@@ -1,0 +1,83 @@
+import React from 'react';
+
+const SpecialtyCard = ({ 
+  title, 
+  subtitle, 
+  image, 
+  badge 
+}: { 
+  title: string; 
+  subtitle: string; 
+  image: string; 
+  badge?: string;
+}) => (
+  <div className="group relative h-[500px] w-full overflow-hidden bg-black cursor-pointer shadow-xl">
+    {/* Image with zoom effect */}
+    <img 
+      src={image} 
+      alt={title} 
+      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-50"
+    />
+    
+    {/* Gradient Overlay */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"></div>
+    
+    {/* Badge (optional) */}
+    {badge && (
+      <div className="absolute top-6 right-6 bg-primary text-black text-xs font-bold px-3 py-1 uppercase tracking-widest shadow-md">
+        {badge}
+      </div>
+    )}
+
+    {/* Content */}
+    <div className="absolute bottom-0 left-0 w-full p-8 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+      <span className="font-hand text-primary text-2xl block mb-2 opacity-90">{subtitle}</span>
+      <h3 className="font-serif text-white text-4xl mb-4 font-bold">{title}</h3>
+      
+      {/* Divider */}
+      <div className="h-0.5 w-12 bg-primary mb-4 transition-all duration-500 group-hover:w-full"></div>
+      
+      <p className="text-gray-300 font-sans text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 max-w-xs leading-relaxed">
+        Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.
+      </p>
+    </div>
+  </div>
+);
+
+const Specialties: React.FC = () => {
+  return (
+    <section className="bg-[#1d1a15] bg-dark-texture py-24 text-white relative">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="text-center mb-16">
+          <span className="font-hand text-3xl text-primary -rotate-2 inline-block mb-2">Autèntics Sabors</span>
+          <h2 className="font-serif text-5xl md:text-6xl font-bold mb-4">Les Nostres Especialitats</h2>
+          <div className="w-24 h-1 bg-primary mx-auto rounded-full mt-6"></div>
+          <p className="mt-6 text-gray-400 max-w-2xl mx-auto font-light">
+            Una selecció de plats i vins que representen l'essència de la nostra terra, cuinats amb passió i producte de proximitat.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <SpecialtyCard 
+            title="Carns a la Brasa" 
+            subtitle="Llenya d'olivera"
+            image="https://images.unsplash.com/photo-1544025162-d76690b67f66?q=80&w=2069&auto=format&fit=crop"
+          />
+          <SpecialtyCard 
+            title="Calçotades" 
+            subtitle="Salsa Romesco"
+            image="https://images.unsplash.com/photo-1627308595133-c598075303c7?q=80&w=2070&auto=format&fit=crop"
+            badge="Temporada"
+          />
+          <SpecialtyCard 
+            title="Vins de Proximitat" 
+            subtitle="DO Tarragona"
+            image="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop"
+          />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Specialties;
