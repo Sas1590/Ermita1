@@ -1,15 +1,18 @@
 import React from 'react';
+import { useConfig } from '../context/ConfigContext';
 
-const SpecialtyCard = ({ 
+interface SpecialtyCardProps {
+  title: string;
+  subtitle: string;
+  image: string;
+  badge?: string;
+}
+
+const SpecialtyCard: React.FC<SpecialtyCardProps> = ({ 
   title, 
   subtitle, 
   image, 
   badge 
-}: { 
-  title: string; 
-  subtitle: string; 
-  image: string; 
-  badge?: string;
 }) => (
   <div className="group relative h-[500px] w-full overflow-hidden bg-black cursor-pointer shadow-xl">
     {/* Image with zoom effect */}
@@ -45,35 +48,31 @@ const SpecialtyCard = ({
 );
 
 const Specialties: React.FC = () => {
+  const { config } = useConfig();
+  const { specialties } = config;
+
   return (
     <section className="bg-[#1d1a15] bg-dark-texture py-24 text-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="text-center mb-16">
-          <span className="font-hand text-3xl text-primary -rotate-2 inline-block mb-2">Autèntics Sabors</span>
-          <h2 className="font-serif text-5xl md:text-6xl font-bold mb-4">Les Nostres Especialitats</h2>
+          <span className="font-hand text-3xl text-primary -rotate-2 inline-block mb-2">{specialties.sectionTitle}</span>
+          <h2 className="font-serif text-5xl md:text-6xl font-bold mb-4">{specialties.mainTitle}</h2>
           <div className="w-24 h-1 bg-primary mx-auto rounded-full mt-6"></div>
           <p className="mt-6 text-gray-400 max-w-2xl mx-auto font-light">
-            Una selecció de plats i vins que representen l'essència de la nostra terra, cuinats amb passió i producte de proximitat.
+            {specialties.description}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <SpecialtyCard 
-            title="Carns a la Brasa" 
-            subtitle="Llenya d'olivera"
-            image="https://images.unsplash.com/photo-1544025162-d76690b67f66?q=80&w=2069&auto=format&fit=crop"
-          />
-          <SpecialtyCard 
-            title="Calçotades" 
-            subtitle="Salsa Romesco"
-            image="https://images.unsplash.com/photo-1627308595133-c598075303c7?q=80&w=2070&auto=format&fit=crop"
-            badge="Temporada"
-          />
-          <SpecialtyCard 
-            title="Vins de Proximitat" 
-            subtitle="DO Tarragona"
-            image="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop"
-          />
+          {specialties.items.map((item, index) => (
+             <SpecialtyCard 
+               key={index}
+               title={item.title} 
+               subtitle={item.subtitle}
+               image={item.image}
+               badge={item.badge}
+             />
+          ))}
         </div>
       </div>
     </section>

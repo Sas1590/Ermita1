@@ -26,8 +26,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
   const [localConfig, setLocalConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Tab State: 'config', 'food_menu'
-  const [activeTab, setActiveTab] = useState<'config' | 'food_menu'>('config');
+  // Tab State: 'config', 'food_menu', 'specialties'
+  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties'>('config');
   
   // Menu Editor State
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -66,6 +66,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
     setIsSaving(false);
     onSaveAndClose();
     // alert("Canvis guardats correctament a la base de dades!"); 
+  };
+
+  // --- SPECIALTIES HANDLERS ---
+  const handleSpecialtyChange = (index: number, field: string, value: string) => {
+    const newItems = [...localConfig.specialties.items];
+    // @ts-ignore
+    newItems[index] = { ...newItems[index], [field]: value };
+    setLocalConfig(prev => ({
+      ...prev,
+      specialties: {
+        ...prev.specialties,
+        items: newItems
+      }
+    }));
   };
 
   // --- MENU MANAGEMENT HANDLERS ---
@@ -151,7 +165,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
         <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
           <h2 className="font-serif text-2xl md:text-3xl font-bold text-secondary flex items-center gap-3">
             <span className="material-symbols-outlined text-primary">settings_suggest</span>
-            Gestió Web
+            Panell d'Administrador
           </h2>
           
           <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
@@ -160,6 +174,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
               className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Configuració
+            </button>
+            <button 
+              onClick={() => setActiveTab('specialties')}
+              className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'specialties' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Especialitats
+              <span className="material-symbols-outlined text-sm">stars</span>
             </button>
             <button 
               onClick={() => setActiveTab('food_menu')}
@@ -288,6 +309,129 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           onChange={(e) => handleChange('intro', 'description', e.target.value)}
                           rows={3}
                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
+                        ></textarea>
+                      </div>
+                  </div>
+                </div>
+
+                {/* Philosophy & History Section */}
+                <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-olive"></div>
+                  <h3 className="font-serif text-xl font-semibold text-olive mb-4 flex items-center gap-2">
+                      <span className="material-symbols-outlined">history_edu</span>
+                      Filosofia i Entorn
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.sectionTitle}
+                          onChange={(e) => handleChange('philosophy', 'sectionTitle', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 1</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.titleLine1}
+                          onChange={(e) => handleChange('philosophy', 'titleLine1', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 2</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.titleLine2}
+                          onChange={(e) => handleChange('philosophy', 'titleLine2', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció General</label>
+                        <textarea
+                          value={localConfig.philosophy.description}
+                          onChange={(e) => handleChange('philosophy', 'description', e.target.value)}
+                          rows={2}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
+                        ></textarea>
+                      </div>
+                      
+                      {/* Product Block */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Producte</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.productTitle}
+                          onChange={(e) => handleChange('philosophy', 'productTitle', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">URL Imatge Producte (Esquerra)</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.productImageUrl}
+                          onChange={(e) => handleChange('philosophy', 'productImageUrl', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                       <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Etiqueta Foto Producte</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.cardTag}
+                          onChange={(e) => handleChange('philosophy', 'cardTag', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label>
+                        <textarea
+                          value={localConfig.philosophy.productDescription}
+                          onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)}
+                          rows={2}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
+                        ></textarea>
+                      </div>
+
+                      {/* Historic Block */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Històric</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.historicTitle}
+                          onChange={(e) => handleChange('philosophy', 'historicTitle', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">URL Imatge Històrica (Dreta)</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.historicImageUrl}
+                          onChange={(e) => handleChange('philosophy', 'historicImageUrl', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Botó (URL)</label>
+                        <input
+                          type="text"
+                          value={localConfig.philosophy.historicLinkUrl}
+                          onChange={(e) => handleChange('philosophy', 'historicLinkUrl', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Històrica</label>
+                        <textarea
+                          value={localConfig.philosophy.historicDescription}
+                          onChange={(e) => handleChange('philosophy', 'historicDescription', e.target.value)}
+                          rows={2}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
                         ></textarea>
                       </div>
                   </div>
@@ -506,6 +650,103 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                   </div>
                 </div>
              </div>
+          )}
+
+          {/* --- SPECIALTIES TAB (NEW) --- */}
+          {activeTab === 'specialties' && (
+              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                  
+                  {/* Header Edit */}
+                  <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                     <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+                     <h3 className="font-serif text-xl font-semibold text-primary mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined">title</span>
+                        Títols i Descripció
+                     </h3>
+                     <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit (Superior)</label>
+                            <input
+                              type="text"
+                              value={localConfig.specialties.sectionTitle}
+                              onChange={(e) => handleChange('specialties', 'sectionTitle', e.target.value)}
+                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
+                            <input
+                              type="text"
+                              value={localConfig.specialties.mainTitle}
+                              onChange={(e) => handleChange('specialties', 'mainTitle', e.target.value)}
+                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció</label>
+                            <textarea
+                              value={localConfig.specialties.description}
+                              onChange={(e) => handleChange('specialties', 'description', e.target.value)}
+                              rows={3}
+                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none resize-none"
+                            ></textarea>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Cards Edit */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {localConfig.specialties.items.map((item, index) => (
+                          <div key={index} className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
+                              <div className="h-32 bg-gray-100 relative overflow-hidden group">
+                                  <img src={item.image} alt="Preview" className="w-full h-full object-cover opacity-80" />
+                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs font-bold uppercase">
+                                      Targeta {index + 1}
+                                  </div>
+                              </div>
+                              <div className="p-4 space-y-3">
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
+                                      <input
+                                        type="text"
+                                        value={item.title}
+                                        onChange={(e) => handleSpecialtyChange(index, 'title', e.target.value)}
+                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Subtítol (Groc)</label>
+                                      <input
+                                        type="text"
+                                        value={item.subtitle}
+                                        onChange={(e) => handleSpecialtyChange(index, 'subtitle', e.target.value)}
+                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Etiqueta (Badge)</label>
+                                      <input
+                                        type="text"
+                                        value={item.badge || ''}
+                                        onChange={(e) => handleSpecialtyChange(index, 'badge', e.target.value)}
+                                        placeholder="Ex: Temporada..."
+                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Imatge URL</label>
+                                      <input
+                                        type="text"
+                                        value={item.image}
+                                        onChange={(e) => handleSpecialtyChange(index, 'image', e.target.value)}
+                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-xs text-gray-600 focus:border-primary outline-none font-mono truncate"
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
           )}
 
           {/* --- FOOD MENU TAB --- */}

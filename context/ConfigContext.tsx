@@ -34,6 +34,17 @@ interface AppConfig {
     mainTitle: string;
     description: string;
   };
+  specialties: {
+    sectionTitle: string; // "Autèntics Sabors"
+    mainTitle: string;    // "Les Nostres Especialitats"
+    description: string;  // "Una selecció de plats i vins..."
+    items: Array<{
+      title: string;
+      subtitle: string;
+      image: string;
+      badge?: string; // "Temporada", etc.
+    }>;
+  };
   philosophy: {
     sectionTitle: string;     // Title 1
     titleLine1: string;       // Title 2
@@ -44,8 +55,12 @@ interface AppConfig {
     cardTag: string;          // Note on the image
     productTitle: string;
     productDescription: string;
+    productImageUrl: string;  // New: Editable Product Image
+    
     historicTitle: string;
     historicDescription: string;
+    historicImageUrl: string; // New: Editable Historic Image
+    historicLinkUrl: string;  // New Link URL
   };
   foodMenu: MenuSection[]; // New Dynamic Menu
   contact: {
@@ -99,6 +114,31 @@ const defaultAppConfig: AppConfig = {
     mainTitle: "Menjar típic català i casolà.",
     description: "\"Calçotades com al mas, cuina tradicional catalana i carns a la brasa amb llenya d’olivera. Gaudint de l'entorn històric i la tranquil·litat de la nostra terra.\""
   },
+  specialties: {
+    sectionTitle: "Autèntics Sabors",
+    mainTitle: "Les Nostres Especialitats",
+    description: "Una selecció de plats i vins que representen l'essència de la nostra terra, cuinats amb passió i producte de proximitat.",
+    items: [
+      {
+        title: "Carns a la Brasa",
+        subtitle: "Llenya d'olivera",
+        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=2070&auto=format&fit=crop",
+        badge: ""
+      },
+      {
+        title: "Calçotades",
+        subtitle: "Salsa Romesco",
+        image: "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?q=80&w=2070&auto=format&fit=crop",
+        badge: "Temporada"
+      },
+      {
+        title: "Vins de Proximitat",
+        subtitle: "DO Tarragona",
+        image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop",
+        badge: "Celler"
+      }
+    ]
+  },
   philosophy: {
     sectionTitle: "Filosofia i Entorn",
     titleLine1: "Cuina amb ànima,",
@@ -107,8 +147,12 @@ const defaultAppConfig: AppConfig = {
     cardTag: "\"L'aroma dels nostres camps a la taula\"",
     productTitle: "Producte de Proximitat",
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
+    productImageUrl: "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop",
+    
     historicTitle: "Un entorn històric",
-    historicDescription: "Situat a l'Ermita de la Paret Delgada, gaudiràs d'un paratge únic que inspira calma. Les parets de pedra i els antics murs contenen el pas del temps, convertint cada àpat en una celebració en companyia."
+    historicDescription: "Situat a l'Ermita de la Paret Delgada, gaudiràs d'un paratge únic que inspira calma. Les parets de pedra i els antics murs contenen el pas del temps, convertint cada àpat en una celebració en companyia.",
+    historicImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Santuari_de_la_Mare_de_D%C3_A9u_de_Paretdelgada_%28La_Selva_del_Camp%29_-_fa%C3%A7ana.JPG/800px-Santuari_de_la_Mare_de_D%C3_A9u_de_Paretdelgada_%28La_Selva_del_Camp%29_-_fa%C3%A7ana.JPG",
+    historicLinkUrl: "https://es.wikipedia.org/wiki/Ermita_de_Santa_Mar%C3%ADa_de_Paretdelgada"
   },
   foodMenu: [
     {
@@ -314,6 +358,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            brand: { ...prev.brand, ...data.brand },
            hero: { ...prev.hero, ...data.hero },
            intro: { ...prev.intro, ...data.intro },
+           specialties: { ...prev.specialties, ...data.specialties },
            philosophy: { ...prev.philosophy, ...data.philosophy },
            contact: { ...prev.contact, ...data.contact },
            navbar: { ...prev.navbar, ...data.navbar },

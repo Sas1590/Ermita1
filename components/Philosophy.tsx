@@ -29,16 +29,16 @@ const Philosophy: React.FC = () => {
         {/* Asymmetric Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
           
-          {/* Left Column: Olive Image & Product Text */}
+          {/* Left Column: Product Image (Editable) */}
           <div className="lg:col-span-5 flex flex-col gap-12">
             
-            {/* Olive Card */}
+            {/* Image Card */}
             <div className="relative group perspective-1000">
               <div className="absolute inset-0 bg-primary/20 transform rotate-3 rounded-sm shadow-xl transition-transform duration-500 group-hover:rotate-1 border border-white/5"></div>
               <div className="relative h-[450px] w-full bg-black overflow-hidden rounded-sm shadow-lg flex items-center justify-center border border-white/10">
                  <img 
-                   src="https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop" 
-                   alt="Olives" 
+                   src={config.philosophy.productImageUrl} 
+                   alt={config.philosophy.productTitle} 
                    className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay hover:scale-110 transition-transform duration-700"
                  />
                  {/* Floating Paper Note */}
@@ -67,14 +67,14 @@ const Philosophy: React.FC = () => {
 
           </div>
 
-          {/* Right Column: Church Image & Historic Text */}
+          {/* Right Column: Historic Image (Editable) */}
           <div className="lg:col-span-7 relative mt-12 lg:mt-0">
              
              {/* Main Historic Image */}
              <div className="relative h-[500px] w-full shadow-2xl overflow-hidden rounded-sm group border border-white/10">
                <img 
-                 src="https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop" 
-                 alt="Ermita Paret Delgada" 
+                 src={config.philosophy.historicImageUrl} 
+                 alt={config.philosophy.historicTitle} 
                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80"
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
@@ -89,14 +89,19 @@ const Philosophy: React.FC = () => {
                   {config.philosophy.historicDescription}
                 </p>
                 
-                <div className="flex items-center gap-3 group/btn cursor-pointer">
+                <a 
+                   href={config.philosophy.historicLinkUrl}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex items-center gap-3 group/btn cursor-pointer"
+                >
                    <div className="w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center transition-transform group-hover/btn:scale-110">
                       <span className="material-symbols-outlined text-sm">favorite</span>
                    </div>
                    <span className="font-hand text-xl text-primary group-hover/btn:text-white transition-colors">
                      Descobreix el passat
                    </span>
-                </div>
+                </a>
              </div>
 
           </div>
