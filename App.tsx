@@ -54,6 +54,11 @@ const App: React.FC = () => {
     }
   };
 
+  const enableAdminMode = () => {
+    setIsAdminMode(true);
+    setShowAdminPanel(true);
+  };
+
   return (
     <div className="font-sans relative overflow-x-hidden">
       <Navbar 
@@ -69,7 +74,7 @@ const App: React.FC = () => {
       <Specialties />
       <Philosophy />
       <Contact />
-      <Footer />
+      <Footer onEnableAdmin={enableAdminMode} />
 
       {showAdminPanel && isAdminMode && <AdminPanel onSaveAndClose={toggleAdminPanel} onClose={toggleAdminPanel} />}
     </div>

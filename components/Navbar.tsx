@@ -52,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {isAdminMode && (
             <div className="hidden md:flex items-center gap-1 bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400">
                <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-               <span className="text-[10px] uppercase font-bold tracking-widest">Panel de administrador</span>
+               <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
             </div>
           )}
         </div>
@@ -132,7 +132,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {isAdminMode && (
              <div className="flex items-center gap-1 text-red-400 mb-2">
                <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-               <span className="text-[10px] uppercase font-bold tracking-widest">Panel de administrador</span>
+               <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
              </div>
           )}
 

@@ -55,12 +55,10 @@ interface AppConfig {
     cardTag: string;          // Note on the image
     productTitle: string;
     productDescription: string;
-    productImageUrl: string;  // New: Editable Product Image
     
     historicTitle: string;
     historicDescription: string;
-    historicImageUrl: string; // New: Editable Historic Image
-    historicLinkUrl: string;  // New Link URL
+    historicLinkUrl: string;  // Link URL (Kept)
   };
   foodMenu: MenuSection[]; // New Dynamic Menu
   contact: {
@@ -147,11 +145,8 @@ const defaultAppConfig: AppConfig = {
     cardTag: "\"L'aroma dels nostres camps a la taula\"",
     productTitle: "Producte de Proximitat",
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
-    productImageUrl: "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop",
-    
     historicTitle: "Un entorn històric",
     historicDescription: "Situat a l'Ermita de la Paret Delgada, gaudiràs d'un paratge únic que inspira calma. Les parets de pedra i els antics murs contenen el pas del temps, convertint cada àpat en una celebració en companyia.",
-    historicImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Santuari_de_la_Mare_de_D%C3_A9u_de_Paretdelgada_%28La_Selva_del_Camp%29_-_fa%C3%A7ana.JPG/800px-Santuari_de_la_Mare_de_D%C3_A9u_de_Paretdelgada_%28La_Selva_del_Camp%29_-_fa%C3%A7ana.JPG",
     historicLinkUrl: "https://es.wikipedia.org/wiki/Ermita_de_Santa_Mar%C3%ADa_de_Paretdelgada"
   },
   foodMenu: [

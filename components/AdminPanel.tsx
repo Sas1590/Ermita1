@@ -369,15 +369,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">URL Imatge Producte (Esquerra)</label>
-                        <input
-                          type="text"
-                          value={localConfig.philosophy.productImageUrl}
-                          onChange={(e) => handleChange('philosophy', 'productImageUrl', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
-                        />
-                      </div>
                        <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Etiqueta Foto Producte</label>
                         <input
@@ -404,15 +395,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           type="text"
                           value={localConfig.philosophy.historicTitle}
                           onChange={(e) => handleChange('philosophy', 'historicTitle', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">URL Imatge Històrica (Dreta)</label>
-                        <input
-                          type="text"
-                          value={localConfig.philosophy.historicImageUrl}
-                          onChange={(e) => handleChange('philosophy', 'historicImageUrl', e.target.value)}
                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
                         />
                       </div>

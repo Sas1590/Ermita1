@@ -29,7 +29,7 @@ const Philosophy: React.FC = () => {
         {/* Asymmetric Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
           
-          {/* Left Column: Product Image (Editable) */}
+          {/* Left Column: Product Image */}
           <div className="lg:col-span-5 flex flex-col gap-12">
             
             {/* Image Card */}
@@ -37,8 +37,8 @@ const Philosophy: React.FC = () => {
               <div className="absolute inset-0 bg-primary/20 transform rotate-3 rounded-sm shadow-xl transition-transform duration-500 group-hover:rotate-1 border border-white/5"></div>
               <div className="relative h-[450px] w-full bg-black overflow-hidden rounded-sm shadow-lg flex items-center justify-center border border-white/10">
                  <img 
-                   src={config.philosophy.productImageUrl} 
-                   alt={config.philosophy.productTitle} 
+                   src="https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop" 
+                   alt="Olives" 
                    className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay hover:scale-110 transition-transform duration-700"
                  />
                  {/* Floating Paper Note */}
@@ -67,14 +67,14 @@ const Philosophy: React.FC = () => {
 
           </div>
 
-          {/* Right Column: Historic Image (Editable) */}
+          {/* Right Column: Historic Image */}
           <div className="lg:col-span-7 relative mt-12 lg:mt-0">
              
              {/* Main Historic Image */}
              <div className="relative h-[500px] w-full shadow-2xl overflow-hidden rounded-sm group border border-white/10">
                <img 
-                 src={config.philosophy.historicImageUrl} 
-                 alt={config.philosophy.historicTitle} 
+                 src="https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop" 
+                 alt="Ermita Paret Delgada" 
                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80"
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
