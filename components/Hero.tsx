@@ -142,6 +142,14 @@ const Hero: React.FC = () => {
           <p className="font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed text-center lg:text-left mt-4 animate-fade-in-slow" style={{ animationDelay: '0.3s' }}>
             Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.
           </p>
+
+          {/* Schedule Display */}
+          <div className="mt-8 flex flex-col items-center lg:items-start animate-fade-in-slow" style={{ animationDelay: '0.5s' }}>
+             <div className="h-px w-24 bg-primary/40 mb-4"></div>
+             <p className="font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center lg:text-left">
+               {config.contact.schedule}
+             </p>
+          </div>
         </div>
 
         {/* Right Content - Sticky Note Reservation Form */}
