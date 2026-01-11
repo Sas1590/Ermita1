@@ -8,12 +8,18 @@ import Specialties from './components/Specialties';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import PrivacyModal from './components/PrivacyModal';
+import CookiesModal from './components/CookiesModal';
+import LegalModal from './components/LegalModal';
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuTab, setMenuTab] = useState<'food' | 'wine' | 'group' | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false); 
-  const [isAdminMode, setIsAdminMode] = useState(false); // New state to track admin mode
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showCookiesModal, setShowCookiesModal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,7 +55,7 @@ const App: React.FC = () => {
   };
 
   const toggleAdminPanel = () => {
-    if (isAdminMode) { // Only allow toggling if in admin mode
+    if (isAdminMode) {
       setShowAdminPanel(prev => !prev);
     }
   };
@@ -66,17 +72,28 @@ const App: React.FC = () => {
         onOpenMenu={handleOpenMenu} 
         onScrollToSection={handleScrollToSection}
         onToggleAdminPanel={toggleAdminPanel} 
-        isAdminMode={isAdminMode} // Pass admin mode status to Navbar
+        isAdminMode={isAdminMode} 
       />
       <Hero />
       <Intro />
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
       <Specialties />
       <Philosophy />
-      <Contact />
-      <Footer onEnableAdmin={enableAdminMode} />
+      <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
+      <Footer 
+        onEnableAdmin={enableAdminMode} 
+        onOpenPrivacy={() => setShowPrivacyModal(true)}
+        onOpenCookies={() => setShowCookiesModal(true)}
+        onOpenLegal={() => setShowLegalModal(true)}
+      />
 
-      {showAdminPanel && isAdminMode && <AdminPanel onSaveAndClose={toggleAdminPanel} onClose={toggleAdminPanel} />}
+      {showPrivacyModal && <PrivacyModal onClose={() => setShowPrivacyModal(false)} />}
+      {showCookiesModal && <CookiesModal onClose={() => setShowCookiesModal(false)} />}
+      {showLegalModal && <LegalModal onClose={() => setShowLegalModal(false)} />}
+      
+      {showAdminPanel && isAdminMode && (
+        <AdminPanel onSaveAndClose={toggleAdminPanel} onClose={toggleAdminPanel} />
+      )}
     </div>
   );
 };

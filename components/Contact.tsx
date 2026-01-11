@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
+import { db } from '../firebase';
+import { ref, push, serverTimestamp } from 'firebase/database';
 
-const Contact: React.FC = () => {
+interface ContactProps {
+  onOpenPrivacy: () => void;
+}
+
+const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
   const { config } = useConfig(); 
   
   // Form States
@@ -41,18 +47,30 @@ const Contact: React.FC = () => {
     setStatus('sending');
 
     try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create a reference to the 'contactMessages' node
+      const messagesRef = ref(db, 'contactMessages');
+      
+      // Push the new message
+      await push(messagesRef, {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message,
+        privacyAccepted: true, // Guardamos explícitamente que aceptó la privacidad
+        timestamp: Date.now(), // Client side timestamp for immediate sorting
+        read: false
+      });
 
-      // Simulate success
+      // Show success
       setStatus('success');
       setFormData({ name: '', email: '', phone: '', subject: '', message: '', privacy: false });
       
-      // Reset success message after 5 seconds
+      // Reset status after a delay
       setTimeout(() => setStatus('idle'), 5000);
 
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending message to Firebase:", error);
       setStatus('error');
     }
   };
@@ -213,7 +231,9 @@ const Contact: React.FC = () => {
                       className="mt-1 accent-primary h-4 w-4 bg-white/10 border-white/20 cursor-pointer" 
                    />
                    <label htmlFor="privacy_check" className="text-xs text-gray-400 cursor-pointer">
-                      <span className="font-bold text-primary block mb-0.5">Política de Privacitat</span>
+                      <span className="font-bold text-primary block mb-0.5" onClick={(e) => { e.preventDefault(); onOpenPrivacy(); }}>
+                        Política de Privacitat
+                      </span>
                       Dono el meu consentiment pel tractament de les dades.
                    </label>
                 </div>

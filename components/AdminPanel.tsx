@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig, MenuSection, MenuItem } from '../context/ConfigContext';
+import { db } from '../firebase';
+import { ref, onValue, update, remove } from 'firebase/database';
 
 interface AdminPanelProps {
   onSaveAndClose: () => void;
   onClose: () => void;
+}
+
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
 }
 
 const AVAILABLE_ICONS = [
@@ -26,11 +39,54 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
   const [localConfig, setLocalConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Tab State: 'config', 'food_menu', 'specialties'
-  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties'>('config');
+  // Tab State: 'config', 'food_menu', 'specialties', 'inbox'
+  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties' | 'inbox'>('config');
   
   // Menu Editor State
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  // --- INBOX STATE ---
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch messages from Firebase
+  useEffect(() => {
+    const messagesRef = ref(db, 'contactMessages');
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const messageList: ContactMessage[] = Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            })).sort((a, b) => b.timestamp - a.timestamp); // Sort by newest
+            
+            setMessages(messageList);
+            setUnreadCount(messageList.filter(m => !m.read).length);
+        } else {
+            setMessages([]);
+            setUnreadCount(0);
+        }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleMarkAsRead = async (messageId: string) => {
+    try {
+        await update(ref(db, `contactMessages/${messageId}`), { read: true });
+    } catch (e) {
+        console.error("Error marking as read", e);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+      if(window.confirm("Segur que vols esborrar aquest missatge?")) {
+        try {
+            await remove(ref(db, `contactMessages/${messageId}`));
+        } catch (e) {
+            console.error("Error deleting message", e);
+        }
+      }
+  };
 
   // Update local config if global config changes
   useEffect(() => {
@@ -65,7 +121,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
     await updateConfig(localConfig);
     setIsSaving(false);
     onSaveAndClose();
-    // alert("Canvis guardats correctament a la base de dades!"); 
   };
 
   // --- SPECIALTIES HANDLERS ---
@@ -83,7 +138,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
   };
 
   // --- MENU MANAGEMENT HANDLERS ---
-
   const handleAddSection = () => {
       const newSection: MenuSection = {
           id: `sec_${Date.now()}`,
@@ -161,40 +215,165 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4 overflow-auto">
       <div className="bg-beige text-secondary p-0 rounded-lg shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
         
-        {/* Header with Tabs */}
+        {/* Header with Tabs and Notification Bell */}
         <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
           <h2 className="font-serif text-2xl md:text-3xl font-bold text-secondary flex items-center gap-3">
             <span className="material-symbols-outlined text-primary">settings_suggest</span>
             Panell d'Administrador
           </h2>
           
-          <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
-            <button 
-              onClick={() => setActiveTab('config')}
-              className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Configuració
-            </button>
-            <button 
-              onClick={() => setActiveTab('specialties')}
-              className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'specialties' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Especialitats
-              <span className="material-symbols-outlined text-sm">stars</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('food_menu')}
-              className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'food_menu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Carta Menjar
-              <span className="material-symbols-outlined text-sm">restaurant_menu</span>
-            </button>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+              {/* Notification Area */}
+              <div className="flex items-center gap-2">
+                 {/* Mail Inbox Button */}
+                 <button 
+                    onClick={() => setActiveTab('inbox')}
+                    className={`relative p-2 rounded-full hover:bg-gray-100 transition-colors ${activeTab === 'inbox' ? 'bg-primary/10 text-primary' : 'text-gray-500'}`}
+                    title="Bústia de Missatges"
+                  >
+                      <span className="material-symbols-outlined text-3xl">mail</span>
+                      {unreadCount > 0 && (
+                          <span className="absolute top-0 right-0 h-5 w-5 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+                              {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                      )}
+                  </button>
+
+                  {/* General Notification Bell (Placeholder for now) */}
+                  <button 
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 cursor-default"
+                    title="Notificacions"
+                  >
+                      <span className="material-symbols-outlined text-3xl">notifications</span>
+                  </button>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
+                <button 
+                  onClick={() => setActiveTab('config')}
+                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Configuració
+                </button>
+                <button 
+                  onClick={() => setActiveTab('specialties')}
+                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'specialties' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Especialitats
+                  <span className="material-symbols-outlined text-sm">stars</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('food_menu')}
+                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'food_menu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Carta Menjar
+                  <span className="material-symbols-outlined text-sm">restaurant_menu</span>
+                </button>
+              </div>
           </div>
         </div>
 
         {/* SCROLLABLE CONTENT AREA */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-beige/50">
           
+          {/* --- INBOX TAB --- */}
+          {activeTab === 'inbox' && (
+              <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">mail</span>
+                        Bústia de Missatges
+                    </h3>
+                    <div className="text-xs font-bold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">Total: {messages.length}</div>
+                  </div>
+
+                  {messages.length === 0 ? (
+                      <div className="text-center py-20 opacity-50">
+                          <span className="material-symbols-outlined text-6xl mb-4 text-gray-300">drafts</span>
+                          <p className="text-lg text-gray-400">No tens cap missatge.</p>
+                      </div>
+                  ) : (
+                      <div className="space-y-4">
+                          {messages.map((msg) => (
+                              <div 
+                                key={msg.id} 
+                                className={`rounded-lg p-6 border transition-all duration-300 relative overflow-hidden group
+                                    ${msg.read 
+                                        ? 'bg-gray-50 border-gray-200 opacity-70 hover:opacity-100' 
+                                        : 'bg-white border-primary shadow-lg border-l-[6px] border-l-primary scale-[1.01]'
+                                    }`}
+                                onClick={() => !msg.read && handleMarkAsRead(msg.id)}
+                              >
+                                  {/* Read/Unread Indicator Visuals */}
+                                  {!msg.read && (
+                                      <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-2 py-1 uppercase tracking-widest rounded-bl-lg shadow-sm">
+                                          Nou Missatge
+                                      </div>
+                                  )}
+
+                                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2 pr-16">
+                                      <div className="flex items-center gap-3">
+                                          <h4 className={`text-lg ${msg.read ? 'font-medium text-gray-600' : 'font-bold text-black'}`}>
+                                            {msg.subject || '(Sense assumpte)'}
+                                          </h4>
+                                      </div>
+                                      <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-sm">schedule</span>
+                                          {new Date(msg.timestamp).toLocaleString('ca-ES')}
+                                      </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-5 text-sm">
+                                      <div className={`p-3 rounded border ${msg.read ? 'bg-gray-100 border-transparent' : 'bg-primary/5 border-primary/10'}`}>
+                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">person</span> Nom
+                                          </span>
+                                          <span className="font-semibold text-secondary">{msg.name}</span>
+                                      </div>
+                                      <div className={`p-3 rounded border ${msg.read ? 'bg-gray-100 border-transparent' : 'bg-primary/5 border-primary/10'}`}>
+                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">alternate_email</span> Email
+                                          </span>
+                                          <a href={`mailto:${msg.email}`} className="text-primary hover:underline font-semibold">{msg.email}</a>
+                                      </div>
+                                      <div className={`p-3 rounded border ${msg.read ? 'bg-gray-100 border-transparent' : 'bg-primary/5 border-primary/10'}`}>
+                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">call</span> Telèfon
+                                          </span>
+                                          <a href={`tel:${msg.phone}`} className="text-secondary hover:underline font-semibold">{msg.phone}</a>
+                                      </div>
+                                  </div>
+
+                                  <div className={`p-5 rounded border mb-4 ${msg.read ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200'}`}>
+                                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                                  </div>
+
+                                  <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {!msg.read && (
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); handleMarkAsRead(msg.id); }}
+                                            className="px-3 py-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold uppercase flex items-center gap-1 transition-colors"
+                                          >
+                                              <span className="material-symbols-outlined text-sm">mark_email_read</span>
+                                              Marcar llegit
+                                          </button>
+                                      )}
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }}
+                                        className="px-3 py-1.5 rounded bg-red-50 text-red-500 hover:bg-red-100 text-xs font-bold uppercase flex items-center gap-1 transition-colors"
+                                      >
+                                          <span className="material-symbols-outlined text-sm">delete</span>
+                                          Esborrar
+                                      </button>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          )}
+
           {/* --- CONFIGURATION TAB --- */}
           {activeTab === 'config' && (
              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
@@ -215,7 +394,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-accent outline-none font-mono text-xs"
                         placeholder="Enganxa aquí el codi data:image/png;base64..."
                       ></textarea>
-                      <p className="text-[10px] text-gray-400 mt-1">Recomanat: Imatge PNG sense fons optimitzada.</p>
                   </div>
                 </div>
 
@@ -314,68 +492,74 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                   </div>
                 </div>
 
-                {/* Philosophy & History Section */}
+                {/* Philosophy Section - NEW ADDITION */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-olive"></div>
-                  <h3 className="font-serif text-xl font-semibold text-olive mb-4 flex items-center gap-2">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#556b2f]"></div>
+                  <h3 className="font-serif text-xl font-semibold text-[#556b2f] mb-4 flex items-center gap-2">
                       <span className="material-symbols-outlined">history_edu</span>
                       Filosofia i Entorn
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
+                  
+                  {/* General Config */}
+                  <div className="grid grid-cols-1 gap-4 mb-6 pb-6 border-b border-gray-100">
+                      <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label>
                         <input
                           type="text"
                           value={localConfig.philosophy.sectionTitle}
                           onChange={(e) => handleChange('philosophy', 'sectionTitle', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
                         />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 1</label>
+                            <input
+                            type="text"
+                            value={localConfig.philosophy.titleLine1}
+                            onChange={(e) => handleChange('philosophy', 'titleLine1', e.target.value)}
+                            className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 2</label>
+                            <input
+                            type="text"
+                            value={localConfig.philosophy.titleLine2}
+                            onChange={(e) => handleChange('philosophy', 'titleLine2', e.target.value)}
+                            className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
+                            />
+                        </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 1</label>
-                        <input
-                          type="text"
-                          value={localConfig.philosophy.titleLine1}
-                          onChange={(e) => handleChange('philosophy', 'titleLine1', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 2</label>
-                        <input
-                          type="text"
-                          value={localConfig.philosophy.titleLine2}
-                          onChange={(e) => handleChange('philosophy', 'titleLine2', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció General</label>
                         <textarea
                           value={localConfig.philosophy.description}
                           onChange={(e) => handleChange('philosophy', 'description', e.target.value)}
                           rows={2}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none resize-none"
                         ></textarea>
                       </div>
-                      
-                      {/* Product Block */}
+                  </div>
+
+                  {/* Product Config */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 pb-6 border-b border-gray-100">
                       <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Producte</label>
                         <input
                           type="text"
                           value={localConfig.philosophy.productTitle}
                           onChange={(e) => handleChange('philosophy', 'productTitle', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
                         />
                       </div>
-                       <div>
+                      <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Etiqueta Foto Producte</label>
                         <input
                           type="text"
                           value={localConfig.philosophy.cardTag}
                           onChange={(e) => handleChange('philosophy', 'cardTag', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -384,18 +568,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           value={localConfig.philosophy.productDescription}
                           onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)}
                           rows={2}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none resize-none"
                         ></textarea>
                       </div>
+                  </div>
 
-                      {/* Historic Block */}
+                  {/* Historic Config */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Històric</label>
                         <input
                           type="text"
                           value={localConfig.philosophy.historicTitle}
                           onChange={(e) => handleChange('philosophy', 'historicTitle', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
                         />
                       </div>
                       <div>
@@ -404,7 +590,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           type="text"
                           value={localConfig.philosophy.historicLinkUrl}
                           onChange={(e) => handleChange('philosophy', 'historicLinkUrl', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -413,7 +599,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           value={localConfig.philosophy.historicDescription}
                           onChange={(e) => handleChange('philosophy', 'historicDescription', e.target.value)}
                           rows={2}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none resize-none"
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none resize-none"
                         ></textarea>
                       </div>
                   </div>
@@ -461,70 +647,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                     </div>
                   </div>
                   
-                  {/* Ubicació i Horaris (New Section) */}
+                  {/* Ubicació i Horaris */}
                   <div className="mb-6 pb-6 border-b border-gray-100">
                      <h4 className="text-xs font-bold uppercase text-gray-400 mb-3">Ubicació i Horaris</h4>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal (Esquerra)</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.sectionTitle}
-                           onChange={(e) => handleChange('contact', 'sectionTitle', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Localització</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.locationTitle}
-                           onChange={(e) => handleChange('contact', 'locationTitle', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 1</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.addressLine1}
-                           onChange={(e) => handleChange('contact', 'addressLine1', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 2 (CP/Ciutat)</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.addressLine2}
-                           onChange={(e) => handleChange('contact', 'addressLine2', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div className="md:col-span-2">
                          <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Horari Text</label>
                          <input
                            type="text"
                            value={localConfig.contact.schedule}
                            onChange={(e) => handleChange('contact', 'schedule', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Mapa</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.directionsButtonText}
-                           onChange={(e) => handleChange('contact', 'directionsButtonText', e.target.value)}
-                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Google Maps (Opcional)</label>
-                         <input
-                           type="text"
-                           value={localConfig.contact.mapUrl}
-                           onChange={(e) => handleChange('contact', 'mapUrl', e.target.value)}
                            className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
                          />
                        </div>
@@ -541,100 +673,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
                      />
                   </div>
-
-                  {/* Formulario */}
-                  <div>
-                    <h4 className="text-xs font-bold uppercase text-gray-400 mb-3">Formulari Web</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Formulari</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formTitle}
-                          onChange={(e) => handleChange('contact', 'formTitle', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Enviar</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formButtonText}
-                          onChange={(e) => handleChange('contact', 'formButtonText', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       {/* Labels */}
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Label Nom</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formNameLabel}
-                          onChange={(e) => handleChange('contact', 'formNameLabel', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Label Email</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formEmailLabel}
-                          onChange={(e) => handleChange('contact', 'formEmailLabel', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Label Telèfon</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formPhoneLabel}
-                          onChange={(e) => handleChange('contact', 'formPhoneLabel', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       <div>
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Label Assumpte</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formSubjectLabel}
-                          onChange={(e) => handleChange('contact', 'formSubjectLabel', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                       <div className="md:col-span-2">
-                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Label Missatge</label>
-                        <input
-                          type="text"
-                          value={localConfig.contact.formMessageLabel}
-                          onChange={(e) => handleChange('contact', 'formMessageLabel', e.target.value)}
-                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
-                        />
-                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Navbar Section */}
-                <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-gray-400"></div>
-                  <h3 className="font-serif text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined">menu</span>
-                    Navegació
-                  </h3>
-                  <div>
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Reserva</label>
-                      <input
-                        type="text"
-                        value={localConfig.navbar.reserveButtonText}
-                        onChange={(e) => handleChange('navbar', 'reserveButtonText', e.target.value)}
-                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-gray-500 focus:ring-1 focus:ring-gray-500 outline-none"
-                      />
-                  </div>
                 </div>
              </div>
           )}
 
-          {/* --- SPECIALTIES TAB (NEW) --- */}
+          {/* --- SPECIALTIES TAB --- */}
           {activeTab === 'specialties' && (
               <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
                   
@@ -647,15 +690,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                      </h3>
                      <div className="grid grid-cols-1 gap-4">
                         <div>
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit (Superior)</label>
-                            <input
-                              type="text"
-                              value={localConfig.specialties.sectionTitle}
-                              onChange={(e) => handleChange('specialties', 'sectionTitle', e.target.value)}
-                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
-                            />
-                        </div>
-                        <div>
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
                             <input
                               type="text"
@@ -663,15 +697,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                               onChange={(e) => handleChange('specialties', 'mainTitle', e.target.value)}
                               className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
                             />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció</label>
-                            <textarea
-                              value={localConfig.specialties.description}
-                              onChange={(e) => handleChange('specialties', 'description', e.target.value)}
-                              rows={3}
-                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none resize-none"
-                            ></textarea>
                         </div>
                      </div>
                   </div>
@@ -682,9 +707,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                           <div key={index} className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
                               <div className="h-32 bg-gray-100 relative overflow-hidden group">
                                   <img src={item.image} alt="Preview" className="w-full h-full object-cover opacity-80" />
-                                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs font-bold uppercase">
-                                      Targeta {index + 1}
-                                  </div>
                               </div>
                               <div className="p-4 space-y-3">
                                   <div>
@@ -703,25 +725,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                                         value={item.subtitle}
                                         onChange={(e) => handleSpecialtyChange(index, 'subtitle', e.target.value)}
                                         className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
-                                      />
-                                  </div>
-                                  <div>
-                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Etiqueta (Badge)</label>
-                                      <input
-                                        type="text"
-                                        value={item.badge || ''}
-                                        onChange={(e) => handleSpecialtyChange(index, 'badge', e.target.value)}
-                                        placeholder="Ex: Temporada..."
-                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
-                                      />
-                                  </div>
-                                  <div>
-                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Imatge URL</label>
-                                      <input
-                                        type="text"
-                                        value={item.image}
-                                        onChange={(e) => handleSpecialtyChange(index, 'image', e.target.value)}
-                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-xs text-gray-600 focus:border-primary outline-none font-mono truncate"
                                       />
                                   </div>
                               </div>
@@ -796,16 +799,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                                                   ))}
                                               </select>
                                           </div>
-                                          <div className="md:col-span-2">
-                                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Peu de Pàgina (Opcional - ex: Menú Infantil)</label>
-                                              <input
-                                                  type="text"
-                                                  value={section.footer || ''}
-                                                  onChange={(e) => handleUpdateSection(section.id, 'footer', e.target.value)}
-                                                  placeholder="Text avís (al·lèrgies, edat, etc)..."
-                                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
-                                              />
-                                          </div>
                                       </div>
 
                                       {/* Items List */}
@@ -866,14 +859,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
           >
             Tancar
           </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`px-8 py-3 border border-transparent rounded shadow-lg text-sm font-bold uppercase tracking-wider text-white bg-primary hover:bg-accent transition-all transform hover:-translate-y-1 flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
-          >
-            {isSaving ? 'Guardant...' : 'Guardar Canvis'}
-            {!isSaving && <span className="material-symbols-outlined text-sm">cloud_upload</span>}
-          </button>
+          {activeTab !== 'inbox' && (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`px-8 py-3 border border-transparent rounded shadow-lg text-sm font-bold uppercase tracking-wider text-white bg-primary hover:bg-accent transition-all transform hover:-translate-y-1 flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
+            >
+              {isSaving ? 'Guardant...' : 'Guardar Canvis'}
+              {!isSaving && <span className="material-symbols-outlined text-sm">cloud_upload</span>}
+            </button>
+          )}
         </div>
 
       </div>
