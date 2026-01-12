@@ -16,6 +16,8 @@ const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuTab, setMenuTab] = useState<'food' | 'wine' | 'group' | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false); 
+  // State to determine which tab to show when Admin Panel opens
+  const [adminInitialTab, setAdminInitialTab] = useState<'config' | 'inbox'>('config');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showCookiesModal, setShowCookiesModal] = useState(false);
@@ -60,9 +62,17 @@ const App: React.FC = () => {
     }
   };
 
+  const openAdminPanel = (tab: 'config' | 'inbox' = 'config') => {
+    if (isAdminMode) {
+      setAdminInitialTab(tab);
+      setShowAdminPanel(true);
+    }
+  };
+
   const enableAdminMode = () => {
     setIsAdminMode(true);
-    setShowAdminPanel(true);
+    // When enabled via footer, open config by default
+    openAdminPanel('config');
   };
 
   return (
@@ -71,7 +81,7 @@ const App: React.FC = () => {
         scrolled={scrolled} 
         onOpenMenu={handleOpenMenu} 
         onScrollToSection={handleScrollToSection}
-        onToggleAdminPanel={toggleAdminPanel} 
+        onOpenAdminPanel={openAdminPanel} 
         isAdminMode={isAdminMode} 
       />
       <Hero />
@@ -92,7 +102,11 @@ const App: React.FC = () => {
       {showLegalModal && <LegalModal onClose={() => setShowLegalModal(false)} />}
       
       {showAdminPanel && isAdminMode && (
-        <AdminPanel onSaveAndClose={toggleAdminPanel} onClose={toggleAdminPanel} />
+        <AdminPanel 
+            initialTab={adminInitialTab}
+            onSaveAndClose={toggleAdminPanel} 
+            onClose={toggleAdminPanel} 
+        />
       )}
     </div>
   );

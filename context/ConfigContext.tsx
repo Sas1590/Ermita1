@@ -102,9 +102,8 @@ const defaultAppConfig: AppConfig = {
     reservationButtonText: "Reservar Ara!",
     stickyNoteText: "Obert tot l'any!",
     backgroundImages: [
-      "/slides/slide1", 
-      "/slides/slide2",
-      "/slides/slide3"
+      "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_5.png",
+      "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_4.png"
     ],
   },
   intro: {

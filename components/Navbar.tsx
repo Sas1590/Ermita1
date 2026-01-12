@@ -1,17 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConfig } from '../context/ConfigContext';
+import { db } from '../firebase';
+import { ref, onValue } from 'firebase/database';
 
 interface NavbarProps {
   scrolled: boolean;
   onOpenMenu: (tab: 'food' | 'wine' | 'group') => void;
   onScrollToSection: (id: string) => void;
-  onToggleAdminPanel: () => void; 
+  onOpenAdminPanel: (tab?: 'config' | 'inbox') => void; 
   isAdminMode: boolean; // New prop for admin mode status
 }
 
-const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection, onToggleAdminPanel, isAdminMode }) => {
+const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection, onOpenAdminPanel, isAdminMode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { config, isLoading } = useConfig(); 
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Listen for unread messages only if in Admin Mode
+  useEffect(() => {
+    if (isAdminMode) {
+      const messagesRef = ref(db, 'contactMessages');
+      const unsubscribe = onValue(messagesRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          // Count messages where read is false
+          const count = Object.values(data).filter((msg: any) => !msg.read).length;
+          setUnreadCount(count);
+        } else {
+          setUnreadCount(0);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [isAdminMode]);
 
   return (
     <nav
@@ -48,11 +69,29 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
              )}
           </button>
 
-          {/* Admin Label - Only visible if in Admin Mode */}
+          {/* Admin Badge & Notification Bell - Only visible if in Admin Mode */}
           {isAdminMode && (
-            <div className="hidden md:flex items-center gap-1 bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400">
-               <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-               <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+            <div className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400 cursor-default">
+                 <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+                 <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+              </div>
+              
+              {/* Notification Bell - Opens Inbox Directly */}
+              <button 
+                onClick={() => onOpenAdminPanel('inbox')}
+                className="relative group bg-white/10 p-1.5 rounded-full hover:bg-white/20 transition-colors border border-white/10"
+                title="Obrir Missatges"
+              >
+                 <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${unreadCount > 0 ? 'text-primary animate-pulse' : 'text-gray-400'}`}>
+                    notifications
+                 </span>
+                 {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 border border-white text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm">
+                      {unreadCount}
+                    </span>
+                 )}
+              </button>
             </div>
           )}
         </div>
@@ -104,11 +143,11 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             {config.navbar.reserveButtonText}
           </button>
 
-          {/* Admin Panel Toggle Button - now conditional */}
+          {/* Admin Panel Toggle Button - Red Styled */}
           {isAdminMode && (
             <button 
-              onClick={onToggleAdminPanel}
-              className="text-white/50 hover:text-primary transition-colors text-xs font-bold tracking-widest uppercase ml-4"
+              onClick={() => onOpenAdminPanel('config')}
+              className="bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400 hover:bg-red-700 transition-colors text-[10px] font-bold tracking-widest uppercase ml-4"
             >
               Modificar Contingut
             </button>
@@ -117,9 +156,15 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-3xl"
+          className="md:hidden text-3xl flex items-center gap-3"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
+          {isAdminMode && unreadCount > 0 && (
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+          )}
           <span className="material-symbols-outlined">menu</span>
         </button>
       </div>
@@ -130,9 +175,17 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           
           {/* Mobile Admin Badge */}
           {isAdminMode && (
-             <div className="flex items-center gap-1 text-red-400 mb-2">
-               <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-               <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+             <div className="flex flex-col items-center gap-3 mb-2">
+               <div className="flex items-center gap-1 text-red-400">
+                 <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+                 <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+               </div>
+               {unreadCount > 0 && (
+                  <div className="bg-white/10 px-3 py-1 rounded-full text-xs flex items-center gap-2" onClick={() => { onOpenAdminPanel('inbox'); setMobileMenuOpen(false); }}>
+                    <span className="material-symbols-outlined text-primary text-sm">notifications</span>
+                    <span className="text-primary font-bold">{unreadCount} missatges nous</span>
+                  </div>
+               )}
              </div>
           )}
 
@@ -157,7 +210,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           </button>
 
           {isAdminMode && ( // Also conditional in mobile menu
-            <button onClick={() => { onToggleAdminPanel(); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary mt-4 text-white/50">Modificar Contingut</button>
+            <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-red-600/90 text-white px-4 py-2 rounded shadow-lg border border-red-400 uppercase tracking-widest text-xs font-bold mt-4">Modificar Contingut</button>
           )}
         </div>
       )}

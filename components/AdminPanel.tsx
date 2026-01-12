@@ -6,6 +6,7 @@ import { ref, onValue, update, remove } from 'firebase/database';
 interface AdminPanelProps {
   onSaveAndClose: () => void;
   onClose: () => void;
+  initialTab?: 'config' | 'food_menu' | 'specialties' | 'inbox'; // Nueva prop opcional
 }
 
 interface ContactMessage {
@@ -34,13 +35,13 @@ const AVAILABLE_ICONS = [
     { label: "Beguda", value: "local_bar" },
 ];
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initialTab = 'config' }) => {
   const { config, updateConfig } = useConfig();
   const [localConfig, setLocalConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Tab State: 'config', 'food_menu', 'specialties', 'inbox'
-  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties' | 'inbox'>('config');
+  // Tab State: initialized with the prop
+  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties' | 'inbox'>(initialTab);
   
   // Menu Editor State
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -101,6 +102,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
           ...prev[section],
           // @ts-ignore
           [key]: value.split(',').map(s => s.trim()), 
+        },
+      }));
+    } else if (section === 'hero' && key === 'backgroundImages') {
+       setLocalConfig(prev => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          // @ts-ignore
+          [key]: value.split('\n').map(s => s.trim()).filter(s => s !== ''), 
         },
       }));
     } else {
@@ -237,14 +247,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                               {unreadCount > 9 ? '9+' : unreadCount}
                           </span>
                       )}
-                  </button>
-
-                  {/* General Notification Bell (Placeholder for now) */}
-                  <button 
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-400 cursor-default"
-                    title="Notificacions"
-                  >
-                      <span className="material-symbols-outlined text-3xl">notifications</span>
                   </button>
               </div>
 
@@ -450,6 +452,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose }) => {
                         onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)}
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                       />
+                    </div>
+                    {/* Background Images Editor */}
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Imatges de Fons (Slides) - Una URL per línia</label>
+                      <textarea
+                        value={localConfig.hero.backgroundImages.join('\n')}
+                        onChange={(e) => handleChange('hero', 'backgroundImages', e.target.value)}
+                        rows={4}
+                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-xs whitespace-pre"
+                        placeholder="https://exemple.com/imatge1.jpg"
+                      ></textarea>
                     </div>
                   </div>
                 </div>
