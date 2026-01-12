@@ -388,8 +388,9 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                     )}
 
                   </div>
+                  {/* Footer deco inside accordion (Dynamic) */}
                   <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">
-                    Celebracions amb ànima
+                    {GroupMenuData.footerText || "Celebracions amb ànima"}
                   </div>
               </div>
             </div>

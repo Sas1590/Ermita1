@@ -90,6 +90,7 @@ interface AppConfig {
     drinks: string[]; // List of included drinks
     infoIntro: string;
     infoAllergy: string;
+    footerText?: string; // New: "Celebracions amb ànima"
   };
 
   contact: {
@@ -413,7 +414,8 @@ const defaultAppConfig: AppConfig = {
         "Pa, cafè i infusió."
     ],
     infoIntro: "A l’Ermita t’oferim un menú especial per a grups, una selecció de les nostres millors receptes a preus per a qualsevol pressupost.",
-    infoAllergy: "En el cas que algun comensal tingués algun tipus d’intolerància alimentària, no dubtis a dir-nos, el nostre equip de cuina s’encarregarà d’oferir les millors alternatives perquè pugui gaudir del menjar."
+    infoAllergy: "En el cas que algun comensal tingués algun tipus d’intolerància alimentària, no dubtis a dir-nos, el nostre equip de cuina s’encarregarà d’oferir les millors alternatives perquè pugui gaudir del menjar.",
+    footerText: "Celebracions amb ànima"
   },
   contact: {
     importantNoteTitle: "Important!",

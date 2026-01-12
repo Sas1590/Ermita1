@@ -167,14 +167,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
   };
   
   const removeGroupSection = (index: number) => {
-      if(window.confirm("Segur que vols esborrar tota la secció?")) {
-        const newSections = [...localConfig.groupMenu.sections];
-        newSections.splice(index, 1);
-        setLocalConfig(prev => ({
-            ...prev,
-            groupMenu: { ...prev.groupMenu, sections: newSections }
-        }));
-      }
+      // Removed window.confirm to avoid browser blocking (Brave/AdBlockers)
+      const newSections = [...localConfig.groupMenu.sections];
+      newSections.splice(index, 1);
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
   };
 
 
@@ -534,6 +533,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                                   value={localConfig.groupMenu.disclaimer}
                                   onChange={(e) => handleGroupMenuGeneralChange('disclaimer', e.target.value)}
                                   className="block w-full border border-red-200 bg-red-50 rounded px-3 py-2 text-sm text-red-700 focus:border-red-500 outline-none"
+                              />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Footer & Notes Section (NEW) */}
+                  <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-gray-400"></div>
+                      <h3 className="font-serif text-xl font-semibold text-gray-600 mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined">edit_note</span>
+                          Peu de Pàgina i Notes
+                      </h3>
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Decoratiu Peu (Ex: Celebracions amb ànima)</label>
+                              <input
+                                  type="text"
+                                  value={localConfig.groupMenu.footerText || ""}
+                                  onChange={(e) => handleGroupMenuGeneralChange('footerText', e.target.value)}
+                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none font-serif italic text-gray-600"
+                                  placeholder="Celebracions amb ànima"
                               />
                           </div>
                       </div>
