@@ -38,7 +38,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
   return (
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-black/90 py-4 shadow-lg' : 'bg-transparent py-8'
+        scrolled ? 'bg-black/90 py-3 md:py-4 shadow-lg' : 'bg-transparent py-6 md:py-8'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex justify-between items-center text-white">
@@ -57,7 +57,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
              ) : (
                <div className="animate-fade-in-slow">
                   {config.brand?.logoUrl ? (
-                    <img src={config.brand.logoUrl} alt="Ermita Paret Delgada" className="h-10 md:h-20 w-auto object-contain transition-all duration-300" />
+                    <img src={config.brand.logoUrl} alt="Ermita Paret Delgada" className="h-8 md:h-20 w-auto object-contain transition-all duration-300" />
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-primary text-3xl">restaurant</span>
@@ -164,24 +164,39 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           ) : null}
         </div>
 
-        {/* Mobile Toggle */}
-        <button 
-          className="md:hidden text-3xl flex items-center gap-3"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {isAdminMode && unreadCount > 0 && (
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-            </span>
-          )}
-          <span className="material-symbols-outlined">menu</span>
-        </button>
+        {/* Mobile Controls (Menu + Reservation) */}
+        <div className="flex items-center gap-3 md:hidden">
+            {/* Mobile Reservation Button - Always visible but styled differently when scrolled */}
+            <button 
+              onClick={() => onScrollToSection('reserva')} 
+              className={`uppercase tracking-widest text-[10px] font-bold px-3 py-1.5 border transition-all duration-300 ${
+                  scrolled 
+                    ? 'border-primary text-primary bg-transparent' 
+                    : 'border-white/50 text-white bg-black/20 backdrop-blur-sm'
+              }`}
+            >
+              {config.navbar.reserveButtonText}
+            </button>
+
+            {/* Mobile Toggle */}
+            <button 
+              className="text-3xl flex items-center gap-3 p-1"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {isAdminMode && unreadCount > 0 && (
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+              )}
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="absolute top-full left-0 w-full bg-black/95 text-white py-10 flex flex-col items-center gap-8 md:hidden shadow-xl border-t border-white/10 h-screen overflow-y-auto pb-20">
+        <div className="absolute top-full left-0 w-full bg-black/95 text-white py-10 flex flex-col items-center gap-8 md:hidden shadow-xl border-t border-white/10 h-screen overflow-y-auto pb-20 animate-[fadeIn_0.2s_ease-out]">
           
           {/* Mobile Admin Badge */}
           {isAdminMode && (
@@ -211,7 +226,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           <button onClick={() => { onScrollToSection('historia'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Història</button>
           <button onClick={() => { onScrollToSection('contacte'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Contacte</button>
           
-          {/* Reserve Button added to Mobile Menu */}
+          {/* Reserve Button inside Menu (Duplicate for ease of access if menu is open) */}
           <button 
             onClick={() => { onScrollToSection('reserva'); setMobileMenuOpen(false); }} 
             className="border border-white/30 px-8 py-3 mt-4 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300 uppercase tracking-widest text-sm"

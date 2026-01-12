@@ -82,6 +82,12 @@ interface AppConfig {
     directionsButtonText: string; // "PORTA'M-HI"
     mapUrl: string;            // Google Maps URL
 
+    // Social Media
+    instagramUrl: string;
+    socialTitle: string;       // "Xarxes Socials"
+    socialDescription: string; // "Segueix el nostre dia a dia"
+    socialButtonText: string;  // "SEGUEIX-NOS"
+
     // Contact Form Config
     formTitle: string;
     formNameLabel: string;
@@ -316,6 +322,12 @@ const defaultAppConfig: AppConfig = {
     schedule: "De dimarts a diumenge de 11:00 a 17:00 h.",
     directionsButtonText: "PORTA'M-HI",
     mapUrl: "https://www.google.com/maps/dir/?api=1&destination=Ermita+Paret+Delgada+Restaurant",
+
+    // Social Media Defaults
+    instagramUrl: "https://www.instagram.com/paret_delgada/",
+    socialTitle: "Xarxes Socials",
+    socialDescription: "Segueix el nostre dia a dia.",
+    socialButtonText: "SEGUEIX-NOS",
 
     formTitle: "Formulari de Contacte",
     formNameLabel: "El teu nom",

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useConfig, MenuSection, MenuItem } from '../context/ConfigContext';
+import { useConfig } from '../context/ConfigContext';
 import { db, auth } from '../firebase';
 import { ref, onValue, update, remove } from 'firebase/database';
 
 interface AdminPanelProps {
   onSaveAndClose: () => void;
   onClose: () => void;
-  initialTab?: 'config' | 'food_menu' | 'specialties' | 'inbox'; 
+  initialTab?: 'config' | 'inbox'; 
 }
 
 interface ContactMessage {
@@ -25,11 +25,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
   const [localConfig, setLocalConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Tab State: initialized with the prop
-  const [activeTab, setActiveTab] = useState<'config' | 'food_menu' | 'specialties' | 'inbox'>(initialTab);
-  
-  // Menu Editor State
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  // Tab State: initialized with the prop (Simplified: only config or inbox)
+  const [activeTab, setActiveTab] = useState<'config' | 'inbox'>(initialTab);
 
   // --- INBOX STATE ---
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -89,15 +86,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
           [key]: value.split(',').map(s => s.trim()), 
         },
       }));
-    } else if (section === 'hero' && key === 'backgroundImages') {
-       setLocalConfig(prev => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          // @ts-ignore
-          [key]: value.split('\n').map(s => s.trim()).filter(s => s !== ''), 
-        },
-      }));
     } else {
       // @ts-ignore
       setLocalConfig(prev => ({
@@ -129,99 +117,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
       }));
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    await updateConfig(localConfig);
-    setIsSaving(false);
-    onSaveAndClose();
-  };
-
-  // --- SPECIALTIES HANDLERS ---
-  const handleSpecialtyChange = (index: number, field: string, value: string) => {
-    const newItems = [...localConfig.specialties.items];
-    // @ts-ignore
-    newItems[index] = { ...newItems[index], [field]: value };
+  // Handler para las imágenes de Hero (Slides)
+  const handleHeroImageChange = (index: number, value: string) => {
+    const currentImages = localConfig.hero.backgroundImages ? [...localConfig.hero.backgroundImages] : [];
+    // Asegurar que el array tenga tamaño suficiente
+    while(currentImages.length <= index) {
+        currentImages.push("");
+    }
+    currentImages[index] = value;
+    
     setLocalConfig(prev => ({
-      ...prev,
-      specialties: {
-        ...prev.specialties,
-        items: newItems
-      }
+        ...prev,
+        hero: {
+            ...prev.hero,
+            backgroundImages: currentImages
+        }
     }));
   };
 
-  // --- MENU MANAGEMENT HANDLERS ---
-  const handleAddSection = () => {
-      const newSection: MenuSection = {
-          id: `sec_${Date.now()}`,
-          category: "NOVA CATEGORIA",
-          icon: "restaurant_menu",
-          items: []
-      };
-      setLocalConfig(prev => ({
-          ...prev,
-          foodMenu: [...(prev.foodMenu || []), newSection]
-      }));
-      setExpandedSection(newSection.id);
-  };
-
-  const handleDeleteSection = (sectionId: string) => {
-      if(window.confirm("Estàs segur d'esborrar tota la secció?")) {
-        setLocalConfig(prev => ({
-            ...prev,
-            foodMenu: prev.foodMenu.filter(s => s.id !== sectionId)
-        }));
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    // Clean up empty strings from image arrays before saving
+    const cleanConfig = {
+      ...localConfig,
+      hero: {
+        ...localConfig.hero,
+        backgroundImages: localConfig.hero.backgroundImages.filter(img => img && img.trim() !== '')
+      },
+      philosophy: {
+        ...localConfig.philosophy,
+        historicImages: localConfig.philosophy.historicImages.filter(img => img && img.trim() !== '')
       }
-  };
+    };
 
-  const handleUpdateSection = (sectionId: string, field: keyof MenuSection, value: string) => {
-      setLocalConfig(prev => ({
-          ...prev,
-          foodMenu: prev.foodMenu.map(s => s.id === sectionId ? { ...s, [field]: value } : s)
-      }));
-  };
-
-  const handleAddItem = (sectionId: string) => {
-      setLocalConfig(prev => ({
-          ...prev,
-          foodMenu: prev.foodMenu.map(s => {
-              if (s.id === sectionId) {
-                  return {
-                      ...s,
-                      items: [...(s.items || []), { name: "Nou Plat", price: "0.00" }]
-                  }
-              }
-              return s;
-          })
-      }));
-  };
-
-  const handleUpdateItem = (sectionId: string, itemIndex: number, field: keyof MenuItem, value: string) => {
-      setLocalConfig(prev => ({
-          ...prev,
-          foodMenu: prev.foodMenu.map(s => {
-              if (s.id === sectionId) {
-                  const newItems = [...s.items];
-                  newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
-                  return { ...s, items: newItems };
-              }
-              return s;
-          })
-      }));
-  };
-
-  const handleDeleteItem = (sectionId: string, itemIndex: number) => {
-      setLocalConfig(prev => ({
-          ...prev,
-          foodMenu: prev.foodMenu.map(s => {
-              if (s.id === sectionId) {
-                  const newItems = [...s.items];
-                  newItems.splice(itemIndex, 1);
-                  return { ...s, items: newItems };
-              }
-              return s;
-          })
-      }));
+    await updateConfig(cleanConfig);
+    setIsSaving(false);
+    onSaveAndClose();
   };
 
   return (
@@ -260,27 +192,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </button>
               </div>
 
-              {/* Navigation Tabs */}
+              {/* Navigation Tabs (SIMPLIFIED) */}
               <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg justify-center md:justify-start">
                 <button 
                   onClick={() => setActiveTab('config')}
                   className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   Configuració
-                </button>
-                <button 
-                  onClick={() => setActiveTab('specialties')}
-                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'specialties' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Especialitats
-                  <span className="material-symbols-outlined text-sm">stars</span>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('food_menu')}
-                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'food_menu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Carta Menjar
-                  <span className="material-symbols-outlined text-sm">restaurant_menu</span>
                 </button>
               </div>
           </div>
@@ -509,28 +427,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                             {localConfig.hero.stickyNoteText.length}/45
                         </span>
                       </div>
-                      <input
-                        type="text"
+                      <textarea
                         maxLength={45}
+                        rows={3}
                         value={localConfig.hero.stickyNoteText}
                         onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)}
-                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                        placeholder="Màxim 45 caràcters"
+                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
+                        placeholder="Escriu la teva nota..."
                       />
-                      <p className="text-[10px] text-gray-400 mt-1">Limitat a 45 caràcters per mantenir el disseny.</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Limitat a 45 caràcters. Pots fer servir salts de línia.</p>
                     </div>
 
-                    {/* Background Images Editor */}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Imatges de Fons (Slides) - Una URL per línia</label>
-                      <textarea
-                        value={localConfig.hero.backgroundImages.join('\n')}
-                        onChange={(e) => handleChange('hero', 'backgroundImages', e.target.value)}
-                        rows={4}
-                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-xs whitespace-pre"
-                        placeholder="https://exemple.com/imatge1.jpg"
-                      ></textarea>
+                    {/* Background Images Editor (NEW STYLE) */}
+                    <div className="md:col-span-2 bg-gray-50 p-4 rounded border border-gray-200 mt-2">
+                       <h4 className="text-sm font-bold uppercase text-gray-600 mb-3 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-lg">imagesmode</span>
+                          Imatges de Fons (Slides)
+                       </h4>
+                       <p className="text-xs text-gray-400 mb-4">Afegeix fins a 5 enllaços d'imatges per al fons de la portada. Es reproduiran automàticament.</p>
+                       
+                       <div className="space-y-3">
+                          {[0, 1, 2, 3, 4].map((index) => (
+                              <div key={index}>
+                                  <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Imatge {index + 1} (URL)</label>
+                                  <input
+                                      type="text"
+                                      value={localConfig.hero.backgroundImages?.[index] || ''}
+                                      onChange={(e) => handleHeroImageChange(index, e.target.value)}
+                                      placeholder="https://..."
+                                      className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs font-mono focus:border-primary outline-none"
+                                  />
+                              </div>
+                          ))}
+                       </div>
                     </div>
+
                   </div>
                 </div>
 
@@ -779,6 +710,54 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none"
                      />
                   </div>
+
+                  {/* Xarxes Socials (NEW) */}
+                  <div className="mb-6 pb-6 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-pink-50 p-4 rounded-md border border-orange-100">
+                     <h4 className="text-sm font-bold uppercase text-orange-600 mb-3 flex items-center gap-2">
+                         <span className="material-symbols-outlined text-lg">photo_camera</span>
+                         Xarxes Socials (Instagram)
+                     </h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="md:col-span-2">
+                             <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">URL Perfil Instagram</label>
+                             <input
+                                type="text"
+                                value={localConfig.contact.instagramUrl}
+                                onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)}
+                                placeholder="https://www.instagram.com/..."
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none"
+                             />
+                         </div>
+                         <div>
+                             <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Títol Secció</label>
+                             <input
+                                type="text"
+                                value={localConfig.contact.socialTitle}
+                                onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none"
+                             />
+                         </div>
+                         <div>
+                             <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Text Botó</label>
+                             <input
+                                type="text"
+                                value={localConfig.contact.socialButtonText}
+                                onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none"
+                             />
+                         </div>
+                         <div className="md:col-span-2">
+                             <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Descripció</label>
+                             <input
+                                type="text"
+                                value={localConfig.contact.socialDescription}
+                                onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none"
+                             />
+                         </div>
+                     </div>
+                  </div>
+
                 </div>
              </div>
           )}

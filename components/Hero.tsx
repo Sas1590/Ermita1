@@ -56,7 +56,7 @@ const SmartBackgroundImage: React.FC<{ src: string; isActive: boolean; index: nu
     <div
       className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
         isActive ? 'opacity-100' : 'opacity-0'
-      } ${blur ? 'blur-[3px] brightness-[0.4]' : 'blur-0 brightness-[0.7]'}`}
+      } ${blur ? 'blur-[1px] brightness-[0.7]' : 'blur-0 brightness-100'}`}
     >
       <img 
         src={currentSrc} 
@@ -448,7 +448,7 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-[#1d1a15] via-transparent to-black/30 z-10 pointer-events-none"></div>
       </div>
 
-      <div className={`max-w-7xl w-full mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10 transition-opacity duration-700 ${scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className="max-w-7xl w-full mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         
         {/* Left Content */}
         <div className="lg:col-span-7 text-white flex flex-col items-center lg:items-start mt-12 lg:mt-0">
@@ -641,9 +641,11 @@ const Hero: React.FC = () => {
                 </>
               )}
 
-              <div className="absolute -bottom-6 -left-6 bg-yellow-200 p-3 shadow-md transform -rotate-6 w-32 text-center font-hand font-bold text-accent">
-                {config.hero.stickyNoteText}
-              </div>
+              {config.hero.stickyNoteText && config.hero.stickyNoteText.trim() !== '' && (
+                <div className="absolute -bottom-6 -left-14 bg-[#fef08a] text-[#854d0e] p-4 shadow-lg transform -rotate-6 font-hand font-bold text-xl leading-none text-center max-w-[160px] break-words whitespace-pre-line z-50">
+                  {config.hero.stickyNoteText}
+                </div>
+              )}
 
             </div>
           </div>

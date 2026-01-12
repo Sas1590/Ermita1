@@ -143,6 +143,30 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                       ))}
                    </div>
                 </div>
+
+                {/* INSTAGRAM SECTION - DYNAMIC */}
+                <div className="flex gap-6 items-start">
+                   <div className="w-12 h-12 bg-gradient-to-tr from-yellow-500 via-red-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg text-white shrink-0 p-0.5">
+                      <div className="bg-[#2c241b] w-full h-full rounded-full flex items-center justify-center group hover:bg-transparent transition-colors duration-500 cursor-pointer">
+                        <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">photo_camera</span>
+                      </div>
+                   </div>
+                   <div>
+                      <h4 className="font-serif text-xl font-bold text-primary mb-1">{config.contact.socialTitle}</h4>
+                      <p className="text-gray-400 font-light text-sm mb-2">{config.contact.socialDescription}</p>
+                      
+                      <a 
+                        href={config.contact.instagramUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">favorite</span>
+                        {config.contact.socialButtonText}
+                      </a>
+                   </div>
+                </div>
+
             </div>
           </div>
 
