@@ -28,6 +28,11 @@ interface AppConfig {
     reservationButtonText: string;
     stickyNoteText: string;
     backgroundImages: string[];
+    // NEW RESERVATION LIMITS
+    reservationTimeStart: string; // "13:00"
+    reservationTimeEnd: string;   // "15:30"
+    reservationTimeInterval: number; // 15 (minutes)
+    reservationErrorMessage: string; // "Ho sentim, la cuina està tancada."
   };
   intro: {
     smallTitle: string;
@@ -59,6 +64,7 @@ interface AppConfig {
     historicTitle: string;
     historicDescription: string;
     historicLinkUrl: string;  // Link URL (Kept)
+    historicImages: string[]; // NEW: Array for the slider
   };
   foodMenu: MenuSection[]; // New Dynamic Menu
   contact: {
@@ -105,6 +111,10 @@ const defaultAppConfig: AppConfig = {
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_5.png",
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_4.png"
     ],
+    reservationTimeStart: "13:00",
+    reservationTimeEnd: "15:30",
+    reservationTimeInterval: 15,
+    reservationErrorMessage: "Ho sentim, l'horari de reserva és de 13:00 a 15:30."
   },
   intro: {
     smallTitle: "Filosofia",
@@ -146,7 +156,11 @@ const defaultAppConfig: AppConfig = {
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
     historicTitle: "Un entorn històric",
     historicDescription: "Situat a l'Ermita de la Paret Delgada, gaudiràs d'un paratge únic que inspira calma. Les parets de pedra i els antics murs contenen el pas del temps, convertint cada àpat en una celebració en companyia.",
-    historicLinkUrl: "https://es.wikipedia.org/wiki/Ermita_de_Santa_Mar%C3%ADa_de_Paretdelgada"
+    historicLinkUrl: "https://es.wikipedia.org/wiki/Ermita_de_Santa_Mar%C3%ADa_de_Paretdelgada",
+    historicImages: [
+      "https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop",
+      "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_2.png"
+    ]
   },
   foodMenu: [
     {
@@ -387,21 +401,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     // 2. Save to Realtime Database
     try {
       const dbRef = ref(db, 'websiteConfig');
-      // En Realtime Database, para actualizar de forma segura estructuras complejas, 
-      // es mejor enviar el objeto fusionado completo si ya lo tenemos en el estado.
-      // Aquí fusionamos el estado actual con los cambios y lo enviamos.
-      
-      // Nota: `config` en el state puede ser viejo si updateConfig se llama rápido,
-      // pero `setConfig` arriba ya calcula el nuevo estado. 
-      // Para simplificar y asegurar consistencia con el AdminPanel que pasa el objeto `localConfig` completo:
-      
-      // Si newConfig es el objeto COMPLETO (como lo pasa AdminPanel), usamos set.
-      // Si es parcial, deberíamos usar update, pero update no hace "deep merge" automático de objetos anidados.
-      // Dado que AdminPanel envía el objeto entero, usamos set.
-      
-      // Como updateConfig acepta Partial, hacemos un merge manual con el config actual para asegurar que enviamos todo.
       const configToSave = { ...config, ...newConfig };
-      
       await set(dbRef, configToSave);
       console.log("Config saved to Realtime Database successfully");
     } catch (error) {

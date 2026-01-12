@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig, MenuSection, MenuItem } from '../context/ConfigContext';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { ref, onValue, update, remove } from 'firebase/database';
 
 interface AdminPanelProps {
@@ -126,6 +126,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
     }
   };
 
+  // Handler específico para las 5 imágenes de filosofía
+  const handleHistoricImageChange = (index: number, value: string) => {
+      const currentImages = localConfig.philosophy.historicImages ? [...localConfig.philosophy.historicImages] : [];
+      // Asegurar que el array tenga tamaño suficiente
+      while(currentImages.length <= index) {
+          currentImages.push("");
+      }
+      currentImages[index] = value;
+      
+      setLocalConfig(prev => ({
+          ...prev,
+          philosophy: {
+              ...prev.philosophy,
+              historicImages: currentImages
+          }
+      }));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     await updateConfig(localConfig);
@@ -227,10 +245,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
         
         {/* Header with Tabs and Notification Bell */}
         <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
-          <h2 className="font-serif text-2xl md:text-3xl font-bold text-secondary flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">settings_suggest</span>
-            Panell d'Administrador
-          </h2>
+          <div className="flex flex-col">
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-secondary flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">settings_suggest</span>
+              Panell d'Administrador
+            </h2>
+            {auth.currentUser?.email && (
+              <span className="text-xs text-gray-400 font-mono mt-1 ml-10">
+                Loguejat com: {auth.currentUser.email}
+              </span>
+            )}
+          </div>
           
           <div className="flex flex-col md:flex-row items-center gap-4">
               {/* Notification Area */}
@@ -279,9 +304,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
         {/* SCROLLABLE CONTENT AREA */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-beige/50">
           
-          {/* --- INBOX TAB --- */}
+          {/* ... INBOX TAB ... */}
           {activeTab === 'inbox' && (
               <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* ... (Existing Inbox Code) ... */}
                   <div className="flex justify-between items-center">
                     <h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">mail</span>
@@ -444,15 +470,73 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Nota Enganxada</label>
+                    
+                    {/* NEW: Reservation Limits Config */}
+                    <div className="md:col-span-2 bg-gray-50 p-4 rounded border border-gray-200 mt-2">
+                       <h4 className="text-sm font-bold uppercase text-gray-600 mb-3 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-lg">schedule</span>
+                          Restriccions de Reserva
+                       </h4>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                           <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Hora Inici (ex: 13:00)</label>
+                              <input
+                                type="time"
+                                value={localConfig.hero.reservationTimeStart || "13:00"}
+                                onChange={(e) => handleChange('hero', 'reservationTimeStart', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-primary outline-none"
+                              />
+                           </div>
+                           <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Hora Fi (ex: 15:30)</label>
+                              <input
+                                type="time"
+                                value={localConfig.hero.reservationTimeEnd || "15:30"}
+                                onChange={(e) => handleChange('hero', 'reservationTimeEnd', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-primary outline-none"
+                              />
+                           </div>
+                           <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Interval (min)</label>
+                              <input
+                                type="number"
+                                step="5"
+                                value={localConfig.hero.reservationTimeInterval || 15}
+                                onChange={(e) => handleChange('hero', 'reservationTimeInterval', e.target.value)}
+                                className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-primary outline-none"
+                              />
+                           </div>
+                       </div>
+                       <div>
+                          <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Missatge d'error (Fora d'horari)</label>
+                          <input
+                             type="text"
+                             value={localConfig.hero.reservationErrorMessage || "Ho sentim, la cuina està tancada."}
+                             onChange={(e) => handleChange('hero', 'reservationErrorMessage', e.target.value)}
+                             className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-primary outline-none"
+                          />
+                       </div>
+                    </div>
+
+                    {/* Sticky Note */}
+                    <div className="md:col-span-2 mt-2">
+                      <div className="flex justify-between items-end mb-1">
+                        <label className="block text-xs font-bold uppercase text-gray-500">Text Nota Enganxada (Post-it)</label>
+                        <span className={`text-[10px] font-bold ${localConfig.hero.stickyNoteText.length >= 45 ? 'text-red-500' : 'text-gray-400'}`}>
+                            {localConfig.hero.stickyNoteText.length}/45
+                        </span>
+                      </div>
                       <input
                         type="text"
+                        maxLength={45}
                         value={localConfig.hero.stickyNoteText}
                         onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)}
                         className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        placeholder="Màxim 45 caràcters"
                       />
+                      <p className="text-[10px] text-gray-400 mt-1">Limitat a 45 caràcters per mantenir el disseny.</p>
                     </div>
+
                     {/* Background Images Editor */}
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Imatges de Fons (Slides) - Una URL per línia</label>
@@ -467,6 +551,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </div>
                 </div>
 
+                {/* ... Rest of sections (Intro, Philosophy, Contact) ... */}
                 {/* INTRO Section */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#8B5A2B]"></div>
@@ -505,7 +590,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </div>
                 </div>
 
-                {/* Philosophy Section - NEW ADDITION */}
+                {/* Philosophy Section */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#556b2f]"></div>
                   <h3 className="font-serif text-xl font-semibold text-[#556b2f] mb-4 flex items-center gap-2">
@@ -587,7 +672,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </div>
 
                   {/* Historic Config */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Històric</label>
                         <input
@@ -616,6 +701,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                         ></textarea>
                       </div>
                   </div>
+
+                  {/* Historic Images Slider Config */}
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                      <h4 className="text-sm font-bold uppercase text-gray-600 mb-3 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-lg">imagesmode</span>
+                          Imatges Històriques (Slider)
+                      </h4>
+                      <p className="text-xs text-gray-400 mb-4">Afegeix fins a 5 enllaços d'imatges per a la secció "Un entorn històric". Es reproduiran automàticament.</p>
+                      
+                      <div className="space-y-3">
+                          {[0, 1, 2, 3, 4].map((index) => (
+                              <div key={index}>
+                                  <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Imatge {index + 1} (URL)</label>
+                                  <input
+                                      type="text"
+                                      value={localConfig.philosophy.historicImages?.[index] || ''}
+                                      onChange={(e) => handleHistoricImageChange(index, e.target.value)}
+                                      placeholder="https://..."
+                                      className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs font-mono focus:border-[#556b2f] outline-none"
+                                  />
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+
                 </div>
 
                 {/* Contact Section */}
@@ -689,179 +799,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                 </div>
              </div>
           )}
-
-          {/* --- SPECIALTIES TAB --- */}
-          {activeTab === 'specialties' && (
-              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-                  
-                  {/* Header Edit */}
-                  <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
-                     <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-                     <h3 className="font-serif text-xl font-semibold text-primary mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined">title</span>
-                        Títols i Descripció
-                     </h3>
-                     <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
-                            <input
-                              type="text"
-                              value={localConfig.specialties.mainTitle}
-                              onChange={(e) => handleChange('specialties', 'mainTitle', e.target.value)}
-                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
-                            />
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Cards Edit */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {localConfig.specialties.items.map((item, index) => (
-                          <div key={index} className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
-                              <div className="h-32 bg-gray-100 relative overflow-hidden group">
-                                  <img src={item.image} alt="Preview" className="w-full h-full object-cover opacity-80" />
-                              </div>
-                              <div className="p-4 space-y-3">
-                                  <div>
-                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
-                                      <input
-                                        type="text"
-                                        value={item.title}
-                                        onChange={(e) => handleSpecialtyChange(index, 'title', e.target.value)}
-                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
-                                      />
-                                  </div>
-                                  <div>
-                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Subtítol (Groc)</label>
-                                      <input
-                                        type="text"
-                                        value={item.subtitle}
-                                        onChange={(e) => handleSpecialtyChange(index, 'subtitle', e.target.value)}
-                                        className="block w-full border border-gray-200 rounded px-2 py-1 text-sm focus:border-primary outline-none"
-                                      />
-                                  </div>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
-          {/* --- FOOD MENU TAB --- */}
-          {activeTab === 'food_menu' && (
-              <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                  <div className="flex justify-between items-center mb-6">
-                      <h3 className="font-serif text-2xl font-bold text-gray-800">Categories de la Carta</h3>
-                      <button 
-                        onClick={handleAddSection}
-                        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition-colors text-sm font-bold uppercase tracking-wide"
-                      >
-                          <span className="material-symbols-outlined text-sm">add</span>
-                          Nova Categoria
-                      </button>
-                  </div>
-
-                  <div className="space-y-4">
-                      {localConfig.foodMenu.map((section, index) => (
-                          <div key={section.id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                              
-                              {/* Section Header (Click to expand) */}
-                              <div 
-                                className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                                onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-                              >
-                                  <div className="flex items-center gap-3">
-                                      <span className={`material-symbols-outlined text-2xl text-accent transition-transform duration-300 ${expandedSection === section.id ? 'rotate-180' : ''}`}>expand_more</span>
-                                      <span className="font-bold text-lg text-secondary">{section.category}</span>
-                                      <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600 flex items-center gap-1">
-                                          <span className="material-symbols-outlined text-xs">{section.icon || 'restaurant_menu'}</span>
-                                          {section.items?.length || 0} plats
-                                      </span>
-                                  </div>
-                                  <button 
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteSection(section.id); }}
-                                      className="text-red-400 hover:text-red-600 p-2"
-                                  >
-                                      <span className="material-symbols-outlined">delete</span>
-                                  </button>
-                              </div>
-
-                              {/* Section Content (Editor) */}
-                              {expandedSection === section.id && (
-                                  <div className="p-6 border-t border-gray-200 animate-[fadeIn_0.2s_ease-out]">
-                                      {/* Header Fields */}
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-beige/30 p-4 rounded border border-primary/10">
-                                          <div>
-                                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Nom Categoria</label>
-                                              <input
-                                                  type="text"
-                                                  value={section.category}
-                                                  onChange={(e) => handleUpdateSection(section.id, 'category', e.target.value)}
-                                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
-                                              />
-                                          </div>
-                                          <div>
-                                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Icona (Logo)</label>
-                                              <select
-                                                  value={section.icon || 'restaurant_menu'}
-                                                  onChange={(e) => handleUpdateSection(section.id, 'icon', e.target.value)}
-                                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none bg-white"
-                                              >
-                                                  {AVAILABLE_ICONS.map(icon => (
-                                                      <option key={icon.value} value={icon.value}>{icon.label}</option>
-                                                  ))}
-                                              </select>
-                                          </div>
-                                      </div>
-
-                                      {/* Items List */}
-                                      <div className="space-y-3">
-                                          <h4 className="text-xs font-bold uppercase text-gray-400 mb-2">Plats de la secció</h4>
-                                          {(section.items || []).map((item, idx) => (
-                                              <div key={idx} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                                  <div className="grow w-full">
-                                                      <input
-                                                          type="text"
-                                                          value={item.name}
-                                                          onChange={(e) => handleUpdateItem(section.id, idx, 'name', e.target.value)}
-                                                          placeholder="Nom del plat..."
-                                                          className="block w-full border border-gray-200 rounded px-3 py-2 text-sm focus:border-primary outline-none"
-                                                      />
-                                                  </div>
-                                                  <div className="w-full md:w-32 flex gap-2">
-                                                      <input
-                                                          type="text"
-                                                          value={item.price}
-                                                          onChange={(e) => handleUpdateItem(section.id, idx, 'price', e.target.value)}
-                                                          placeholder="Preu"
-                                                          className="block w-full border border-gray-200 rounded px-3 py-2 text-sm focus:border-primary outline-none text-right font-mono"
-                                                      />
-                                                      <button 
-                                                          onClick={() => handleDeleteItem(section.id, idx)}
-                                                          className="text-red-300 hover:text-red-500 p-2"
-                                                      >
-                                                          <span className="material-symbols-outlined text-lg">close</span>
-                                                      </button>
-                                                  </div>
-                                              </div>
-                                          ))}
-                                          
-                                          <button 
-                                              onClick={() => handleAddItem(section.id)}
-                                              className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-primary hover:text-primary transition-colors text-xs font-bold uppercase flex justify-center items-center gap-2 mt-4"
-                                          >
-                                              <span className="material-symbols-outlined text-sm">add_circle</span>
-                                              Afegir Plat
-                                          </button>
-                                      </div>
-                                  </div>
-                              )}
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
+          
         </div>
 
         {/* Footer Actions */}

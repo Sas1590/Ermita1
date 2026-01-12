@@ -8,10 +8,11 @@ interface NavbarProps {
   onOpenMenu: (tab: 'food' | 'wine' | 'group') => void;
   onScrollToSection: (id: string) => void;
   onOpenAdminPanel: (tab?: 'config' | 'inbox') => void; 
-  isAdminMode: boolean; // New prop for admin mode status
+  isAdminMode: boolean; // Means "Is Logged In"
+  onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection, onOpenAdminPanel, isAdminMode }) => {
+const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection, onOpenAdminPanel, isAdminMode, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { config, isLoading } = useConfig(); 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -72,9 +73,9 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {/* Admin Badge & Notification Bell - Only visible if in Admin Mode */}
           {isAdminMode && (
             <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400 cursor-default">
-                 <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-                 <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+              <div className="flex items-center gap-1 bg-green-600/90 text-white px-3 py-1 rounded shadow-lg border border-green-400 cursor-default">
+                 <span className="material-symbols-outlined text-sm">verified_user</span>
+                 <span className="text-[10px] uppercase font-bold tracking-widest">Admin Actiu</span>
               </div>
               
               {/* Notification Bell - Opens Inbox Directly */}
@@ -144,14 +145,23 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           </button>
 
           {/* Admin Panel Toggle Button - Red Styled */}
-          {isAdminMode && (
-            <button 
-              onClick={() => onOpenAdminPanel('config')}
-              className="bg-red-600/90 text-white px-3 py-1 rounded shadow-lg border border-red-400 hover:bg-red-700 transition-colors text-[10px] font-bold tracking-widest uppercase ml-4"
-            >
-              Modificar Contingut
-            </button>
-          )}
+          {isAdminMode ? (
+             <div className="flex items-center gap-2 ml-4">
+                 <button 
+                  onClick={() => onOpenAdminPanel('config')}
+                  className="bg-primary hover:bg-accent text-white px-3 py-1 rounded shadow-lg transition-colors text-[10px] font-bold tracking-widest uppercase"
+                >
+                  Panell
+                </button>
+                <button 
+                  onClick={onLogout}
+                  className="text-red-400 hover:text-red-500 border border-red-400/30 px-3 py-1 rounded text-[10px] font-bold tracking-widest uppercase transition-colors"
+                  title="Tancar Sessió"
+                >
+                  Sortir
+                </button>
+             </div>
+          ) : null}
         </div>
 
         {/* Mobile Toggle */}
@@ -176,9 +186,9 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {/* Mobile Admin Badge */}
           {isAdminMode && (
              <div className="flex flex-col items-center gap-3 mb-2">
-               <div className="flex items-center gap-1 text-red-400">
-                 <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-                 <span className="text-[10px] uppercase font-bold tracking-widest">Panell d'administrador</span>
+               <div className="flex items-center gap-1 text-green-500">
+                 <span className="material-symbols-outlined text-sm">verified_user</span>
+                 <span className="text-[10px] uppercase font-bold tracking-widest">Sessió Iniciada</span>
                </div>
                {unreadCount > 0 && (
                   <div className="bg-white/10 px-3 py-1 rounded-full text-xs flex items-center gap-2" onClick={() => { onOpenAdminPanel('inbox'); setMobileMenuOpen(false); }}>
@@ -210,7 +220,10 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           </button>
 
           {isAdminMode && ( // Also conditional in mobile menu
-            <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-red-600/90 text-white px-4 py-2 rounded shadow-lg border border-red-400 uppercase tracking-widest text-xs font-bold mt-4">Modificar Contingut</button>
+             <div className="flex flex-col gap-4 mt-4 w-full px-12">
+                <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-primary text-white px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold">Obrir Panell</button>
+                <button onClick={() => { if(onLogout) onLogout(); setMobileMenuOpen(false); }} className="text-red-400 border border-red-400 px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold">Tancar Sessió</button>
+             </div>
           )}
         </div>
       )}

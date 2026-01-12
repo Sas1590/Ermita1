@@ -5,9 +5,10 @@ interface FooterProps {
   onOpenPrivacy: () => void;
   onOpenCookies: () => void;
   onOpenLegal: () => void;
+  isLoggedIn: boolean;
 }
 
-const Footer: React.FC<FooterProps> = ({ onEnableAdmin, onOpenPrivacy, onOpenCookies, onOpenLegal }) => {
+const Footer: React.FC<FooterProps> = ({ onEnableAdmin, onOpenPrivacy, onOpenCookies, onOpenLegal, isLoggedIn }) => {
   return (
     <footer className="bg-black text-white/40 py-12 px-6 border-t border-white/10">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs tracking-widest gap-6">
@@ -23,9 +24,9 @@ const Footer: React.FC<FooterProps> = ({ onEnableAdmin, onOpenPrivacy, onOpenCoo
           
           <button 
             onClick={(e) => { e.preventDefault(); onEnableAdmin(); }} 
-            className="hover:text-white transition-colors border border-white/10 px-2 py-1 rounded hover:border-white/30 text-[10px]"
+            className={`transition-colors border px-2 py-1 rounded text-[10px] ${isLoggedIn ? 'border-green-500/50 text-green-500 hover:bg-green-500/10' : 'border-white/10 hover:text-white hover:border-white/30'}`}
           >
-            Admin
+            {isLoggedIn ? 'Panell' : 'Admin'}
           </button>
         </div>
       </div>

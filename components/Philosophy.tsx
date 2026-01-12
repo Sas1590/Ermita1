@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConfig } from '../context/ConfigContext';
 
 const Philosophy: React.FC = () => {
   const { config } = useConfig();
+  
+  // Get images array, fallback to empty array if undefined
+  const historicImages = config.philosophy.historicImages?.filter(url => url && url.trim() !== '') || [];
+  
+  // Slider Logic
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    // Only start interval if we have more than 1 image
+    if (historicImages.length > 1) {
+        const interval = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % historicImages.length);
+        }, 5000); // Change every 5 seconds
+
+        return () => clearInterval(interval);
+    }
+  }, [historicImages]);
+
+  // Fallback image if no images are configured
+  const fallbackImage = "https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop";
+  const displayImages = historicImages.length > 0 ? historicImages : [fallbackImage];
 
   return (
     <section id="historia" className="bg-[#1d1a15] bg-dark-texture py-24 md:py-32 relative overflow-hidden scroll-mt-24">
@@ -67,17 +88,30 @@ const Philosophy: React.FC = () => {
 
           </div>
 
-          {/* Right Column: Historic Image */}
+          {/* Right Column: Historic Image Slider */}
           <div className="lg:col-span-7 relative mt-12 lg:mt-0">
              
-             {/* Main Historic Image */}
-             <div className="relative h-[500px] w-full shadow-2xl overflow-hidden rounded-sm group border border-white/10">
-               <img 
-                 src="https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop" 
-                 alt="Ermita Paret Delgada" 
-                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-80"
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+             {/* Main Historic Image Container */}
+             <div className="relative h-[500px] w-full shadow-2xl overflow-hidden rounded-sm group border border-white/10 bg-black">
+               
+               {/* Slider Implementation */}
+               {displayImages.map((src, index) => (
+                  <div
+                    key={index}
+                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                        index === currentImageIndex ? 'opacity-80' : 'opacity-0'
+                    }`}
+                  >
+                      <img 
+                        src={src} 
+                        alt={`Ermita Paret Delgada Història ${index + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-[5000ms] ease-linear scale-100 group-hover:scale-105"
+                        style={{ transform: index === currentImageIndex ? 'scale(1.05)' : 'scale(1)' }}
+                      />
+                  </div>
+               ))}
+               
+               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90 pointer-events-none"></div>
              </div>
 
              {/* Overlapping Content Box */}

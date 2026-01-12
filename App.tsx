@@ -8,17 +8,24 @@ import Specialties from './components/Specialties';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import LoginModal from './components/LoginModal';
 import PrivacyModal from './components/PrivacyModal';
 import CookiesModal from './components/CookiesModal';
 import LegalModal from './components/LegalModal';
+import { auth } from './firebase';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuTab, setMenuTab] = useState<'food' | 'wine' | 'group' | null>(null);
+  
+  // Auth & Admin States
+  const [user, setUser] = useState<User | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false); 
-  // State to determine which tab to show when Admin Panel opens
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<'config' | 'inbox'>('config');
-  const [isAdminMode, setIsAdminMode] = useState(false);
+
+  // Modals
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showCookiesModal, setShowCookiesModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
@@ -31,12 +38,17 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Check for admin query parameter on load
+  // Auth Listener
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === 'true') {
-      setIsAdminMode(true);
-    }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      // Optional: Auto open admin panel on login if URL has ?admin=true
+      const params = new URLSearchParams(window.location.search);
+      if (currentUser && params.get('admin') === 'true') {
+         setShowAdminPanel(true);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleOpenMenu = (tab: 'food' | 'wine' | 'group') => {
@@ -56,23 +68,30 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleAdminPanel = () => {
-    if (isAdminMode) {
-      setShowAdminPanel(prev => !prev);
-    }
-  };
-
+  // Logic to open admin panel
   const openAdminPanel = (tab: 'config' | 'inbox' = 'config') => {
-    if (isAdminMode) {
+    if (user) {
+      // If logged in, open the panel
       setAdminInitialTab(tab);
       setShowAdminPanel(true);
+    } else {
+      // If not logged in, show login modal
+      setShowLoginModal(true);
     }
   };
 
-  const enableAdminMode = () => {
-    setIsAdminMode(true);
-    // When enabled via footer, open config by default
-    openAdminPanel('config');
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    setShowAdminPanel(true); // Auto open panel after successful login
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setShowAdminPanel(false);
+    } catch (error) {
+      console.error("Error signing out", error);
+    }
   };
 
   return (
@@ -82,7 +101,8 @@ const App: React.FC = () => {
         onOpenMenu={handleOpenMenu} 
         onScrollToSection={handleScrollToSection}
         onOpenAdminPanel={openAdminPanel} 
-        isAdminMode={isAdminMode} 
+        isAdminMode={!!user} // Pass boolean if user is logged in
+        onLogout={handleLogout}
       />
       <Hero />
       <Intro />
@@ -91,21 +111,29 @@ const App: React.FC = () => {
       <Philosophy />
       <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
       <Footer 
-        onEnableAdmin={enableAdminMode} 
+        onEnableAdmin={() => openAdminPanel('config')} 
         onOpenPrivacy={() => setShowPrivacyModal(true)}
         onOpenCookies={() => setShowCookiesModal(true)}
         onOpenLegal={() => setShowLegalModal(true)}
+        isLoggedIn={!!user}
       />
 
       {showPrivacyModal && <PrivacyModal onClose={() => setShowPrivacyModal(false)} />}
       {showCookiesModal && <CookiesModal onClose={() => setShowCookiesModal(false)} />}
       {showLegalModal && <LegalModal onClose={() => setShowLegalModal(false)} />}
       
-      {showAdminPanel && isAdminMode && (
+      {showLoginModal && (
+        <LoginModal 
+          onClose={() => setShowLoginModal(false)} 
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+      
+      {showAdminPanel && user && (
         <AdminPanel 
             initialTab={adminInitialTab}
-            onSaveAndClose={toggleAdminPanel} 
-            onClose={toggleAdminPanel} 
+            onSaveAndClose={() => setShowAdminPanel(false)} 
+            onClose={() => setShowAdminPanel(false)} 
         />
       )}
     </div>
