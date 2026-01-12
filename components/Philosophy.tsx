@@ -85,8 +85,8 @@ const Philosophy: React.FC = () => {
                         key={index}
                         src={src} 
                         alt={`Producte Proximitat ${index}`} 
-                        className={`absolute inset-0 w-full h-full object-cover mix-blend-overlay transition-all duration-[2000ms] ease-in-out
-                            ${index === currentProductImageIndex ? 'opacity-60 scale-110' : 'opacity-0 scale-100'}
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms] ease-in-out
+                            ${index === currentProductImageIndex ? 'opacity-80 scale-110' : 'opacity-0 scale-100'}
                         `}
                     />
                  ))}
