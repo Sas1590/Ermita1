@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../context/ConfigContext';
+import { db } from '../firebase';
+import { ref, push } from 'firebase/database';
 
 // Subcomponente inteligente ultra-robusto para imágenes
 const SmartBackgroundImage: React.FC<{ src: string; isActive: boolean; index: number; blur: boolean }> = ({ src, isActive, index, blur }) => {
@@ -80,7 +82,7 @@ const CustomDateTimePicker: React.FC<{
     const [viewDate, setViewDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<'date' | 'time'>('date'); // NEW: Controls the view step
+    const [viewMode, setViewMode] = useState<'date' | 'time'>('date'); 
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     // Initial load from value prop
@@ -95,23 +97,22 @@ const CustomDateTimePicker: React.FC<{
                 const minutes = d.getMinutes().toString().padStart(2, '0');
                 setSelectedTimeSlot(`${hours}:${minutes}`);
             }
+        } else {
+            // Reset internal state if value is cleared externally
+            setSelectedDate(null);
+            setSelectedTimeSlot(null);
+            setViewMode('date');
         }
-    }, []);
+    }, [value]);
 
     // Reset view to date when opening
     useEffect(() => {
         if (isOpen) {
-            if (!selectedDate) {
-                setViewMode('date');
-            } else {
-                // If date is already selected, user might want to change time, 
-                // but usually better to show date first or current selection context.
-                // Let's default to date picker to allow changing date easily, 
-                // or if time is set, maybe show time? Let's stick to date for consistency.
-                // However, for UX, if I click to edit, I might want to see what I picked.
-                // We'll default to 'date' so they can see the calendar.
-                setViewMode('date'); 
-            }
+             if (!selectedDate) {
+                 setViewMode('date');
+             } else {
+                 setViewMode('date'); // Always start at date for context
+             }
         }
     }, [isOpen]);
 
@@ -137,21 +138,19 @@ const CustomDateTimePicker: React.FC<{
         const year = date.getFullYear();
         const month = date.getMonth();
         let day = new Date(year, month, 1).getDay();
-        // Shift so Monday is index 0 (European style)
         return day === 0 ? 6 : day - 1;
     };
 
     const handleDateClick = (day: number) => {
         const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
         setSelectedDate(newDate);
-        setSelectedTimeSlot(null); // Reset time when date changes
-        setViewMode('time'); // SWITCH TO TIME VIEW
+        setSelectedTimeSlot(null); 
+        setViewMode('time'); 
     };
 
     const handleTimeClick = (time: string) => {
         setSelectedTimeSlot(time);
         if (selectedDate) {
-            // Construct final ISO string for form
             const year = selectedDate.getFullYear();
             const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
             const day = selectedDate.getDate().toString().padStart(2, '0');
@@ -297,9 +296,9 @@ const CustomDateTimePicker: React.FC<{
                                     <button
                                         key={time}
                                         onClick={(e) => { e.preventDefault(); handleTimeClick(time); }}
-                                        className={`py-2 px-1 text-xs rounded border transition-colors
+                                        className={`py-2 px-1 rounded border transition-colors font-hand text-xl font-bold tracking-wide
                                             ${selectedTimeSlot === time 
-                                                ? 'bg-primary text-white border-primary font-bold shadow-sm' 
+                                                ? 'bg-primary text-white border-primary shadow-sm' 
                                                 : 'bg-white border-gray-200 hover:border-primary hover:text-primary text-gray-600'}
                                         `}
                                     >
@@ -326,8 +325,93 @@ const Hero: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
-  // Form State
+  // --- RESERVATION STATE ---
+  const [formData, setFormData] = useState({
+      name: '',
+      phone: '',
+      pax: '2',
+      notes: '',
+      privacy: false
+  });
   const [dateTime, setDateTime] = useState("");
+  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  
+  // Validation State
+  const [phoneError, setPhoneError] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      
+      // Phone Validation Logic
+      if (name === 'phone') {
+          // Check if contains letters
+          const hasLetters = /[a-zA-Z]/.test(value);
+          if (hasLetters) {
+              setPhoneError("Si us plau, introdueix només números.");
+          } else {
+              setPhoneError("");
+          }
+      }
+
+      setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData(prev => ({ ...prev, privacy: e.target.checked }));
+  };
+
+  const handleSubmit = async () => {
+      // Basic Validation
+      if (!formData.name || !formData.phone || !dateTime) {
+          alert("Si us plau, omple el nom, telèfon i data de reserva.");
+          return;
+      }
+      
+      // Strict Phone Validation before submit
+      const digitsOnly = formData.phone.replace(/[^0-9]/g, '');
+      if (/[a-zA-Z]/.test(formData.phone) || digitsOnly.length < 6) {
+          setPhoneError("El telèfon no sembla correcte (mínim 6 dígits).");
+          alert("El número de telèfon no sembla correcte. Si us plau, revisa'l abans de reservar.");
+          return;
+      }
+
+      if (!formData.privacy) {
+          alert("Has d'acceptar la política de privacitat.");
+          return;
+      }
+
+      setFormStatus('loading');
+
+      try {
+          const reservationsRef = ref(db, 'reservations');
+          
+          // Split Date and Time for cleaner storage
+          // dateTime format from picker is YYYY-MM-DDTHH:mm
+          const [datePart, timePart] = dateTime.split('T');
+
+          await push(reservationsRef, {
+              ...formData,
+              date: datePart, // YYYY-MM-DD
+              time: timePart, // HH:mm
+              dateTimeIso: dateTime, // Keep ISO just in case
+              createdAt: Date.now(),
+              status: 'pending' // pending, confirmed, cancelled
+          });
+
+          setFormStatus('success');
+          // Reset form after 3 seconds or allow user to see success
+          setTimeout(() => {
+              setFormStatus('idle');
+              setFormData({ name: '', phone: '', pax: '2', notes: '', privacy: false });
+              setDateTime("");
+              setPhoneError("");
+          }, 4000);
+
+      } catch (error) {
+          console.error("Error saving reservation:", error);
+          setFormStatus('error');
+      }
+  };
 
   // Listener para el efecto blur al hacer scroll
   useEffect(() => {
@@ -428,69 +512,134 @@ const Hero: React.FC = () => {
             <div className="bg-paper bg-paper-texture p-8 shadow-paper relative">
               <div className="absolute bottom-0 right-0 border-t-[30px] border-r-[30px] border-t-black/5 border-r-transparent pointer-events-none"></div>
 
-              <div className="text-center mb-6">
-                <h2 className="font-hand text-4xl font-bold text-secondary mb-1">{config.hero.reservationFormTitle}</h2>
-                <p className="font-marker text-gray-500 text-lg">{config.hero.reservationFormSubtitle}</p>
-              </div>
-
-              <form className="space-y-4 font-marker text-lg text-secondary">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col">
-                    <label className="text-sm text-gray-500 mb-1 font-sans">Nom:</label>
-                    <input type="text" placeholder="Pere..." className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" />
+              {formStatus === 'success' ? (
+                   <div className="text-center py-10 animate-[fadeIn_0.5s_ease-out]">
+                       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500">
+                           <span className="material-symbols-outlined text-4xl text-green-600">check</span>
+                       </div>
+                       <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Reserva Enviada!</h3>
+                       <p className="font-sans text-gray-600 mb-6">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
+                       <button 
+                           onClick={() => setFormStatus('idle')}
+                           className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
+                       >
+                           Fer una altra reserva
+                       </button>
+                   </div>
+              ) : (
+                <>
+                  <div className="text-center mb-6">
+                    <h2 className="font-hand text-4xl font-bold text-secondary mb-1">{config.hero.reservationFormTitle}</h2>
+                    <p className="font-marker text-gray-500 text-lg">{config.hero.reservationFormSubtitle}</p>
                   </div>
-                  <div className="flex flex-col">
-                    <label className="text-sm text-gray-500 mb-1 font-sans">Telèfon:</label>
-                    <input type="tel" placeholder="6..." className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 relative z-40">
-                  <div className="flex flex-col">
-                    <label className="text-sm text-gray-500 mb-1 font-sans">Dia i hora:</label>
-                    {/* CUSTOM DATE PICKER IMPLEMENTATION */}
-                    <CustomDateTimePicker 
-                        value={dateTime}
-                        onChange={setDateTime}
-                        configStart={config.hero.reservationTimeStart}
-                        configEnd={config.hero.reservationTimeEnd}
-                        configInterval={config.hero.reservationTimeInterval}
-                        errorMsg={config.hero.reservationErrorMessage}
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <label className="text-sm text-gray-500 mb-1 font-sans">Gent:</label>
-                    <select className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full text-secondary">
-                      <option>2 pers.</option>
-                      <option>3 pers.</option>
-                      <option>4 pers.</option>
-                      <option>+5 pers.</option>
-                    </select>
-                  </div>
-                </div>
+                  <form className="space-y-4 font-marker text-lg text-secondary">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col">
+                        <label className="text-sm text-gray-500 mb-1 font-sans">Nom:</label>
+                        <input 
+                            type="text" 
+                            name="name"
+                            maxLength={40} // Limit added
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="Pere..." 
+                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                        />
+                      </div>
+                      <div className="flex flex-col relative">
+                        <label className="text-sm text-gray-500 mb-1 font-sans">Telèfon:</label>
+                        <input 
+                            type="tel" 
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="6..." 
+                            className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
+                        />
+                        {/* Mensaje de error flotante */}
+                        {phoneError && (
+                            <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
+                                {phoneError}
+                            </span>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="flex flex-col relative z-0">
-                    <label className="text-sm text-gray-500 mb-1 font-sans">Notes:</label>
-                    <input type="text" placeholder="Algèrgies, terrassa..." className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" />
-                </div>
+                    <div className="grid grid-cols-2 gap-4 relative z-40">
+                      <div className="flex flex-col">
+                        <label className="text-sm text-gray-500 mb-1 font-sans">Dia i hora:</label>
+                        {/* CUSTOM DATE PICKER IMPLEMENTATION */}
+                        <CustomDateTimePicker 
+                            value={dateTime}
+                            onChange={setDateTime}
+                            configStart={config.hero.reservationTimeStart}
+                            configEnd={config.hero.reservationTimeEnd}
+                            configInterval={config.hero.reservationTimeInterval}
+                            errorMsg={config.hero.reservationErrorMessage}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-sm text-gray-500 mb-1 font-sans">Gent:</label>
+                        <select 
+                            name="pax"
+                            value={formData.pax}
+                            onChange={handleInputChange}
+                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full text-secondary"
+                        >
+                          <option value="2">2 pers.</option>
+                          <option value="3">3 pers.</option>
+                          <option value="4">4 pers.</option>
+                          <option value="5">5 pers.</option>
+                          <option value="6">6 pers.</option>
+                          <option value="+6">+6 pers.</option>
+                        </select>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-2 pt-2">
-                  <input type="checkbox" id="privacy" className="accent-olive" />
-                  <label htmlFor="privacy" className="text-sm font-hand text-gray-600">Sí, accepto la privacitat.</label>
-                </div>
+                    <div className="flex flex-col relative z-0">
+                        <label className="text-sm text-gray-500 mb-1 font-sans">Notes:</label>
+                        <input 
+                            type="text" 
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleInputChange}
+                            placeholder="Algèrgies, terrassa..." 
+                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                        />
+                    </div>
 
-                <div className="border-t border-dashed border-gray-400 my-4"></div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <input 
+                        type="checkbox" 
+                        id="privacy" 
+                        checked={formData.privacy}
+                        onChange={handleCheckboxChange}
+                        className="accent-olive h-4 w-4" 
+                      />
+                      <label htmlFor="privacy" className="text-sm font-hand text-gray-600">Sí, accepto la privacitat.</label>
+                    </div>
 
-                <div className="flex justify-between items-end mb-4">
-                   <div className="text-sm font-sans text-gray-500">O truca'ns:</div>
-                   <div className="font-bold font-hand text-xl">{config.hero.reservationPhoneNumber}</div>
-                </div>
+                    <div className="border-t border-dashed border-gray-400 my-4"></div>
 
-                <button type="button" className="w-full bg-[#4a403a] hover:bg-[#3a302a] text-white font-marker text-2xl py-2 shadow-md transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2">
-                  {config.hero.reservationButtonText}
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-              </form>
+                    <div className="flex justify-between items-end mb-4">
+                      <div className="text-sm font-sans text-gray-500">O truca'ns:</div>
+                      <div className="font-bold font-hand text-xl">{config.hero.reservationPhoneNumber}</div>
+                    </div>
+
+                    <button 
+                        type="button" 
+                        onClick={handleSubmit}
+                        disabled={formStatus === 'loading'}
+                        className={`w-full bg-[#4a403a] hover:bg-[#3a302a] text-white font-marker text-2xl py-2 shadow-md transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 ${formStatus === 'loading' ? 'opacity-70 cursor-wait' : ''}`}
+                    >
+                      {formStatus === 'loading' ? 'Enviant...' : config.hero.reservationButtonText}
+                      {formStatus !== 'loading' && <span className="material-symbols-outlined">arrow_forward</span>}
+                    </button>
+                    {formStatus === 'error' && <p className="text-red-500 text-center text-sm font-sans">Error enviant. Truca'ns!</p>}
+                  </form>
+                </>
+              )}
 
               <div className="absolute -bottom-6 -left-6 bg-yellow-200 p-3 shadow-md transform -rotate-6 w-32 text-center font-hand font-bold text-accent">
                 {config.hero.stickyNoteText}

@@ -6,7 +6,7 @@ import { ref, onValue, update, remove } from 'firebase/database';
 interface AdminPanelProps {
   onSaveAndClose: () => void;
   onClose: () => void;
-  initialTab?: 'config' | 'food_menu' | 'specialties' | 'inbox'; // Nueva prop opcional
+  initialTab?: 'config' | 'food_menu' | 'specialties' | 'inbox'; 
 }
 
 interface ContactMessage {
@@ -19,21 +19,6 @@ interface ContactMessage {
   timestamp: number;
   read: boolean;
 }
-
-const AVAILABLE_ICONS = [
-    { label: "Plat", value: "restaurant_menu" },
-    { label: "Sopa/Olla", value: "soup_kitchen" },
-    { label: "Tapes", value: "tapas" },
-    { label: "Paella/Arros", value: "skillet" },
-    { label: "Graella", value: "outdoor_grill" },
-    { label: "Peix", value: "set_meal" },
-    { label: "Burger", value: "lunch_dining" },
-    { label: "Infantil", value: "child_care" },
-    { label: "Postre/Gelat", value: "icecream" },
-    { label: "Eco", value: "eco" },
-    { label: "Pizza", value: "local_pizza" },
-    { label: "Beguda", value: "local_bar" },
-];
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initialTab = 'config' }) => {
   const { config, updateConfig } = useConfig();
@@ -276,7 +261,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
+              <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg justify-center md:justify-start">
                 <button 
                   onClick={() => setActiveTab('config')}
                   className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
@@ -304,10 +289,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
         {/* SCROLLABLE CONTENT AREA */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-beige/50">
           
-          {/* ... INBOX TAB ... */}
+          {/* --- INBOX TAB --- */}
           {activeTab === 'inbox' && (
               <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                  {/* ... (Existing Inbox Code) ... */}
                   <div className="flex justify-between items-center">
                     <h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">mail</span>
@@ -326,12 +310,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                           {messages.map((msg) => (
                               <div 
                                 key={msg.id} 
-                                className={`rounded-lg p-6 border transition-all duration-300 relative overflow-hidden group
+                                className={`rounded-lg p-6 border relative overflow-hidden
                                     ${msg.read 
-                                        ? 'bg-gray-50 border-gray-200 opacity-70 hover:opacity-100' 
-                                        : 'bg-white border-primary shadow-lg border-l-[6px] border-l-primary scale-[1.01]'
+                                        ? 'bg-gray-50 border-gray-200 opacity-70' 
+                                        : 'bg-white border-primary shadow-lg border-l-[6px] border-l-primary'
                                     }`}
-                                onClick={() => !msg.read && handleMarkAsRead(msg.id)}
                               >
                                   {/* Read/Unread Indicator Visuals */}
                                   {!msg.read && (
@@ -377,7 +360,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                                       <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                                   </div>
 
-                                  <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex justify-end gap-3 mt-4">
                                       {!msg.read && (
                                           <button 
                                             onClick={(e) => { e.stopPropagation(); handleMarkAsRead(msg.id); }}
@@ -402,7 +385,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
               </div>
           )}
 
-          {/* --- CONFIGURATION TAB --- */}
+          {/* ... CONFIGURATION TAB ... */}
           {activeTab === 'config' && (
              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
                
