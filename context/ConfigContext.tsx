@@ -60,6 +60,7 @@ interface AppConfig {
     cardTag: string;          // Note on the image
     productTitle: string;
     productDescription: string;
+    productImages: string[];  // NEW: Array for the product slider
     
     historicTitle: string;
     historicDescription: string;
@@ -160,6 +161,10 @@ const defaultAppConfig: AppConfig = {
     cardTag: "\"L'aroma dels nostres camps a la taula\"",
     productTitle: "Producte de Proximitat",
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
+    productImages: [
+      "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?q=80&w=2070&auto=format&fit=crop"
+    ],
     historicTitle: "Un entorn històric",
     historicDescription: "Situat a l'Ermita de la Paret Delgada, gaudiràs d'un paratge únic que inspira calma. Les parets de pedra i els antics murs contenen el pas del temps, convertint cada àpat en una celebració en companyia.",
     historicLinkUrl: "https://es.wikipedia.org/wiki/Ermita_de_Santa_Mar%C3%ADa_de_Paretdelgada",

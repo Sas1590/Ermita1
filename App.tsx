@@ -4,7 +4,7 @@ import Hero from './components/Hero';
 import Intro from './components/Intro';
 import Philosophy from './components/Philosophy';
 import Menu from './components/Menu';
-// import Specialties from './components/Specialties';
+import Specialties from './components/Specialties';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
@@ -107,7 +107,7 @@ const App: React.FC = () => {
       <Hero />
       <Intro />
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
-      {/* <Specialties />  -- Temporarily removed as requested */}
+      <Specialties />
       <Philosophy />
       <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
       <Footer 

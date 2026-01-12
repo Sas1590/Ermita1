@@ -99,7 +99,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
     }
   };
 
-  // Handler específico para las 5 imágenes de filosofía
+  // Handler específico para las 5 imágenes de filosofía (Historic)
   const handleHistoricImageChange = (index: number, value: string) => {
       const currentImages = localConfig.philosophy.historicImages ? [...localConfig.philosophy.historicImages] : [];
       // Asegurar que el array tenga tamaño suficiente
@@ -113,6 +113,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
           philosophy: {
               ...prev.philosophy,
               historicImages: currentImages
+          }
+      }));
+  };
+
+    // Handler específico para las 5 imágenes de filosofía (Product)
+  const handleProductImageChange = (index: number, value: string) => {
+      const currentImages = localConfig.philosophy.productImages ? [...localConfig.philosophy.productImages] : [];
+      // Asegurar que el array tenga tamaño suficiente
+      while(currentImages.length <= index) {
+          currentImages.push("");
+      }
+      currentImages[index] = value;
+      
+      setLocalConfig(prev => ({
+          ...prev,
+          philosophy: {
+              ...prev.philosophy,
+              productImages: currentImages
           }
       }));
   };
@@ -135,6 +153,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
     }));
   };
 
+  // Handler para los items de Especialidades
+  const handleSpecialtyItemChange = (index: number, field: string, value: string) => {
+    const newItems = [...localConfig.specialties.items];
+    // @ts-ignore
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    setLocalConfig(prev => ({
+        ...prev,
+        specialties: {
+            ...prev.specialties,
+            items: newItems
+        }
+    }));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     
@@ -147,7 +180,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
       },
       philosophy: {
         ...localConfig.philosophy,
-        historicImages: localConfig.philosophy.historicImages.filter(img => img && img.trim() !== '')
+        historicImages: localConfig.philosophy.historicImages.filter(img => img && img.trim() !== ''),
+        productImages: localConfig.philosophy.productImages ? localConfig.philosophy.productImages.filter(img => img && img.trim() !== '') : []
       }
     };
 
@@ -465,7 +499,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </div>
                 </div>
 
-                {/* ... Rest of sections (Intro, Philosophy, Contact) ... */}
                 {/* INTRO Section */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#8B5A2B]"></div>
@@ -501,6 +534,93 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
                         ></textarea>
                       </div>
+                  </div>
+                </div>
+
+                {/* Specialties Section (NEW) */}
+                <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#1d1a15]"></div>
+                  <h3 className="font-serif text-xl font-semibold text-[#1d1a15] mb-4 flex items-center gap-2">
+                      <span className="material-symbols-outlined">stars</span>
+                      Especialitats
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 gap-4 mb-6 border-b border-gray-100 pb-6">
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció (Petit)</label>
+                        <input
+                          type="text"
+                          value={localConfig.specialties.sectionTitle}
+                          onChange={(e) => handleChange('specialties', 'sectionTitle', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
+                        <input
+                          type="text"
+                          value={localConfig.specialties.mainTitle}
+                          onChange={(e) => handleChange('specialties', 'mainTitle', e.target.value)}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció</label>
+                        <textarea
+                          value={localConfig.specialties.description}
+                          onChange={(e) => handleChange('specialties', 'description', e.target.value)}
+                          rows={2}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black outline-none resize-none"
+                        />
+                      </div>
+                  </div>
+
+                  {/* Items Loop */}
+                  <div className="space-y-6">
+                      {localConfig.specialties.items.map((item, index) => (
+                          <div key={index} className="bg-gray-50 p-4 rounded border border-gray-200">
+                              <h4 className="text-xs font-bold uppercase text-gray-500 mb-3">Targeta {index + 1}</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol (Ex: Carns a la Brasa)</label>
+                                      <input
+                                          type="text"
+                                          value={item.title}
+                                          onChange={(e) => handleSpecialtyItemChange(index, 'title', e.target.value)}
+                                          className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none"
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol (Ex: Llenya d'olivera)</label>
+                                      <input
+                                          type="text"
+                                          value={item.subtitle}
+                                          onChange={(e) => handleSpecialtyItemChange(index, 'subtitle', e.target.value)}
+                                          className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none"
+                                      />
+                                  </div>
+                                  <div className="md:col-span-2">
+                                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatge URL</label>
+                                      <input
+                                          type="text"
+                                          value={item.image}
+                                          onChange={(e) => handleSpecialtyItemChange(index, 'image', e.target.value)}
+                                          className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none font-mono text-xs"
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta (Opcional)</label>
+                                      <input
+                                          type="text"
+                                          value={item.badge || ''}
+                                          onChange={(e) => handleSpecialtyItemChange(index, 'badge', e.target.value)}
+                                          placeholder="Ex: TEMPORADA"
+                                          className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none"
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
                   </div>
                 </div>
 
@@ -583,6 +703,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                           className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#556b2f] outline-none resize-none"
                         ></textarea>
                       </div>
+
+                      {/* Product Images Slider Config (NEW) */}
+                      <div className="md:col-span-2 bg-gray-50 p-4 rounded border border-gray-200 mt-2">
+                          <h4 className="text-sm font-bold uppercase text-gray-600 mb-3 flex items-center gap-2">
+                              <span className="material-symbols-outlined text-lg">imagesmode</span>
+                              Imatges Producte (Slider)
+                          </h4>
+                          <p className="text-xs text-gray-400 mb-4">Afegeix fins a 5 enllaços d'imatges per a la secció "Producte de Proximitat" (la de l'esquerra). Es reproduiran automàticament.</p>
+                          
+                          <div className="space-y-3">
+                              {[0, 1, 2, 3, 4].map((index) => (
+                                  <div key={index}>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Imatge {index + 1} (URL)</label>
+                                      <input
+                                          type="text"
+                                          value={localConfig.philosophy.productImages?.[index] || ''}
+                                          onChange={(e) => handleProductImageChange(index, e.target.value)}
+                                          placeholder="https://..."
+                                          className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs font-mono focus:border-[#556b2f] outline-none"
+                                      />
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
                   </div>
 
                   {/* Historic Config */}
@@ -622,7 +766,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                           <span className="material-symbols-outlined text-lg">imagesmode</span>
                           Imatges Històriques (Slider)
                       </h4>
-                      <p className="text-xs text-gray-400 mb-4">Afegeix fins a 5 enllaços d'imatges per a la secció "Un entorn històric". Es reproduiran automàticament.</p>
+                      <p className="text-xs text-gray-400 mb-4">Afegeix fins a 5 enllaços d'imatges per a la secció "Un entorn històric" (la de la dreta). Es reproduiran automàticament.</p>
                       
                       <div className="space-y-3">
                           {[0, 1, 2, 3, 4].map((index) => (

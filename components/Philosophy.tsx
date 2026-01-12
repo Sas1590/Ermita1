@@ -4,14 +4,20 @@ import { useConfig } from '../context/ConfigContext';
 const Philosophy: React.FC = () => {
   const { config } = useConfig();
   
-  // Get images array, fallback to empty array if undefined
+  // Get images array for Historic section (Right Column)
   const historicImages = config.philosophy.historicImages?.filter(url => url && url.trim() !== '') || [];
   
-  // Slider Logic
+  // Get images array for Product section (Left Column)
+  const productImages = config.philosophy.productImages?.filter(url => url && url.trim() !== '') || [];
+  
+  // Slider Logic for Historic
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Slider Logic for Product
+  const [currentProductImageIndex, setCurrentProductImageIndex] = useState(0);
 
+  // Effect for Historic Images Slider
   useEffect(() => {
-    // Only start interval if we have more than 1 image
     if (historicImages.length > 1) {
         const interval = setInterval(() => {
         setCurrentImageIndex((prevIndex) => (prevIndex + 1) % historicImages.length);
@@ -21,9 +27,22 @@ const Philosophy: React.FC = () => {
     }
   }, [historicImages]);
 
-  // Fallback image if no images are configured
-  const fallbackImage = "https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop";
-  const displayImages = historicImages.length > 0 ? historicImages : [fallbackImage];
+  // Effect for Product Images Slider
+  useEffect(() => {
+    if (productImages.length > 1) {
+        const interval = setInterval(() => {
+        setCurrentProductImageIndex((prevIndex) => (prevIndex + 1) % productImages.length);
+        }, 5000); 
+        return () => clearInterval(interval);
+    }
+  }, [productImages]);
+
+  // Fallbacks
+  const fallbackHistoricImage = "https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop";
+  const displayHistoricImages = historicImages.length > 0 ? historicImages : [fallbackHistoricImage];
+
+  const fallbackProductImage = "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop";
+  const displayProductImages = productImages.length > 0 ? productImages : [fallbackProductImage];
 
   return (
     <section id="historia" className="bg-[#1d1a15] bg-dark-texture py-24 md:py-32 relative overflow-hidden scroll-mt-24">
@@ -50,20 +69,30 @@ const Philosophy: React.FC = () => {
         {/* Asymmetric Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-start">
           
-          {/* Left Column: Product Image */}
+          {/* Left Column: Product Image & Slider */}
           <div className="lg:col-span-5 flex flex-col gap-12">
             
-            {/* Image Card */}
+            {/* Image Card Container */}
             <div className="relative group perspective-1000">
               <div className="absolute inset-0 bg-primary/20 transform rotate-3 rounded-sm shadow-xl transition-transform duration-500 group-hover:rotate-1 border border-white/5"></div>
-              <div className="relative h-[450px] w-full bg-black overflow-hidden rounded-sm shadow-lg flex items-center justify-center border border-white/10">
-                 <img 
-                   src="https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop" 
-                   alt="Olives" 
-                   className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay hover:scale-110 transition-transform duration-700"
-                 />
-                 {/* Floating Paper Note */}
-                 <div className="absolute top-8 right-8 bg-[#2c241b] border border-white/20 p-4 max-w-[150px] shadow-card transform -rotate-3 text-center">
+              
+              {/* Product Slider Container */}
+              <div className="relative h-[450px] w-full bg-black overflow-hidden rounded-sm shadow-lg flex items-center justify-center border border-white/10 group">
+                 
+                 {/* Images Mapping */}
+                 {displayProductImages.map((src, index) => (
+                    <img 
+                        key={index}
+                        src={src} 
+                        alt={`Producte Proximitat ${index}`} 
+                        className={`absolute inset-0 w-full h-full object-cover mix-blend-overlay transition-all duration-[2000ms] ease-in-out
+                            ${index === currentProductImageIndex ? 'opacity-60 scale-110' : 'opacity-0 scale-100'}
+                        `}
+                    />
+                 ))}
+
+                 {/* Floating Paper Note (Static on top of slider) */}
+                 <div className="absolute top-8 right-8 bg-[#2c241b] border border-white/20 p-4 max-w-[150px] shadow-card transform -rotate-3 text-center z-10">
                     <span className="font-hand text-xl text-primary leading-none">
                       {config.philosophy.cardTag}
                     </span>
@@ -95,7 +124,7 @@ const Philosophy: React.FC = () => {
              <div className="relative h-[500px] w-full shadow-2xl overflow-hidden rounded-sm group border border-white/10 bg-black">
                
                {/* Slider Implementation */}
-               {displayImages.map((src, index) => (
+               {displayHistoricImages.map((src, index) => (
                   <div
                     key={index}
                     className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
