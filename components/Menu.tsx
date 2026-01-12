@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
 
-// Keep Wine and Group data static for now as requested
+// Keep Wine data static for now as requested
 const WineMenuData = [
   {
     category: "Negres",
@@ -140,58 +140,6 @@ const WineMenuData = [
   }
 ];
 
-// Group Menu Data
-const GroupMenuData = {
-  title: "MENÚ DE GRUP",
-  price: "39 EUROS",
-  vat: "IVA INCLÒS",
-  sections: [
-    {
-      title: "PER PICAR AL MIG DE LA TAULA",
-      items: [
-        "Amanida de fumats amb vinagreta d'avellana.",
-        "Caneló cruixent de confit d'ànec i bolets.",
-        "Assortiment de formatges i embotits.",
-        "Patates braves de l'Ermita."
-      ]
-    },
-    {
-      title: "SEGONS A TRIAR",
-      items: [
-        "Llobarro farcit de verdures fetes a la brasa amb orio de tomaquets xerrys.",
-        "Espatlla de xai al forn al estil tradicional.",
-        "Timbal d'escalivada amb patata confitada i ceps.",
-        "Presa duroc a la brasa amb guarnició."
-      ]
-    },
-    {
-      title: "POSTRES",
-      items: [
-        "Torrija d'orxata amb xocolata calenta i gelat de canyella.",
-        "Caneló amb trufa i salsa toffe.",
-        "Pannacotta amb fruits vermells.",
-        "Sorbet de llimona amb coulis de menta."
-      ]
-    }
-  ],
-  drinks: [
-    "Vi negre o Vi blanc, 1 ampolla per cada 4 persones",
-    "Aigua d'un litre, 1 ampolla per cada 2 persones",
-    "Pa, cafè i infusió."
-  ],
-  disclaimer: "*Qualsevol beguda no inclosa al menú es cobrarà a part.",
-  infoNote: {
-    intro: "A l’Ermita t’oferim un menú especial per a grups, una selecció de les nostres millors receptes a preus per a qualsevol pressupost.",
-    allergy: "En el cas que algun comensal tingués algun tipus d’intolerància alimentària, no dubtis a dir-nos, el nostre equip de cuina s’encarregarà d’oferir les millors alternatives perquè pugui gaudir del menjar.",
-    conditions: [
-      "Recorda que, en el cas de triar el menú de grup, no podràs gaudir d’altres descomptes o promocions.",
-      "No s’accepten tiquets restaurant ni xecs gurmet en els menús per a grups."
-    ],
-    contact: "Per a qualsevol informació, poden posar-se en contacte amb nosaltres, estarem encantats d’atendre’ls."
-  }
-};
-
-
 interface MenuProps {
   activeTab: 'food' | 'wine' | 'group' | null;
   onToggleTab: (tab: 'food' | 'wine' | 'group' | null) => void;
@@ -203,6 +151,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
   // Dynamic Food Menu from Context
   const FoodMenuData = config.foodMenu || [];
+  // Dynamic Group Menu from Context
+  const GroupMenuData = config.groupMenu;
 
   const toggleTab = (tab: 'food' | 'wine' | 'group') => {
     if (activeTab === tab) {
@@ -357,13 +307,13 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                     
                     {/* Title Decoration */}
                     <div className="text-center mb-12">
-                      <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] uppercase tracking-widest mb-2">Menú de Grup</h2>
+                      <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] uppercase tracking-widest mb-2">{GroupMenuData.title}</h2>
                       <div className="w-24 h-1 bg-[#8b5a2b] mx-auto rounded-full"></div>
                     </div>
 
                     {/* Sections */}
                     <div className="space-y-12 w-full max-w-3xl">
-                      {GroupMenuData.sections.map((section, idx) => (
+                      {(GroupMenuData.sections || []).map((section, idx) => (
                           <div key={idx} className="text-center relative">
                             {/* Diamond Separator */}
                             <div className="flex items-center justify-center gap-4 mb-6">
@@ -374,10 +324,19 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                             
                             <h4 className="font-serif text-2xl font-bold text-[#556b2f] uppercase tracking-widest mb-6">{section.title}</h4>
                             
-                            <ul className="space-y-3">
+                            <ul className="space-y-6">
                                 {section.items.map((item, i) => (
-                                  <li key={i} className="font-sans text-lg text-[#2c241b] leading-relaxed">
-                                    {item}
+                                  <li key={i} className="flex flex-col items-center gap-1">
+                                    {/* Main (Catalan) - Standard Serif */}
+                                    <span className="font-serif text-xl text-[#2c241b] leading-tight font-bold">
+                                        {item.nameCa}
+                                    </span>
+                                    {/* Secondary (Spanish) - Stylish Script (Caveat) */}
+                                    {item.nameEs && (
+                                        <span className="font-hand text-lg text-gray-500 leading-none">
+                                            {item.nameEs}
+                                        </span>
+                                    )}
                                   </li>
                                 ))}
                             </ul>
@@ -387,7 +346,7 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
                     {/* Drinks & Extra Info */}
                     <div className="mt-16 text-center space-y-2 font-serif text-[#2c241b] italic text-lg">
-                      {GroupMenuData.drinks.map((drink, idx) => (
+                      {(GroupMenuData.drinks || []).map((drink, idx) => (
                           <p key={idx}>{drink}</p>
                       ))}
                     </div>
@@ -402,7 +361,7 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                       <span className="font-sans text-sm font-bold text-[#8b5a2b] uppercase tracking-[0.3em]">{GroupMenuData.vat}</span>
                     </div>
 
-                    {/* INFO NOTE - MODERN DISMISSIBLE STYLE (MOVED TO BOTTOM) */}
+                    {/* INFO NOTE */}
                     {showGroupInfo && (
                       <div className="relative w-full max-w-4xl mx-auto mt-16 bg-[#F9F7F2] border-l-4 border-[#8b5a2b] shadow-lg p-6 md:p-8 animate-[fadeIn_0.5s_ease-out]">
                         <button 
@@ -418,14 +377,11 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                               <span className="material-symbols-outlined text-5xl text-[#8b5a2b] bg-[#e8e4d9] rounded-full p-3">info</span>
                           </div>
                           <div className="font-sans text-[#2c241b] space-y-4 text-sm md:text-base leading-relaxed">
-                              <p className="font-medium text-lg">{GroupMenuData.infoNote.intro}</p>
-                              <p>{GroupMenuData.infoNote.allergy}</p>
-                              <ul className="list-disc pl-5 space-y-1 text-[#556b2f] font-semibold bg-[#e8e4d9]/50 p-4 rounded-r-lg border-l-2 border-[#556b2f]">
-                                {GroupMenuData.infoNote.conditions.map((cond, i) => (
-                                  <li key={i}>{cond}</li>
-                                ))}
-                              </ul>
-                              <p className="italic text-gray-500 text-xs border-t border-gray-200 pt-2">{GroupMenuData.infoNote.contact}</p>
+                              <p className="font-medium text-lg">{GroupMenuData.infoIntro}</p>
+                              <p>{GroupMenuData.infoAllergy}</p>
+                              <p className="italic text-gray-500 text-xs border-t border-gray-200 pt-2">
+                                * Recorda que no s’accepten tiquets restaurant ni descomptes en el menú de grup.
+                              </p>
                           </div>
                         </div>
                       </div>

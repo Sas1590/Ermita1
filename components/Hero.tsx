@@ -3,6 +3,10 @@ import { useConfig } from '../context/ConfigContext';
 import { db } from '../firebase';
 import { ref, push } from 'firebase/database';
 
+interface HeroProps {
+    onRedirectToMenu?: (tab: 'food' | 'wine' | 'group') => void;
+}
+
 // Subcomponente inteligente ultra-robusto para imágenes
 const SmartBackgroundImage: React.FC<{ src: string; isActive: boolean; index: number; blur: boolean }> = ({ src, isActive, index, blur }) => {
   const [currentSrc, setCurrentSrc] = useState<string | null>(null);
@@ -318,7 +322,7 @@ const CustomDateTimePicker: React.FC<{
 };
 
 
-const Hero: React.FC = () => {
+const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   const { config, isLoading } = useConfig(); 
   const backgroundImages = config.hero.backgroundImages;
 
@@ -329,7 +333,7 @@ const Hero: React.FC = () => {
   const [formData, setFormData] = useState({
       name: '',
       phone: '',
-      pax: '2',
+      pax: '', // Default to empty string to encourage typing
       notes: '',
       privacy: false
   });
@@ -338,6 +342,9 @@ const Hero: React.FC = () => {
   
   // Validation State
   const [phoneError, setPhoneError] = useState('');
+
+  // Group Warning Modal State
+  const [showGroupWarning, setShowGroupWarning] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
@@ -353,6 +360,15 @@ const Hero: React.FC = () => {
           }
       }
 
+      // PAX Logic check (Group Menu Warning)
+      if (name === 'pax') {
+          const num = parseInt(value, 10);
+          // Check immediately if number is valid and greater than 10
+          if (!isNaN(num) && num > 10) {
+              setShowGroupWarning(true);
+          }
+      }
+
       setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -360,10 +376,18 @@ const Hero: React.FC = () => {
       setFormData(prev => ({ ...prev, privacy: e.target.checked }));
   };
 
+  const handleGroupRedirect = (shouldRedirect: boolean) => {
+      setShowGroupWarning(false);
+      if (shouldRedirect && onRedirectToMenu) {
+          onRedirectToMenu('group');
+      }
+      // If no redirect (clicked No), user stays on form with the number they typed.
+  };
+
   const handleSubmit = async () => {
       // Basic Validation
-      if (!formData.name || !formData.phone || !dateTime) {
-          alert("Si us plau, omple el nom, telèfon i data de reserva.");
+      if (!formData.name || !formData.phone || !dateTime || !formData.pax) {
+          alert("Si us plau, omple el nom, telèfon, persones i data de reserva.");
           return;
       }
       
@@ -402,7 +426,7 @@ const Hero: React.FC = () => {
           // Reset form after 3 seconds or allow user to see success
           setTimeout(() => {
               setFormStatus('idle');
-              setFormData({ name: '', phone: '', pax: '2', notes: '', privacy: false });
+              setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
               setDateTime("");
               setPhoneError("");
           }, 4000);
@@ -433,6 +457,18 @@ const Hero: React.FC = () => {
   return (
     <header id="reserva" className="relative min-h-screen flex items-center justify-center pt-20 pb-20 lg:pt-0 lg:pb-0 overflow-hidden">
       
+      {/* CSS to hide input number spinners */}
+      <style>{`
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+
       {/* Background Slider with Conditional Blur */}
       <div className="absolute inset-0 z-0 bg-[#1d1a15]">
         {backgroundImages.map((image, index) => (
@@ -579,21 +615,21 @@ const Hero: React.FC = () => {
                             errorMsg={config.hero.reservationErrorMessage}
                         />
                       </div>
+                      
+                      {/* --- MODIFIED PAX INPUT (Gent + Handwritten Style) --- */}
                       <div className="flex flex-col">
                         <label className="text-sm text-gray-500 mb-1 font-sans">Gent:</label>
-                        <select 
+                        <input 
+                            type="number" 
                             name="pax"
+                            min="1"
+                            max="50"
+                            placeholder="2"
                             value={formData.pax}
                             onChange={handleInputChange}
-                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full text-secondary"
-                        >
-                          <option value="2">2 pers.</option>
-                          <option value="3">3 pers.</option>
-                          <option value="4">4 pers.</option>
-                          <option value="5">5 pers.</option>
-                          <option value="6">6 pers.</option>
-                          <option value="+6">+6 pers.</option>
-                        </select>
+                            // Applied same styling as phone input (font-marker, bg, border, padding)
+                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
+                        />
                       </div>
                     </div>
 
@@ -656,6 +692,37 @@ const Hero: React.FC = () => {
         <span className="text-[10px] tracking-widest uppercase mb-2">Scroll</span>
         <span className="material-symbols-outlined">keyboard_arrow_down</span>
       </div>
+
+      {/* --- GROUP MENU WARNING MODAL (High Z-Index) --- */}
+      {showGroupWarning && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGroupWarning(false)}></div>
+              <div className="bg-[#fdfbf7] bg-paper-texture p-6 max-w-sm w-full rounded shadow-2xl relative z-10 border border-primary text-center transform rotate-1 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="material-symbols-outlined text-3xl text-primary">groups</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-secondary mb-2">Més de 10 persones?</h3>
+                  <p className="font-sans text-gray-600 mb-6 text-sm">
+                      Sembla que sou un grup gran. Potser us interessa fer un cop d'ull al nostre <strong>Menú de Grup</strong> abans de reservar.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                      <button 
+                          onClick={() => handleGroupRedirect(false)}
+                          className="px-4 py-2 border border-gray-300 text-gray-600 font-bold text-xs uppercase tracking-wider hover:bg-gray-100 transition-colors"
+                      >
+                          No, gràcies
+                      </button>
+                      <button 
+                          onClick={() => handleGroupRedirect(true)}
+                          className="px-4 py-2 bg-primary text-white font-bold text-xs uppercase tracking-wider hover:bg-accent transition-colors shadow-lg"
+                      >
+                          Sí, veure menú
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </header>
   );
 };

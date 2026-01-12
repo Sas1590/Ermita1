@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { db } from '../firebase';
-import { ref, onValue, set, update } from 'firebase/database';
+import { ref, onValue, set } from 'firebase/database';
 
 // 0. Define Menu Types
 export interface MenuItem {
@@ -14,6 +14,17 @@ export interface MenuSection {
   icon?: string; // New: For Logo selection
   items: MenuItem[];
   footer?: string;
+}
+
+// Group Menu Types
+export interface GroupMenuItem {
+  nameCa: string;
+  nameEs: string;
+}
+
+export interface GroupMenuSection {
+  title: string;
+  items: GroupMenuItem[];
 }
 
 // 1. Define the AppConfig interface
@@ -68,6 +79,19 @@ interface AppConfig {
     historicImages: string[]; // NEW: Array for the slider
   };
   foodMenu: MenuSection[]; // New Dynamic Menu
+  
+  // NEW DYNAMIC GROUP MENU
+  groupMenu: {
+    title: string;
+    price: string;
+    vat: string;
+    disclaimer: string; // The red text
+    sections: GroupMenuSection[];
+    drinks: string[]; // List of included drinks
+    infoIntro: string;
+    infoAllergy: string;
+  };
+
   contact: {
     importantNoteTitle: string;
     importantNoteMessage1: string;
@@ -313,6 +337,84 @@ const defaultAppConfig: AppConfig = {
       ]
     }
   ],
+  groupMenu: {
+    title: "MENÚ DE GRUP",
+    price: "39 EUROS",
+    vat: "IVA INCLÒS",
+    disclaimer: "*Qualsevol beguda no inclosa al menú es cobrarà a part.",
+    sections: [
+        {
+            title: "PER PICAR AL MIG DE LA TAULA",
+            items: [
+                { 
+                    nameCa: "Amanida de fumats amb vinagreta d'avellana.", 
+                    nameEs: "Ensalada de ahumados con vinagreta de avellana." 
+                },
+                { 
+                    nameCa: "Caneló cruixent de confit d'ànec i bolets.", 
+                    nameEs: "Canelón crujiente de confit de pato y setas." 
+                },
+                { 
+                    nameCa: "Assortiment de formatges i embotits.", 
+                    nameEs: "Surtido de quesos y embutidos." 
+                },
+                { 
+                    nameCa: "Patates braves de l'Ermita.", 
+                    nameEs: "Patatas bravas de la Ermita." 
+                }
+            ]
+        },
+        {
+            title: "SEGONS A TRIAR",
+            items: [
+                { 
+                    nameCa: "Llobarro farcit de verdures fetes a la brasa amb orio de tomaquets xerrys.", 
+                    nameEs: "Lubina rellena de verduras a la brasa con orio de tomates cherry." 
+                },
+                { 
+                    nameCa: "Espatlla de xai al forn al estil tradicional.", 
+                    nameEs: "Paletilla de cordero al horno al estilo tradicional." 
+                },
+                { 
+                    nameCa: "Timbal d'escalivada amb patata confitada i ceps.", 
+                    nameEs: "Timbal de escalivada con patata confitada y setas." 
+                },
+                { 
+                    nameCa: "Presa duroc a la brasa amb guarnició.", 
+                    nameEs: "Presa duroc a la brasa con guarnición." 
+                }
+            ]
+        },
+        {
+            title: "POSTRES",
+            items: [
+                { 
+                    nameCa: "Torrija d'orxata amb xocolata calenta i gelat de canyella.", 
+                    nameEs: "Torrija de horchata con chocolate caliente y helado de canela." 
+                },
+                { 
+                    nameCa: "Caneló amb trufa i salsa toffe.", 
+                    nameEs: "Canelón con trufa y salsa toffee." 
+                },
+                { 
+                    nameCa: "Pannacotta amb fruits vermells.", 
+                    nameEs: "Pannacotta con frutos rojos." 
+                },
+                { 
+                    nameCa: "Sorbet de llimona amb coulis de menta.", 
+                    nameEs: "Sorbete de limón con coulis de menta." 
+                }
+            ]
+        }
+    ],
+    drinks: [
+        "Vi negre o Vi blanc, 1 ampolla per cada 4 persones",
+        "Aigua d'un litre, 1 ampolla per cada 2 persones",
+        "Pa, cafè i infusió."
+    ],
+    infoIntro: "A l’Ermita t’oferim un menú especial per a grups, una selecció de les nostres millors receptes a preus per a qualsevol pressupost.",
+    infoAllergy: "En el cas que algun comensal tingués algun tipus d’intolerància alimentària, no dubtis a dir-nos, el nostre equip de cuina s’encarregarà d’oferir les millors alternatives perquè pugui gaudir del menjar."
+  },
   contact: {
     importantNoteTitle: "Important!",
     importantNoteMessage1: "Només acceptem reserves per telèfon.",
@@ -387,8 +489,13 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            philosophy: { ...prev.philosophy, ...data.philosophy },
            contact: { ...prev.contact, ...data.contact },
            navbar: { ...prev.navbar, ...data.navbar },
-           // Si el array de foodMenu viene de la DB, úsalo, si no, usa el previo
+           // Arrays need fallback if empty in DB
            foodMenu: data.foodMenu || prev.foodMenu,
+           groupMenu: data.groupMenu ? {
+                ...prev.groupMenu,
+                ...data.groupMenu,
+                sections: data.groupMenu.sections || prev.groupMenu.sections
+           } : prev.groupMenu
         }));
       } else {
         // Si no existe (es la primera vez), subimos la configuración por defecto

@@ -104,7 +104,7 @@ const App: React.FC = () => {
         isAdminMode={!!user} // Pass boolean if user is logged in
         onLogout={handleLogout}
       />
-      <Hero />
+      <Hero onRedirectToMenu={handleOpenMenu} />
       <Intro />
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
       <Specialties />

@@ -25,8 +25,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
   const [localConfig, setLocalConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Tab State: initialized with the prop (Simplified: only config or inbox)
-  const [activeTab, setActiveTab] = useState<'config' | 'inbox'>(initialTab);
+  // Tab State: initialized with the prop 
+  const [activeTab, setActiveTab] = useState<'config' | 'inbox' | 'groupMenu'>(initialTab);
+
+  // --- CONFIRMATION STATE ---
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [changedSections, setChangedSections] = useState<string[]>([]);
+  const [showNoChangesAlert, setShowNoChangesAlert] = useState(false);
 
   // --- INBOX STATE ---
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -71,9 +76,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
       }
   };
 
-  // Update local config if global config changes
+  // Update local config if global config changes (sync)
+  // We use a ref to track if it's the first load to avoid overwriting user WIP if real-time update comes in
   useEffect(() => {
-    setLocalConfig(config);
+     // Only sync if we haven't started editing, or simple deep sync strategy
+     // For simplicity in this context, we will sync but usually you might want to warn user.
+     // Here we just assume admin is single user mostly.
+     // To avoid resetting local state while typing, we can skip this or manage it carefully.
+     // For now, let's NOT auto-update localConfig from config changes to prevent overwriting user input.
+     // setLocalConfig(config); 
   }, [config]);
 
   const handleChange = (section: keyof typeof localConfig, key: string, value: string) => {
@@ -99,99 +110,243 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
     }
   };
 
-  // Handler específico para las 5 imágenes de filosofía (Historic)
+  // --- GROUP MENU HANDLERS ---
+  const handleGroupMenuGeneralChange = (key: string, value: string) => {
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: {
+              ...prev.groupMenu,
+              [key]: value
+          }
+      }));
+  };
+
+  const handleGroupSectionTitleChange = (sectionIndex: number, newTitle: string) => {
+      const newSections = [...localConfig.groupMenu.sections];
+      newSections[sectionIndex].title = newTitle;
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
+  };
+
+  const handleGroupItemChange = (sectionIndex: number, itemIndex: number, field: 'nameCa' | 'nameEs', value: string) => {
+      const newSections = [...localConfig.groupMenu.sections];
+      newSections[sectionIndex].items[itemIndex][field] = value;
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
+  };
+
+  const addGroupItem = (sectionIndex: number) => {
+      const newSections = [...localConfig.groupMenu.sections];
+      newSections[sectionIndex].items.push({ nameCa: "", nameEs: "" });
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
+  };
+
+  const removeGroupItem = (sectionIndex: number, itemIndex: number) => {
+      const newSections = [...localConfig.groupMenu.sections];
+      newSections[sectionIndex].items.splice(itemIndex, 1);
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
+  };
+
+  const addGroupSection = () => {
+      const newSections = [...(localConfig.groupMenu.sections || [])];
+      newSections.push({ title: "Nova Secció", items: [] });
+      setLocalConfig(prev => ({
+          ...prev,
+          groupMenu: { ...prev.groupMenu, sections: newSections }
+      }));
+  };
+  
+  const removeGroupSection = (index: number) => {
+      if(window.confirm("Segur que vols esborrar tota la secció?")) {
+        const newSections = [...localConfig.groupMenu.sections];
+        newSections.splice(index, 1);
+        setLocalConfig(prev => ({
+            ...prev,
+            groupMenu: { ...prev.groupMenu, sections: newSections }
+        }));
+      }
+  };
+
+
   const handleHistoricImageChange = (index: number, value: string) => {
       const currentImages = localConfig.philosophy.historicImages ? [...localConfig.philosophy.historicImages] : [];
-      // Asegurar que el array tenga tamaño suficiente
       while(currentImages.length <= index) {
           currentImages.push("");
       }
       currentImages[index] = value;
-      
       setLocalConfig(prev => ({
           ...prev,
-          philosophy: {
-              ...prev.philosophy,
-              historicImages: currentImages
-          }
+          philosophy: { ...prev.philosophy, historicImages: currentImages }
       }));
   };
 
-    // Handler específico para las 5 imágenes de filosofía (Product)
   const handleProductImageChange = (index: number, value: string) => {
       const currentImages = localConfig.philosophy.productImages ? [...localConfig.philosophy.productImages] : [];
-      // Asegurar que el array tenga tamaño suficiente
       while(currentImages.length <= index) {
           currentImages.push("");
       }
       currentImages[index] = value;
-      
       setLocalConfig(prev => ({
           ...prev,
-          philosophy: {
-              ...prev.philosophy,
-              productImages: currentImages
-          }
+          philosophy: { ...prev.philosophy, productImages: currentImages }
       }));
   };
 
-  // Handler para las imágenes de Hero (Slides)
   const handleHeroImageChange = (index: number, value: string) => {
     const currentImages = localConfig.hero.backgroundImages ? [...localConfig.hero.backgroundImages] : [];
-    // Asegurar que el array tenga tamaño suficiente
     while(currentImages.length <= index) {
         currentImages.push("");
     }
     currentImages[index] = value;
-    
     setLocalConfig(prev => ({
         ...prev,
-        hero: {
-            ...prev.hero,
-            backgroundImages: currentImages
-        }
+        hero: { ...prev.hero, backgroundImages: currentImages }
     }));
   };
 
-  // Handler para los items de Especialidades
   const handleSpecialtyItemChange = (index: number, field: string, value: string) => {
     const newItems = [...localConfig.specialties.items];
     // @ts-ignore
     newItems[index] = { ...newItems[index], [field]: value };
-    
     setLocalConfig(prev => ({
         ...prev,
-        specialties: {
-            ...prev.specialties,
-            items: newItems
-        }
+        specialties: { ...prev.specialties, items: newItems }
     }));
   };
 
-  const handleSave = async () => {
+  // --- SAVE LOGIC WITH DETECTION ---
+
+  // Helper to normalize data for comparison (remove empty strings from arrays, etc)
+  const cleanDataForComparison = (data: typeof config) => {
+      return {
+          ...data,
+          hero: {
+              ...data.hero,
+              backgroundImages: data.hero.backgroundImages?.filter(i => i && i.trim() !== '') || []
+          },
+          philosophy: {
+              ...data.philosophy,
+              historicImages: data.philosophy.historicImages?.filter(i => i && i.trim() !== '') || [],
+              productImages: data.philosophy.productImages?.filter(i => i && i.trim() !== '') || []
+          }
+      };
+  };
+
+  const detectChanges = () => {
+      const original = cleanDataForComparison(config);
+      const current = cleanDataForComparison(localConfig);
+      const changes: string[] = [];
+
+      if (JSON.stringify(original.hero) !== JSON.stringify(current.hero)) changes.push("Hero (Portada / Reserva)");
+      if (JSON.stringify(original.groupMenu) !== JSON.stringify(current.groupMenu)) changes.push("Menú de Grup");
+      if (JSON.stringify(original.contact) !== JSON.stringify(current.contact)) changes.push("Contacte i Horaris");
+      if (JSON.stringify(original.intro) !== JSON.stringify(current.intro)) changes.push("Intro");
+      if (JSON.stringify(original.specialties) !== JSON.stringify(current.specialties)) changes.push("Especialitats");
+      if (JSON.stringify(original.philosophy) !== JSON.stringify(current.philosophy)) changes.push("Filosofia / Història");
+      if (JSON.stringify(original.brand) !== JSON.stringify(current.brand)) changes.push("Identitat (Logo)");
+
+      return changes;
+  };
+
+  const handlePreSave = () => {
+      const changes = detectChanges();
+      
+      if (changes.length === 0) {
+          setShowNoChangesAlert(true);
+      } else {
+          setChangedSections(changes);
+          setShowSaveConfirmation(true);
+      }
+  };
+
+  const handleConfirmSave = async () => {
     setIsSaving(true);
     
-    // Clean up empty strings from image arrays before saving
-    const cleanConfig = {
-      ...localConfig,
-      hero: {
-        ...localConfig.hero,
-        backgroundImages: localConfig.hero.backgroundImages.filter(img => img && img.trim() !== '')
-      },
-      philosophy: {
-        ...localConfig.philosophy,
-        historicImages: localConfig.philosophy.historicImages.filter(img => img && img.trim() !== ''),
-        productImages: localConfig.philosophy.productImages ? localConfig.philosophy.productImages.filter(img => img && img.trim() !== '') : []
-      }
-    };
+    // Clean up empty strings from image arrays before saving (Final cleanup)
+    const cleanConfig = cleanDataForComparison(localConfig);
 
     await updateConfig(cleanConfig);
     setIsSaving(false);
+    setShowSaveConfirmation(false);
     onSaveAndClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4 overflow-auto">
+      
+      {/* --- CONFIRMATION MODAL --- */}
+      {showSaveConfirmation && (
+          <div className="absolute inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 animate-[fadeIn_0.2s_ease-out] border-t-4 border-primary">
+                  <div className="flex flex-col items-center text-center mb-6">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                          <span className="material-symbols-outlined text-4xl text-primary">save</span>
+                      </div>
+                      <h3 className="font-serif text-2xl font-bold text-secondary">Confirmar Canvis</h3>
+                      <p className="text-gray-500 mt-2">S'han detectat modificacions a les següents seccions:</p>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded border border-gray-200 p-4 mb-6">
+                      <ul className="space-y-2">
+                          {changedSections.map((section, idx) => (
+                              <li key={idx} className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                  <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
+                                  {section}
+                              </li>
+                          ))}
+                      </ul>
+                  </div>
+
+                  <p className="text-center text-sm text-gray-400 mb-6 italic">¿Estàs segur que vols guardar aquests canvis permanentment?</p>
+
+                  <div className="flex gap-3">
+                      <button 
+                          onClick={() => setShowSaveConfirmation(false)}
+                          className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors"
+                      >
+                          Cancel·lar
+                      </button>
+                      <button 
+                          onClick={handleConfirmSave}
+                          disabled={isSaving}
+                          className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent transition-colors shadow-lg"
+                      >
+                          {isSaving ? 'Guardant...' : 'Sí, Guardar'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* --- NO CHANGES ALERT --- */}
+      {showNoChangesAlert && (
+          <div className="absolute inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-[1px] p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-[fadeIn_0.2s_ease-out] text-center">
+                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <span className="material-symbols-outlined text-2xl text-gray-400">rule</span>
+                   </div>
+                   <h3 className="font-bold text-lg text-gray-800 mb-2">Sense canvis</h3>
+                   <p className="text-gray-500 text-sm mb-6">No s'ha detectat cap modificació respecte a la versió actual.</p>
+                   <button 
+                      onClick={() => setShowNoChangesAlert(false)}
+                      className="w-full py-2 bg-gray-800 text-white rounded font-bold uppercase text-xs hover:bg-black transition-colors"
+                   >
+                      Entesos
+                   </button>
+              </div>
+          </div>
+      )}
+
       <div className="bg-beige text-secondary p-0 rounded-lg shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
         
         {/* Header with Tabs and Notification Bell */}
@@ -226,13 +381,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                   </button>
               </div>
 
-              {/* Navigation Tabs (SIMPLIFIED) */}
+              {/* Navigation Tabs */}
               <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg justify-center md:justify-start">
                 <button 
                   onClick={() => setActiveTab('config')}
                   className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                  Configuració
+                  General
+                </button>
+                <button 
+                  onClick={() => setActiveTab('groupMenu')}
+                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'groupMenu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Menú Grup
                 </button>
               </div>
           </div>
@@ -334,6 +495,117 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
                           ))}
                       </div>
                   )}
+              </div>
+          )}
+
+          {/* --- GROUP MENU TAB --- */}
+          {activeTab === 'groupMenu' && (
+              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                  {/* General Info */}
+                  <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-[#8b5a2b]"></div>
+                      <h3 className="font-serif text-xl font-semibold text-[#8b5a2b] mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined">info</span>
+                          Informació General Menú
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Menú</label>
+                              <input
+                                  type="text"
+                                  value={localConfig.groupMenu.title}
+                                  onChange={(e) => handleGroupMenuGeneralChange('title', e.target.value)}
+                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Preu</label>
+                              <input
+                                  type="text"
+                                  value={localConfig.groupMenu.price}
+                                  onChange={(e) => handleGroupMenuGeneralChange('price', e.target.value)}
+                                  className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none"
+                              />
+                          </div>
+                          <div className="md:col-span-2">
+                              <label className="block text-xs font-bold uppercase text-red-500 mb-1">Avis (Text Vermell)</label>
+                              <input
+                                  type="text"
+                                  value={localConfig.groupMenu.disclaimer}
+                                  onChange={(e) => handleGroupMenuGeneralChange('disclaimer', e.target.value)}
+                                  className="block w-full border border-red-200 bg-red-50 rounded px-3 py-2 text-sm text-red-700 focus:border-red-500 outline-none"
+                              />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Sections Editor */}
+                  <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                          <h3 className="font-serif text-xl font-bold text-gray-800">Seccions i Plats</h3>
+                          <button 
+                              onClick={addGroupSection}
+                              className="bg-[#556b2f] text-white px-4 py-2 rounded text-xs font-bold uppercase hover:bg-[#445525] transition-colors flex items-center gap-1"
+                          >
+                              <span className="material-symbols-outlined text-sm">add</span> Nova Secció
+                          </button>
+                      </div>
+
+                      {localConfig.groupMenu.sections.map((section, sIdx) => (
+                          <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
+                              <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                                  <input 
+                                      type="text"
+                                      value={section.title}
+                                      onChange={(e) => handleGroupSectionTitleChange(sIdx, e.target.value)}
+                                      className="font-serif text-lg font-bold text-[#556b2f] border-b border-transparent focus:border-[#556b2f] outline-none bg-transparent w-full"
+                                      placeholder="Títol de la Secció"
+                                  />
+                                  <button onClick={() => removeGroupSection(sIdx)} className="text-red-400 hover:text-red-600 ml-4">
+                                      <span className="material-symbols-outlined">delete</span>
+                                  </button>
+                              </div>
+
+                              <div className="space-y-4">
+                                  {section.items.map((item, iIdx) => (
+                                      <div key={iIdx} className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-gray-50 p-3 rounded border border-gray-200">
+                                          <div>
+                                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Plat (Català)</label>
+                                              <input
+                                                  type="text"
+                                                  value={item.nameCa}
+                                                  onChange={(e) => handleGroupItemChange(sIdx, iIdx, 'nameCa', e.target.value)}
+                                                  className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none font-bold"
+                                              />
+                                          </div>
+                                          <div className="relative">
+                                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Plat (Castellà)</label>
+                                              <input
+                                                  type="text"
+                                                  value={item.nameEs}
+                                                  onChange={(e) => handleGroupItemChange(sIdx, iIdx, 'nameEs', e.target.value)}
+                                                  className="block w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-black outline-none font-hand text-gray-600"
+                                              />
+                                              <button 
+                                                  onClick={() => removeGroupItem(sIdx, iIdx)}
+                                                  className="absolute top-7 right-[-25px] text-red-300 hover:text-red-500"
+                                                  title="Esborrar plat"
+                                              >
+                                                  <span className="material-symbols-outlined text-sm">remove_circle</span>
+                                              </button>
+                                          </div>
+                                      </div>
+                                  ))}
+                                  <button 
+                                      onClick={() => addGroupItem(sIdx)}
+                                      className="w-full py-2 border border-dashed border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 rounded text-xs uppercase font-bold flex justify-center items-center gap-1 transition-colors"
+                                  >
+                                      <span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat
+                                  </button>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
               </div>
           )}
 
@@ -918,7 +1190,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initia
           </button>
           {activeTab !== 'inbox' && (
             <button
-              onClick={handleSave}
+              onClick={handlePreSave}
               disabled={isSaving}
               className={`px-8 py-3 border border-transparent rounded shadow-lg text-sm font-bold uppercase tracking-wider text-white bg-primary hover:bg-accent transition-all transform hover:-translate-y-1 flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
             >
