@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { ref, push } from 'firebase/database';
 
 interface HeroProps {
-    onRedirectToMenu?: (tab: 'food' | 'wine' | 'group') => void;
+    onRedirectToMenu?: (tab: string) => void;
 }
 
 // Subcomponente inteligente ultra-robusto para imágenes

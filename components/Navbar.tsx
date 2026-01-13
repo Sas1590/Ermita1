@@ -5,7 +5,7 @@ import { ref, onValue } from 'firebase/database';
 
 interface NavbarProps {
   scrolled: boolean;
-  onOpenMenu: (tab: 'food' | 'wine' | 'group') => void;
+  onOpenMenu: (tab: string) => void;
   onScrollToSection: (id: string) => void;
   onOpenAdminPanel: (tab?: 'config' | 'inbox') => void; 
   isAdminMode: boolean; // Means "Is Logged In"
@@ -130,6 +130,18 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    Menú de Grup
                    <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">groups</span>
                  </button>
+                 
+                 {/* Dynamic Extra Menus Links in Navbar Dropdown (Optional but nice) */}
+                 {(config.extraMenus || []).map((menu, idx) => (
+                    <button 
+                        key={menu.id}
+                        onClick={() => onOpenMenu(`extra_${idx}`)} 
+                        className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-t border-white/5 transition-colors flex items-center justify-between group/item"
+                    >
+                        {menu.title}
+                        <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">add</span>
+                    </button>
+                 ))}
                </div>
             </div>
           </div>
@@ -219,6 +231,10 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             <button onClick={() => { onOpenMenu('food'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Menjar</button>
             <button onClick={() => { onOpenMenu('wine'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Vins</button>
             <button onClick={() => { onOpenMenu('group'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Menú de Grup</button>
+            {/* Dynamic Mobile Links */}
+            {(config.extraMenus || []).map((menu, idx) => (
+                <button key={menu.id} onClick={() => { onOpenMenu(`extra_${idx}`); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">{menu.title}</button>
+            ))}
           </div>
           
           <div className="w-12 h-px bg-white/20"></div>

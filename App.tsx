@@ -7,7 +7,7 @@ import Menu from './components/Menu';
 import Specialties from './components/Specialties';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-import AdminPanel from './components/AdminPanel';
+import { AdminPanel } from './components/AdminPanel';
 import LoginModal from './components/LoginModal';
 import PrivacyModal from './components/PrivacyModal';
 import CookiesModal from './components/CookiesModal';
@@ -17,7 +17,8 @@ import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [menuTab, setMenuTab] = useState<'food' | 'wine' | 'group' | null>(null);
+  // Allow string for menuTab to support 'food', 'wine', 'group' AND 'extra_0', 'extra_1', etc.
+  const [menuTab, setMenuTab] = useState<string | null>(null);
   
   // Auth & Admin States
   const [user, setUser] = useState<User | null>(null);
@@ -51,7 +52,7 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleOpenMenu = (tab: 'food' | 'wine' | 'group') => {
+  const handleOpenMenu = (tab: string) => {
     setMenuTab(tab);
     setTimeout(() => {
       const element = document.getElementById('carta');

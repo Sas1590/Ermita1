@@ -51,6 +51,20 @@ const Specialties: React.FC = () => {
   const { config } = useConfig();
   const { specialties } = config;
 
+  const visibleItems = specialties.items.filter((item) => item.visible !== false);
+
+  if (visibleItems.length === 0) {
+    return null;
+  }
+
+  // Dynamic Layout Logic for Centering
+  let containerClasses = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
+  if (visibleItems.length === 1) {
+    containerClasses = "grid grid-cols-1 gap-8 max-w-md mx-auto";
+  } else if (visibleItems.length === 2) {
+    containerClasses = "grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto";
+  }
+
   return (
     <section className="bg-[#1d1a15] bg-dark-texture py-24 text-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
@@ -63,8 +77,8 @@ const Specialties: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {specialties.items.map((item, index) => (
+        <div className={containerClasses}>
+          {visibleItems.map((item, index) => (
              <SpecialtyCard 
                key={index}
                title={item.title} 
