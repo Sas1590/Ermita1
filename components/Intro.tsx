@@ -10,7 +10,7 @@ const Intro: React.FC = () => {
         
         {/* Compressed Header */}
         <div className="flex flex-col items-center">
-            <span className="font-serif italic text-primary text-lg md:text-xl tracking-wider opacity-80">
+            <span className="font-serif italic text-[#8b5a2b] text-lg md:text-xl tracking-wider font-medium">
             {config.intro.smallTitle}
             </span>
             <h2 className="font-serif text-3xl md:text-5xl font-bold text-secondary mt-1 leading-none">

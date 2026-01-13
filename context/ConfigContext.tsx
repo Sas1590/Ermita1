@@ -60,6 +60,9 @@ export interface AppConfig {
   brand: {
     logoUrl: string;
   };
+  adminSettings: {
+    customDisplayName: string;
+  };
   hero: {
     reservationFormTitle: string;
     reservationFormSubtitle: string;
@@ -71,6 +74,14 @@ export interface AppConfig {
     reservationTimeEnd: string;
     reservationTimeInterval: number;
     reservationErrorMessage: string;
+    // New Form Labels
+    formNameLabel: string;
+    formPhoneLabel: string;
+    formDateLabel: string;
+    formPaxLabel: string;
+    formNotesLabel: string;
+    formPrivacyLabel: string;
+    formCallUsLabel: string;
   };
   intro: {
     smallTitle: string;
@@ -86,7 +97,8 @@ export interface AppConfig {
       subtitle: string;
       image: string;
       badge?: string;
-      visible?: boolean; // Added visible property
+      description?: string; // Added description
+      visible?: boolean;
     }>;
   };
   philosophy: {
@@ -156,9 +168,12 @@ export const defaultAppConfig: AppConfig = {
   brand: {
     logoUrl: "", 
   },
+  adminSettings: {
+    customDisplayName: ""
+  },
   hero: {
-    reservationFormTitle: "Reserva la teva taula",
-    reservationFormSubtitle: "Omple'l o truca'ns!",
+    reservationFormTitle: "Reserva Taula!",
+    reservationFormSubtitle: "omple'l o truca'ns!",
     reservationPhoneNumber: "+34 654 321 987",
     reservationButtonText: "Reservar Ara!",
     stickyNoteText: "Obert tot l'any!",
@@ -169,7 +184,15 @@ export const defaultAppConfig: AppConfig = {
     reservationTimeStart: "13:00",
     reservationTimeEnd: "15:30",
     reservationTimeInterval: 15,
-    reservationErrorMessage: "Ho sentim, l'horari de reserva és de 13:00 a 15:30."
+    reservationErrorMessage: "Ho sentim, l'horari de reserva és de", // Removed hardcoded times
+    // Default labels
+    formNameLabel: "Nom:",
+    formPhoneLabel: "Telèfon:",
+    formDateLabel: "Dia i hora:",
+    formPaxLabel: "Gent:",
+    formNotesLabel: "Notes:",
+    formPrivacyLabel: "Si, accepto la privacitat.",
+    formCallUsLabel: "O truca'ns:"
   },
   intro: {
     smallTitle: "Filosofia",
@@ -186,6 +209,7 @@ export const defaultAppConfig: AppConfig = {
         subtitle: "Llenya d'olivera",
         image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=2070&auto=format&fit=crop",
         badge: "",
+        description: "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.",
         visible: true
       },
       {
@@ -193,6 +217,7 @@ export const defaultAppConfig: AppConfig = {
         subtitle: "Salsa Romesco",
         image: "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?q=80&w=2070&auto=format&fit=crop",
         badge: "Temporada",
+        description: "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.",
         visible: true
       },
       {
@@ -200,6 +225,7 @@ export const defaultAppConfig: AppConfig = {
         subtitle: "DO Tarragona",
         image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop",
         badge: "Celler",
+        description: "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.",
         visible: true
       }
     ]
@@ -649,6 +675,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            ...prev,
            ...data,
            brand: { ...prev.brand, ...data.brand },
+           adminSettings: { ...prev.adminSettings, ...data.adminSettings },
            hero: { ...prev.hero, ...data.hero },
            intro: { ...prev.intro, ...data.intro },
            specialties: { ...prev.specialties, ...data.specialties },

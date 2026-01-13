@@ -6,7 +6,7 @@ import { ref, onValue, update, remove } from 'firebase/database';
 interface AdminPanelProps {
   onSaveAndClose: () => void;
   onClose: () => void;
-  initialTab?: 'config' | 'inbox'; 
+  initialTab?: 'config' | 'inbox' | 'reservations'; 
 }
 
 interface ContactMessage {
@@ -18,6 +18,20 @@ interface ContactMessage {
   message: string;
   timestamp: number;
   read: boolean;
+}
+
+interface Reservation {
+  id: string;
+  name: string;
+  phone: string;
+  pax: string;
+  notes: string;
+  date: string;
+  time: string;
+  dateTimeIso: string;
+  createdAt: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  privacy: boolean;
 }
 
 // --- CURATED LIST OF ICONS FOR RESTAURANT ---
@@ -87,7 +101,7 @@ const IconPicker = ({ value, onChange }: { value: string, onChange: (val: string
     );
 };
 
-// --- ISOLATED EDITOR COMPONENTS (Fixes Focus Issues) ---
+// --- ISOLATED EDITOR COMPONENTS ---
 
 const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     const safeData = Array.isArray(data) ? data : [];
@@ -382,32 +396,52 @@ const getBlankGroupMenu = () => ({
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose, initialTab = 'config' }) => {
   const { config, updateConfig } = useConfig();
-  // DEEP CLONE initial config to prevent reference sharing issues with context
-  const [localConfig, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(config)));
+  
+  // DEEP CLONE initial config & HYDRATE DEFAULTS
+  const [localConfig, setLocalConfig] = useState(() => {
+      const initial = JSON.parse(JSON.stringify(config));
+      // Patch Specialties Description if missing to match Web Default
+      const defaultDesc = "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.";
+      if(initial.specialties?.items) {
+          initial.specialties.items = initial.specialties.items.map((item: any) => ({
+              ...item,
+              description: item.description || defaultDesc
+          }));
+      }
+      return initial;
+  });
+
   const [isSaving, setIsSaving] = useState(false);
   
   // Tab State
-  const [activeTab, setActiveTab] = useState<'config' | 'inbox' | 'menu'>(
-      initialTab === 'inbox' ? 'inbox' : 'config'
+  const [activeTab, setActiveTab] = useState<'config' | 'inbox' | 'menu' | 'reservations'>(
+      initialTab === 'inbox' ? 'inbox' : initialTab === 'reservations' ? 'reservations' : 'config'
   );
+
+  // Reservation Filter State (Trays)
+  const [reservationFilter, setReservationFilter] = useState<'pending' | 'confirmed' | 'cancelled'>('pending');
 
   // --- MENU DASHBOARD STATE ---
   // View States: 'dashboard' (grid of cards) | 'type_selection' (3 buttons) | 'editor' (form)
   const [menuViewState, setMenuViewState] = useState<'dashboard' | 'type_selection' | 'editor'>('dashboard');
   
   // Track which menu is being edited
-  // ID can be 'main_food', 'main_wine', 'main_group', or an index/id from extraMenus
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
   
-  // --- CONFIRMATION STATE ---
+  // --- CONFIRMATION STATES ---
+  const [showDeleteCardConfirmation, setShowDeleteCardConfirmation] = useState(false);
+  // NEW: Save Confirmation Modal
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  const [showDeleteCardConfirmation, setShowDeleteCardConfirmation] = useState(false); // NEW STATE
-  const [changedSections, setChangedSections] = useState<string[]>([]);
-  const [showNoChangesAlert, setShowNoChangesAlert] = useState(false);
 
   // --- INBOX STATE ---
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  // --- RESERVATIONS STATE ---
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [pendingReservationsCount, setPendingReservationsCount] = useState(0);
+  const [confirmedReservationsCount, setConfirmedReservationsCount] = useState(0);
+  const [cancelledReservationsCount, setCancelledReservationsCount] = useState(0);
 
   // Fetch messages from Firebase
   useEffect(() => {
@@ -421,10 +455,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
             })).sort((a, b) => b.timestamp - a.timestamp); // Sort by newest
             
             setMessages(messageList);
-            setUnreadCount(messageList.filter(m => !m.read).length);
+            setUnreadMessagesCount(messageList.filter(m => !m.read).length);
         } else {
             setMessages([]);
-            setUnreadCount(0);
+            setUnreadMessagesCount(0);
+        }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch reservations from Firebase
+  useEffect(() => {
+    const reservationsRef = ref(db, 'reservations');
+    const unsubscribe = onValue(reservationsRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            const resList: Reservation[] = Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            })).sort((a, b) => b.createdAt - a.createdAt); // Sort by newest created
+            
+            setReservations(resList);
+            setPendingReservationsCount(resList.filter(r => r.status === 'pending').length);
+            setConfirmedReservationsCount(resList.filter(r => r.status === 'confirmed').length);
+            setCancelledReservationsCount(resList.filter(r => r.status === 'cancelled').length);
+        } else {
+            setReservations([]);
+            setPendingReservationsCount(0);
+            setConfirmedReservationsCount(0);
+            setCancelledReservationsCount(0);
         }
     });
     return () => unsubscribe();
@@ -439,10 +498,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
   };
 
   const handleDeleteMessage = async (messageId: string) => {
+      if(window.confirm("Estàs segur que vols esborrar aquest missatge?")) {
+        try {
+            await remove(ref(db, `contactMessages/${messageId}`));
+        } catch (e) {
+            console.error("Error deleting message", e);
+        }
+      }
+  };
+
+  // --- RESERVATION ACTIONS ---
+  const handleUpdateReservationStatus = async (resId: string, newStatus: 'confirmed' | 'cancelled') => {
       try {
-          await remove(ref(db, `contactMessages/${messageId}`));
+          await update(ref(db, `reservations/${resId}`), { status: newStatus });
       } catch (e) {
-          console.error("Error deleting message", e);
+          console.error("Error updating reservation status", e);
+      }
+  };
+
+  const handleDeleteReservation = async (resId: string) => {
+      if(window.confirm("Segur que vols eliminar aquesta reserva?")) {
+          try {
+              await remove(ref(db, `reservations/${resId}`));
+          } catch (e) {
+              console.error("Error deleting reservation", e);
+          }
       }
   };
 
@@ -588,164 +668,103 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
   };
 
   // --- SAVE LOGIC ---
-  const cleanDataForComparison = (data: typeof config) => {
-      return {
-          ...data,
-          hero: {
-              ...data.hero,
-              backgroundImages: data.hero.backgroundImages?.filter(i => i && i.trim() !== '') || []
-          },
-          philosophy: {
-              ...data.philosophy,
-              historicImages: data.philosophy.historicImages?.filter(i => i && i.trim() !== '') || [],
-              productImages: data.philosophy.productImages?.filter(i => i && i.trim() !== '') || []
-          },
-          // Ensure extraMenus is always an array for robust comparison
-          extraMenus: data.extraMenus || []
-      };
+  
+  // 1. Trigger Modal
+  const handleSaveClick = () => {
+      setShowSaveConfirmation(true);
   };
 
-  const detectChanges = () => {
-      const original = cleanDataForComparison(config);
-      const current = cleanDataForComparison(localConfig);
-      const changes: string[] = [];
+  // 2. Perform Save (Called from Modal)
+  const finalSave = async () => {
+    setShowSaveConfirmation(false); // Close modal
+    try {
+        setIsSaving(true);
+        // Minimal cleanup for arrays to avoid saving empty strings
+        const dataToSave = {
+            ...localConfig,
+            hero: {
+                ...localConfig.hero,
+                backgroundImages: localConfig.hero.backgroundImages?.filter((i: string) => i && i.trim() !== '') || []
+            },
+            philosophy: {
+                ...localConfig.philosophy,
+                historicImages: localConfig.philosophy.historicImages?.filter((i: string) => i && i.trim() !== '') || [],
+                productImages: localConfig.philosophy.productImages?.filter((i: string) => i && i.trim() !== '') || []
+            }
+        };
 
-      if (JSON.stringify(original.hero) !== JSON.stringify(current.hero)) changes.push("Hero (Portada / Reserva)");
-      if (JSON.stringify(original.groupMenu) !== JSON.stringify(current.groupMenu)) changes.push("Menú de Grup");
-      if (JSON.stringify(original.foodMenu) !== JSON.stringify(current.foodMenu)) changes.push("Carta Menjar");
-      if (JSON.stringify(original.wineMenu) !== JSON.stringify(current.wineMenu)) changes.push("Carta Vins");
-      if (JSON.stringify(original.contact) !== JSON.stringify(current.contact)) changes.push("Contacte i Horaris");
-      if (JSON.stringify(original.intro) !== JSON.stringify(current.intro)) changes.push("Intro");
-      if (JSON.stringify(original.specialties) !== JSON.stringify(current.specialties)) changes.push("Especialitats");
-      if (JSON.stringify(original.philosophy) !== JSON.stringify(current.philosophy)) changes.push("Filosofia / Història");
-      if (JSON.stringify(original.brand) !== JSON.stringify(current.brand)) changes.push("Identitat (Logo)");
-      
-      // Explicit array comparison for extraMenus to handle undefined vs empty vs populated
-      const origExtras = original.extraMenus || [];
-      const currExtras = current.extraMenus || [];
-      if (JSON.stringify(origExtras) !== JSON.stringify(currExtras)) changes.push("Cartes Adicionals");
-
-      return changes;
+        await updateConfig(dataToSave);
+        setIsSaving(false);
+        onSaveAndClose();
+    } catch (error) {
+        console.error("Error saving:", error);
+        setIsSaving(false);
+        alert("Error guardant els canvis. Comprova la connexió.");
+    }
   };
 
-  const handlePreSave = () => {
-      const changes = detectChanges();
-      
-      if (changes.length === 0) {
-          setShowNoChangesAlert(true);
-      } else {
-          setChangedSections(changes);
-          setShowSaveConfirmation(true);
-      }
-  };
-
-  const handleConfirmSave = async () => {
-    setIsSaving(true);
-    const cleanConfig = cleanDataForComparison(localConfig);
-    await updateConfig(cleanConfig);
-    setIsSaving(false);
-    setShowSaveConfirmation(false);
-    onSaveAndClose();
-  };
+  // Filter reservations based on active sub-tab
+  const filteredReservations = reservations.filter(r => r.status === reservationFilter);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4 overflow-auto">
       
-      {/* --- CUSTOM DELETE CARD MODAL --- */}
-      {showDeleteCardConfirmation && (
-          <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6 animate-[fadeIn_0.2s_ease-out] border-t-4 border-red-500">
-                  <div className="flex flex-col items-center text-center mb-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-3">
-                          <span className="material-symbols-outlined text-2xl text-red-500">delete_forever</span>
-                      </div>
-                      <h3 className="font-serif text-xl font-bold text-gray-800">Esborrar Carta?</h3>
-                      <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                          Estàs segur que vols eliminar aquesta carta? <br/>
-                          <span className="font-bold text-red-500">Aquesta acció no es pot desfer.</span>
-                      </p>
-                  </div>
-                  <div className="flex gap-3">
-                      <button 
-                          onClick={() => setShowDeleteCardConfirmation(false)}
-                          className="flex-1 py-2.5 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors"
-                      >
-                          Cancel·lar
-                      </button>
-                      <button 
-                          onClick={confirmDeleteCard}
-                          className="flex-1 py-2.5 bg-red-500 text-white rounded font-bold uppercase text-xs hover:bg-red-600 shadow-lg transition-colors"
-                      >
-                          Sí, Esborrar
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* --- SAVE CONFIRMATION MODAL --- */}
+      {/* --- SAVE CONFIRMATION MODAL (High Z-Index) --- */}
       {showSaveConfirmation && (
-          <div className="absolute inset-0 z-[150] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-              <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 animate-[fadeIn_0.2s_ease-out] border-t-4 border-primary">
-                  <div className="flex flex-col items-center text-center mb-6">
-                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                          <span className="material-symbols-outlined text-4xl text-primary">save</span>
-                      </div>
-                      <h3 className="font-serif text-2xl font-bold text-secondary">Confirmar Canvis</h3>
-                      <p className="text-gray-500 mt-2">S'han detectat modificacions a les següents seccions:</p>
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSaveConfirmation(false)}></div>
+              <div className="bg-[#fdfbf7] bg-paper-texture p-6 max-w-sm w-full rounded shadow-2xl relative z-10 border border-primary text-center transform rotate-1 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="material-symbols-outlined text-3xl text-primary">save</span>
                   </div>
-                  
-                  <div className="bg-gray-50 rounded border border-gray-200 p-4 mb-6">
-                      <ul className="space-y-2">
-                          {changedSections.map((section, idx) => (
-                              <li key={idx} className="flex items-center gap-2 text-sm font-bold text-gray-700">
-                                  <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
-                                  {section}
-                              </li>
-                          ))}
-                      </ul>
-                  </div>
-
-                  <p className="text-center text-sm text-gray-400 mb-6 italic">¿Estàs segur que vols guardar aquests canvis permanentment?</p>
-
-                  <div className="flex gap-3">
+                  <h3 className="font-serif text-xl font-bold text-secondary mb-2">¿Estàs segur de guardar els canvis realitzats?</h3>
+                  <p className="font-sans text-gray-600 mb-6 text-sm">
+                      Pensa que això és irreversible.
+                  </p>
+                  <div className="flex gap-3 justify-center">
                       <button 
                           onClick={() => setShowSaveConfirmation(false)}
-                          className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors"
+                          className="px-4 py-2 border border-gray-300 text-gray-600 font-bold text-xs uppercase tracking-wider hover:bg-gray-100 transition-colors"
                       >
-                          Cancel·lar
+                          Rebutjar
                       </button>
                       <button 
-                          onClick={handleConfirmSave}
-                          disabled={isSaving}
-                          className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent transition-colors shadow-lg"
+                          onClick={finalSave}
+                          className="px-4 py-2 bg-primary text-white font-bold text-xs uppercase tracking-wider hover:bg-accent transition-colors shadow-lg"
                       >
-                          {isSaving ? 'Guardant...' : 'Sí, Guardar'}
+                          Acceptar
                       </button>
                   </div>
               </div>
           </div>
       )}
 
-      {showNoChangesAlert && (
-          <div className="absolute inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-[1px] p-4">
-              <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-[fadeIn_0.2s_ease-out] text-center">
-                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <span className="material-symbols-outlined text-2xl text-gray-400">rule</span>
-                   </div>
-                   <h3 className="font-bold text-lg text-gray-800 mb-2">Sense canvis</h3>
-                   <p className="text-gray-500 text-sm mb-6">No s'ha detectat cap modificació respecte a la versió actual.</p>
-                   <button 
-                      onClick={() => setShowNoChangesAlert(false)}
-                      className="w-full py-2 bg-gray-800 text-white rounded font-bold uppercase text-xs hover:bg-black transition-colors"
-                   >
-                      Entesos
-                   </button>
-              </div>
+      {/* DELETE CONFIRMATION MODAL (For Menu Cards) */}
+      {showDeleteCardConfirmation && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteCardConfirmation(false)}></div>
+          <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-sm relative z-10 border-t-4 border-red-500 animate-[fadeIn_0.2s_ease-out]">
+            <h3 className="font-bold text-xl mb-2 text-gray-800">Esborrar Carta?</h3>
+            <p className="text-gray-600 mb-6 text-sm">Aquesta acció no es pot desfer. Estàs segur que vols eliminar aquesta carta extra?</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setShowDeleteCardConfirmation(false)}
+                className="px-4 py-2 text-gray-500 hover:text-gray-700 font-bold uppercase text-xs"
+              >
+                Cancel·lar
+              </button>
+              <button 
+                onClick={confirmDeleteCard}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow font-bold uppercase text-xs"
+              >
+                Sí, Esborrar
+              </button>
+            </div>
           </div>
+        </div>
       )}
-
-      <div className="bg-beige text-secondary p-0 rounded-lg shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
+      
+      <div className="bg-beige text-secondary p-0 rounded-lg shadow-2xl max-w-6xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
         
         {/* Header with Tabs and Notification Bell */}
         <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
@@ -762,87 +781,297 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
           </div>
           
           <div className="flex flex-col md:flex-row items-center gap-4">
-              {/* Notification Area */}
-              <div className="flex items-center gap-2">
-                 {/* Mail Inbox Button */}
-                 <button 
-                    onClick={() => setActiveTab('inbox')}
-                    className={`relative p-2 rounded-full hover:bg-gray-100 transition-colors ${activeTab === 'inbox' ? 'bg-primary/10 text-primary' : 'text-gray-500'}`}
-                    title="Bústia de Missatges"
-                  >
-                      <span className="material-symbols-outlined text-3xl">mail</span>
-                      {unreadCount > 0 && (
-                          <span className="absolute top-0 right-0 h-5 w-5 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
-                              {unreadCount > 9 ? '9+' : unreadCount}
-                          </span>
-                      )}
-                  </button>
-              </div>
-
-              {/* Navigation Tabs */}
-              <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg justify-center md:justify-start">
+              
+              {/* Navigation Tabs - GENERAL and MENU */}
+              <div className="flex flex-wrap gap-2 bg-gray-100 p-1.5 rounded-lg justify-center md:justify-start">
                 <button 
                   onClick={() => setActiveTab('config')}
-                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3 md:px-6 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   General
                 </button>
                 <button 
                   onClick={() => { setActiveTab('menu'); setMenuViewState('dashboard'); setEditingMenuId(null); }}
-                  className={`px-3 md:px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'menu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3 md:px-6 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'menu' ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   Gestió Menú
                 </button>
+              </div>
+
+              {/* RESERVATIONS BUTTON - ISOLATED & RED */}
+              <button 
+                  onClick={() => setActiveTab('reservations')}
+                  className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap relative flex items-center gap-2 shadow-lg transform hover:scale-105 ${activeTab === 'reservations' ? 'bg-red-700 text-white ring-2 ring-red-300' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">book_online</span>
+                  <span>RESERVES</span>
+                  {pendingReservationsCount > 0 && (
+                      <span className="bg-white text-red-600 text-[10px] px-2 py-0.5 rounded-full font-extrabold animate-pulse shadow-sm">{pendingReservationsCount}</span>
+                  )}
+              </button>
+
+              {/* Notification Area */}
+              <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+                 {/* Mail Inbox Button */}
+                 <button 
+                    onClick={() => setActiveTab('inbox')}
+                    className={`relative p-2 rounded-full hover:bg-gray-100 transition-colors ${activeTab === 'inbox' ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
+                    title="Bústia de Missatges"
+                  >
+                      <span className="material-symbols-outlined text-3xl">mail</span>
+                      {unreadMessagesCount > 0 && (
+                          <span className="absolute top-0 right-0 h-5 w-5 bg-red-600 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+                              {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                          </span>
+                      )}
+                  </button>
               </div>
           </div>
         </div>
 
         {/* SCROLLABLE CONTENT AREA */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-beige/50">
+        <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${activeTab === 'inbox' ? 'bg-slate-50' : 'bg-beige/50'}`}>
           
-          {/* --- INBOX TAB --- */}
+          {/* --- RESERVATIONS TAB --- */}
+          {activeTab === 'reservations' && (
+              <div className="animate-[fadeIn_0.3s_ease-out]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-red-600">book_online</span>
+                        Gestió de Reserves
+                    </h3>
+                  </div>
+
+                  {/* SUB-TABS (TRAYS) */}
+                  <div className="flex gap-4 mb-6 border-b border-gray-200 pb-2">
+                      <button 
+                        onClick={() => setReservationFilter('pending')}
+                        className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider transition-all relative ${reservationFilter === 'pending' ? 'text-yellow-600 border-b-2 border-yellow-500' : 'text-gray-400 hover:text-gray-600'}`}
+                      >
+                          Pendents
+                          {pendingReservationsCount > 0 && <span className="ml-2 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-[10px]">{pendingReservationsCount}</span>}
+                      </button>
+                      <button 
+                        onClick={() => setReservationFilter('confirmed')}
+                        className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider transition-all relative ${reservationFilter === 'confirmed' ? 'text-green-600 border-b-2 border-green-500' : 'text-gray-400 hover:text-gray-600'}`}
+                      >
+                          Confirmades (Aceptades)
+                          <span className="ml-2 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">{confirmedReservationsCount}</span>
+                      </button>
+                      <button 
+                        onClick={() => setReservationFilter('cancelled')}
+                        className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider transition-all relative ${reservationFilter === 'cancelled' ? 'text-red-400 border-b-2 border-red-400' : 'text-gray-400 hover:text-gray-600'}`}
+                      >
+                          Cancel·lades
+                          <span className="ml-2 bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px]">{cancelledReservationsCount}</span>
+                      </button>
+                  </div>
+
+                  {filteredReservations.length === 0 ? (
+                      <div className="text-center py-20 opacity-50 bg-white rounded-lg border border-gray-200 border-dashed">
+                          <span className="material-symbols-outlined text-6xl mb-4 text-gray-300">event_busy</span>
+                          <p className="text-lg text-gray-400">No hi ha reserves en aquesta safata.</p>
+                      </div>
+                  ) : (
+                      <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                          <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                  <thead>
+                                      <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                          <th className="p-4">Estat</th>
+                                          <th className="p-4">Dia i Hora</th>
+                                          <th className="p-4">Pax</th>
+                                          <th className="p-4">Nom</th>
+                                          <th className="p-4">Telèfon</th>
+                                          <th className="p-4">Notes</th>
+                                          <th className="p-4 text-right">Accions</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                      {filteredReservations.map((res) => {
+                                          let statusColor = "bg-gray-100 text-gray-500";
+                                          let statusLabel = "Desconegut";
+                                          if (res.status === 'pending') { statusColor = "bg-yellow-100 text-yellow-700 border border-yellow-200"; statusLabel = "PENDENT"; }
+                                          else if (res.status === 'confirmed') { statusColor = "bg-green-100 text-green-700 border border-green-200"; statusLabel = "CONFIRMADA"; }
+                                          else if (res.status === 'cancelled') { statusColor = "bg-red-50 text-red-400 border border-red-100 decoration-line-through"; statusLabel = "CANCEL·LADA"; }
+
+                                          return (
+                                              <tr key={res.id} className={`hover:bg-gray-50 transition-colors ${res.status === 'pending' ? 'bg-yellow-50/10' : ''}`}>
+                                                  <td className="p-4">
+                                                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${statusColor}`}>
+                                                          {statusLabel}
+                                                      </span>
+                                                  </td>
+                                                  <td className="p-4">
+                                                      <div className="flex flex-col">
+                                                          <span className="font-bold text-gray-800">{new Date(res.date).toLocaleDateString('ca-ES')}</span>
+                                                          <span className="text-xs text-gray-500 font-mono bg-gray-100 px-1 rounded w-fit">{res.time}</span>
+                                                      </div>
+                                                  </td>
+                                                  <td className="p-4 font-bold text-lg text-secondary">
+                                                      {res.pax} <span className="text-xs font-normal text-gray-400">pers.</span>
+                                                  </td>
+                                                  <td className="p-4 font-medium text-gray-700">
+                                                      {res.name}
+                                                  </td>
+                                                  <td className="p-4">
+                                                      <a href={`tel:${res.phone}`} className="text-primary hover:underline font-mono text-sm">{res.phone}</a>
+                                                  </td>
+                                                  <td className="p-4 text-sm text-gray-500 max-w-xs truncate" title={res.notes}>
+                                                      {res.notes || '-'}
+                                                  </td>
+                                                  <td className="p-4 text-right">
+                                                      <div className="flex justify-end gap-2">
+                                                          {/* Actions for Pending */}
+                                                          {res.status === 'pending' && (
+                                                              <>
+                                                                  <button 
+                                                                      onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')}
+                                                                      className="bg-green-500 hover:bg-green-600 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"
+                                                                      title="Confirmar Reserva"
+                                                                  >
+                                                                      <span className="material-symbols-outlined text-sm">check</span>
+                                                                      <span className="text-xs font-bold uppercase hidden md:inline">Acceptar</span>
+                                                                  </button>
+                                                                  <button 
+                                                                      onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
+                                                                      className="bg-red-400 hover:bg-red-500 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"
+                                                                      title="Cancel·lar/Rebutjar"
+                                                                  >
+                                                                      <span className="material-symbols-outlined text-sm">close</span>
+                                                                      <span className="text-xs font-bold uppercase hidden md:inline">Rebutjar</span>
+                                                                  </button>
+                                                              </>
+                                                          )}
+                                                          
+                                                          {/* Actions for Confirmed */}
+                                                          {res.status === 'confirmed' && (
+                                                              <button 
+                                                                  onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
+                                                                  className="border border-red-300 text-red-400 hover:bg-red-50 p-2 rounded transition-colors flex items-center gap-1"
+                                                                  title="Cancel·lar Reserva"
+                                                              >
+                                                                  <span className="material-symbols-outlined text-sm">block</span>
+                                                                  <span className="text-xs font-bold uppercase hidden md:inline">Cancel·lar</span>
+                                                              </button>
+                                                          )}
+
+                                                          {/* Actions for Cancelled */}
+                                                          {res.status === 'cancelled' && (
+                                                              <button 
+                                                                  onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')}
+                                                                  className="border border-gray-300 text-gray-400 hover:text-green-600 hover:bg-green-50 p-2 rounded transition-colors"
+                                                                  title="Recuperar (Confirmar)"
+                                                              >
+                                                                  <span className="material-symbols-outlined text-sm">restore</span>
+                                                              </button>
+                                                          )}
+                                                          
+                                                          {/* Delete button always available but subtle */}
+                                                          <button 
+                                                              onClick={() => handleDeleteReservation(res.id)}
+                                                              className="text-gray-300 hover:text-red-500 p-2 transition-colors ml-2"
+                                                              title="Esborrar definitivament"
+                                                          >
+                                                              <span className="material-symbols-outlined text-sm">delete</span>
+                                                          </button>
+                                                      </div>
+                                                  </td>
+                                              </tr>
+                                          );
+                                      })}
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                  )}
+              </div>
+          )}
+
+          {/* --- INBOX TAB (BLUE REDESIGN) --- */}
           {activeTab === 'inbox' && (
-              <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-                  {/* Messages rendering code */}
+              <div className="space-y-6 animate-[fadeIn_0.3s_ease-out] max-w-4xl mx-auto">
                   <div className="flex justify-between items-center">
                     <h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">mail</span>
+                        <span className="material-symbols-outlined text-blue-600">mail</span>
                         Bústia de Missatges
                     </h3>
-                    <div className="text-xs font-bold text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">Total: {messages.length}</div>
+                    <div className="text-xs font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full border border-blue-100 shadow-sm">
+                        Total: {messages.length}
+                    </div>
                   </div>
 
                   {messages.length === 0 ? (
-                      <div className="text-center py-20 opacity-50">
-                          <span className="material-symbols-outlined text-6xl mb-4 text-gray-300">drafts</span>
-                          <p className="text-lg text-gray-400">No tens cap missatge.</p>
+                      <div className="text-center py-24 bg-white rounded-xl border border-blue-100 border-dashed shadow-sm">
+                          <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                             <span className="material-symbols-outlined text-4xl text-blue-300">inbox</span>
+                          </div>
+                          <p className="text-lg text-gray-400 font-medium">La bústia està buida.</p>
                       </div>
                   ) : (
                       <div className="space-y-4">
                           {messages.map((msg) => (
-                              <div key={msg.id} className={`rounded-lg p-6 border relative overflow-hidden ${msg.read ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-primary shadow-lg border-l-[6px] border-l-primary'}`}>
-                                  {!msg.read && <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-2 py-1 uppercase tracking-widest rounded-bl-lg shadow-sm">Nou Missatge</div>}
-                                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2 pr-16">
+                              <div 
+                                key={msg.id} 
+                                className={`rounded-xl border transition-all duration-300 group ${
+                                    !msg.read 
+                                        ? 'bg-white border-blue-300 shadow-md border-l-[6px] border-l-blue-600' 
+                                        : 'bg-white/80 border-gray-200 shadow-sm hover:shadow-md'
+                                }`}
+                              >
+                                  {/* HEADER */}
+                                  <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-50 bg-gray-50/30 rounded-t-xl gap-2">
                                       <div className="flex items-center gap-3">
-                                          <h4 className={`text-lg ${msg.read ? 'font-medium text-gray-600' : 'font-bold text-black'}`}>{msg.subject || '(Sense assumpte)'}</h4>
+                                          {!msg.read && <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>}
+                                          <h4 className={`text-lg ${!msg.read ? 'font-bold text-gray-900' : 'font-medium text-gray-600'}`}>
+                                              {msg.subject || '(Sense assumpte)'}
+                                          </h4>
                                       </div>
-                                      <span className="text-xs text-gray-400 font-mono flex items-center gap-1"><span className="material-symbols-outlined text-sm">schedule</span>{new Date(msg.timestamp).toLocaleString('ca-ES')}</span>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-5 text-sm">
-                                      <div className="p-3 rounded border bg-primary/5 border-primary/10">
-                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nom</span><span className="font-semibold text-secondary">{msg.name}</span>
-                                      </div>
-                                      <div className="p-3 rounded border bg-primary/5 border-primary/10">
-                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Email</span><span className="text-primary font-semibold">{msg.email}</span>
-                                      </div>
-                                      <div className="p-3 rounded border bg-primary/5 border-primary/10">
-                                          <span className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Telèfon</span><span className="text-secondary font-semibold">{msg.phone}</span>
+                                      <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
+                                          <span className="material-symbols-outlined text-sm">schedule</span>
+                                          {new Date(msg.timestamp).toLocaleString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                       </div>
                                   </div>
-                                  <div className="p-5 rounded border mb-4 bg-white border-gray-100"><p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{msg.message}</p></div>
-                                  <div className="flex justify-end gap-3 mt-4">
-                                      {!msg.read && <button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(msg.id); }} className="px-3 py-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold uppercase flex items-center gap-1"><span className="material-symbols-outlined text-sm">mark_email_read</span> Marcar llegit</button>}
-                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }} className="px-3 py-1.5 rounded bg-red-50 text-red-500 hover:bg-red-100 text-xs font-bold uppercase flex items-center gap-1"><span className="material-symbols-outlined text-sm">delete</span> Esborrar</button>
+
+                                  {/* BODY */}
+                                  <div className="p-6">
+                                      <div className="flex flex-wrap gap-2 mb-4">
+                                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                                              <span className="material-symbols-outlined text-sm">person</span> {msg.name}
+                                          </span>
+                                          <a href={`mailto:${msg.email}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-xs font-medium border border-gray-200">
+                                              <span className="material-symbols-outlined text-sm">alternate_email</span> {msg.email}
+                                          </a>
+                                          {msg.phone && (
+                                              <a href={`tel:${msg.phone}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors text-xs font-medium border border-gray-200">
+                                                  <span className="material-symbols-outlined text-sm">call</span> {msg.phone}
+                                              </a>
+                                          )}
+                                      </div>
+                                      
+                                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                                          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+                                              {msg.message}
+                                          </p>
+                                      </div>
+                                  </div>
+
+                                  {/* FOOTER ACTIONS */}
+                                  <div className="px-6 py-3 bg-gray-50 rounded-b-xl flex justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                                      {!msg.read && (
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); handleMarkAsRead(msg.id); }} 
+                                            className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+                                          >
+                                              <span className="material-symbols-outlined text-sm">mark_email_read</span> Marcar llegit
+                                          </button>
+                                      )}
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }} 
+                                        className="text-gray-400 hover:text-red-500 text-xs font-bold uppercase flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                      >
+                                          <span className="material-symbols-outlined text-sm">delete</span> Esborrar
+                                      </button>
                                   </div>
                               </div>
                           ))}
@@ -851,219 +1080,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
               </div>
           )}
 
-          {/* --- NEW MENU DASHBOARD (Card Grid) --- */}
-          {activeTab === 'menu' && (
-              <div className="animate-[fadeIn_0.3s_ease-out] h-full flex flex-col">
-                  
-                  {/* VIEW 1: DASHBOARD (Grid) */}
-                  {menuViewState === 'dashboard' && (
-                      <div className="space-y-8">
-                          <div className="flex justify-between items-center border-b border-primary/10 pb-4">
-                              <h3 className="font-serif text-2xl font-bold text-secondary">Les teves Cartes</h3>
-                              <button 
-                                  onClick={() => setMenuViewState('type_selection')}
-                                  className="bg-primary text-white px-5 py-2.5 rounded shadow-lg hover:bg-accent hover:scale-105 transition-all flex items-center gap-2 font-bold uppercase text-xs tracking-widest"
-                              >
-                                  <span className="material-symbols-outlined text-lg">add_circle</span>
-                                  Afegir Nova Carta
-                              </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {/* MAIN FOOD CARD */}
-                              <div onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="group cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-200 hover:border-primary transition-all p-6 relative overflow-hidden h-48 flex flex-col justify-between">
-                                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span className="material-symbols-outlined text-8xl text-primary">restaurant</span></div>
-                                  <div>
-                                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mb-4 text-primary"><span className="material-symbols-outlined">restaurant</span></div>
-                                      <h4 className="font-serif text-xl font-bold text-gray-800">Carta de Menjar</h4>
-                                      <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Principal</p>
-                                  </div>
-                                  <div className="flex justify-between items-end">
-                                      <span className="text-xs font-bold text-primary group-hover:underline">EDITAR CARTA</span>
-                                  </div>
-                              </div>
-
-                              {/* MAIN WINE CARD */}
-                              <div onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="group cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-200 hover:border-primary transition-all p-6 relative overflow-hidden h-48 flex flex-col justify-between">
-                                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span className="material-symbols-outlined text-8xl text-primary">wine_bar</span></div>
-                                  <div>
-                                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mb-4 text-primary"><span className="material-symbols-outlined">wine_bar</span></div>
-                                      <h4 className="font-serif text-xl font-bold text-gray-800">Carta de Vins</h4>
-                                      <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Principal</p>
-                                  </div>
-                                  <div className="flex justify-between items-end">
-                                      <span className="text-xs font-bold text-primary group-hover:underline">EDITAR CARTA</span>
-                                  </div>
-                              </div>
-
-                              {/* MAIN GROUP CARD */}
-                              <div onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="group cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-xl border border-gray-200 hover:border-primary transition-all p-6 relative overflow-hidden h-48 flex flex-col justify-between">
-                                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span className="material-symbols-outlined text-8xl text-primary">diversity_3</span></div>
-                                  <div>
-                                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mb-4 text-primary"><span className="material-symbols-outlined">diversity_3</span></div>
-                                      <h4 className="font-serif text-xl font-bold text-gray-800">Menú de Grup</h4>
-                                      <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Principal</p>
-                                  </div>
-                                  <div className="flex justify-between items-end">
-                                      <span className="text-xs font-bold text-primary group-hover:underline">EDITAR CARTA</span>
-                                  </div>
-                              </div>
-
-                              {/* DYNAMIC CARDS (EXTRAS) */}
-                              {(localConfig.extraMenus || []).map((menu: any, index: number) => (
-                                  <div key={menu.id} onClick={() => { setEditingMenuId(`extra_${index}`); setMenuViewState('editor'); }} className="group cursor-pointer bg-[#f9f7f2] rounded-lg shadow-sm hover:shadow-xl border border-dashed border-gray-300 hover:border-primary transition-all p-6 relative overflow-hidden h-48 flex flex-col justify-between">
-                                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                          <span className="material-symbols-outlined text-8xl text-gray-500">
-                                              {menu.type === 'food' ? 'restaurant' : menu.type === 'wine' ? 'wine_bar' : 'diversity_3'}
-                                          </span>
-                                      </div>
-                                      <div>
-                                          <div className="w-10 h-10 bg-gray-200 group-hover:bg-primary/20 rounded-full flex items-center justify-center mb-4 text-gray-500 group-hover:text-primary transition-colors">
-                                              <span className="material-symbols-outlined">
-                                                  {menu.type === 'food' ? 'restaurant' : menu.type === 'wine' ? 'wine_bar' : 'diversity_3'}
-                                              </span>
-                                          </div>
-                                          <h4 className="font-serif text-xl font-bold text-gray-800 line-clamp-1" title={menu.title}>{menu.title || 'Sense Títol'}</h4>
-                                          <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">{menu.type === 'group' ? 'Menú Grup' : `Carta ${menu.type === 'food' ? 'Menjar' : 'Vins'}`}</p>
-                                      </div>
-                                      <div className="flex justify-between items-end">
-                                          <span className="text-xs font-bold text-primary group-hover:underline">EDITAR</span>
-                                      </div>
-                                  </div>
-                              ))}
-                          </div>
-                      </div>
-                  )}
-
-                  {/* VIEW 2: TYPE SELECTION */}
-                  {menuViewState === 'type_selection' && (
-                      <div className="flex flex-col h-full">
-                          <button 
-                              onClick={() => setMenuViewState('dashboard')}
-                              className="self-start flex items-center gap-2 text-gray-500 hover:text-primary transition-colors font-bold uppercase text-xs tracking-widest mb-8"
-                          >
-                              <span className="material-symbols-outlined text-lg">arrow_back</span>
-                              Tornar al Tauler
-                          </button>
-
-                          <div className="flex flex-col items-center justify-center flex-1">
-                              <h3 className="font-serif text-3xl font-bold text-secondary mb-10">Quin tipus de carta vols crear?</h3>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
-                                  {/* OPTION 1: FOOD */}
-                                  <button onClick={() => handleCreateNewCard('food')} className="group bg-white p-10 rounded-xl shadow-lg hover:shadow-2xl border border-gray-100 hover:border-primary transition-all flex flex-col items-center text-center gap-4">
-                                      <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary transition-colors">
-                                          <span className="material-symbols-outlined text-5xl text-primary group-hover:text-white">restaurant</span>
-                                      </div>
-                                      <h4 className="font-serif text-2xl font-bold text-gray-800">Carta de Menjar</h4>
-                                      <p className="text-sm text-gray-500">Per a plats, entrants, tapes i postres.</p>
-                                  </button>
-
-                                  {/* OPTION 2: WINE */}
-                                  <button onClick={() => handleCreateNewCard('wine')} className="group bg-white p-10 rounded-xl shadow-lg hover:shadow-2xl border border-gray-100 hover:border-primary transition-all flex flex-col items-center text-center gap-4">
-                                      <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary transition-colors">
-                                          <span className="material-symbols-outlined text-5xl text-primary group-hover:text-white">wine_bar</span>
-                                      </div>
-                                      <h4 className="font-serif text-2xl font-bold text-gray-800">Carta de Vins</h4>
-                                      <p className="text-sm text-gray-500">Per a vins, caves, licors i begudes.</p>
-                                  </button>
-
-                                  {/* OPTION 3: GROUP */}
-                                  <button onClick={() => handleCreateNewCard('group')} className="group bg-white p-10 rounded-xl shadow-lg hover:shadow-2xl border border-gray-100 hover:border-primary transition-all flex flex-col items-center text-center gap-4">
-                                      <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary transition-colors">
-                                          <span className="material-symbols-outlined text-5xl text-primary group-hover:text-white">diversity_3</span>
-                                      </div>
-                                      <h4 className="font-serif text-2xl font-bold text-gray-800">Menú de Grup</h4>
-                                      <p className="text-sm text-gray-500">Menú tancat amb preu fix i opcions.</p>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  )}
-
-                  {/* VIEW 3: EDITOR (Generic Wrapper) */}
-                  {menuViewState === 'editor' && editingMenuId && (
-                      <div className="flex flex-col h-full">
-                          <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
-                              <div className="flex items-center gap-4">
-                                  <button 
-                                      onClick={() => setMenuViewState('dashboard')}
-                                      className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
-                                      title="Tornar"
-                                  >
-                                      <span className="material-symbols-outlined text-2xl">arrow_back</span>
-                                  </button>
-                                  <div>
-                                      {/* Allow editing title for Extra Menus */}
-                                      {editingMenuId.startsWith('extra_') ? (
-                                          <input 
-                                              type="text" 
-                                              value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_', ''))]?.title} 
-                                              onChange={(e) => {
-                                                  const idx = parseInt(editingMenuId.replace('extra_', ''));
-                                                  setLocalConfig((prev:any) => {
-                                                      const newExtras = [...prev.extraMenus];
-                                                      newExtras[idx] = { ...newExtras[idx], title: e.target.value };
-                                                      return { ...prev, extraMenus: newExtras };
-                                                  });
-                                              }}
-                                              className="font-serif text-2xl font-bold text-gray-800 bg-transparent border-b border-transparent focus:border-primary outline-none w-full"
-                                          />
-                                      ) : (
-                                          <h3 className="font-serif text-2xl font-bold text-gray-800">
-                                              {editingMenuId === 'main_food' ? 'Carta de Menjar (Principal)' : 
-                                               editingMenuId === 'main_wine' ? 'Carta de Vins (Principal)' : 
-                                               'Menú de Grup (Principal)'}
-                                          </h3>
-                                      )}
-                                  </div>
-                              </div>
-                              
-                              {/* DELETE BUTTON FOR EXTRA MENUS (Moved here for better UX) */}
-                              {editingMenuId.startsWith('extra_') && (
-                                  <button 
-                                      onClick={handleDeleteCurrentCard}
-                                      className="bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-sm group"
-                                      title="Esborrar aquesta carta permanentment"
-                                  >
-                                      <span className="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">delete</span>
-                                      <span className="text-xs font-bold uppercase hidden md:inline tracking-wider">Esborrar Carta</span>
-                                  </button>
-                              )}
-                          </div>
-
-                          <div className="flex-1 overflow-y-auto pr-2">
-                              {/* RENDER SPECIFIC EDITOR BASED ON TYPE */}
-                              {(() => {
-                                  const data = getCurrentMenuData();
-                                  
-                                  // SAFEGUARD: If data is not ready, don't render editor to avoid crashes
-                                  if (!data) return <div className="text-center p-10 text-gray-500">Carregant dades...</div>;
-
-                                  let type = 'food';
-                                  if (editingMenuId === 'main_wine') type = 'wine';
-                                  if (editingMenuId === 'main_group') type = 'group';
-                                  if (editingMenuId.startsWith('extra_')) {
-                                      const idx = parseInt(editingMenuId.replace('extra_', ''));
-                                      if (localConfig.extraMenus && localConfig.extraMenus[idx]) {
-                                          type = localConfig.extraMenus[idx].type;
-                                      }
-                                  }
-
-                                  if (type === 'food') return <FoodEditor data={data} onChange={updateCurrentMenuData} />;
-                                  if (type === 'wine') return <WineEditor data={data} onChange={updateCurrentMenuData} />;
-                                  if (type === 'group') return <GroupEditor data={data} onChange={updateCurrentMenuData} />;
-                                  return null;
-                              })()}
-                          </div>
-                      </div>
-                  )}
-              </div>
-          )}
-
-          {/* ... CONFIGURATION TAB ... */}
+          {/* ... OTHER TABS ... */}
+          {/* ... CONFIG TAB RENDERED ABOVE ... */}
           {activeTab === 'config' && (
              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                
+                {/* 0. NEW: ADMIN CUSTOMIZATION */}
+                <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                  <h3 className="font-serif text-xl font-semibold text-green-700 mb-4 flex items-center gap-2">
+                    <span className="material-symbols-outlined">person_edit</span>
+                    Configuració Usuari (Admin)
+                  </h3>
+                  <div>
+                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Nom a mostrar (Navbar)</label>
+                      <input
+                        type="text"
+                        value={localConfig.adminSettings?.customDisplayName || ''}
+                        onChange={(e) => {
+                            setLocalConfig((prev: any) => ({
+                                ...prev,
+                                adminSettings: {
+                                    ...prev.adminSettings,
+                                    customDisplayName: e.target.value
+                                }
+                            }));
+                        }}
+                        className="block w-full md:w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:border-green-500 outline-none"
+                        placeholder="Ex: Elena (Deixar buit per 'Hola Admin')"
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1 italic">Si escrius "Elena", a dalt posarà "Hola Elena". Si està buit, posarà "Hola Admin".</p>
+                  </div>
+                </div>
+
                 {/* 1. Brand Section (LOGO) */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-accent"></div>
@@ -1083,89 +1132,172 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                   </div>
                 </div>
 
-                {/* 2. Hero Section */}
+                {/* 2. Portada (Imatges de Fons) - Separate */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
                   <h3 className="font-serif text-xl font-semibold text-primary mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined">home</span>
-                    Hero (Portada i Reserva)
+                    <span className="material-symbols-outlined">image</span>
+                    Portada (Imatges de Fons)
                   </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Formulari</label>
-                      <input type="text" value={localConfig.hero.reservationFormTitle} onChange={(e) => handleChange('hero', 'reservationFormTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Subtítol</label>
-                      <input type="text" value={localConfig.hero.reservationFormSubtitle} onChange={(e) => handleChange('hero', 'reservationFormSubtitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Telèfon (Mostrar)</label>
-                      <input type="text" value={localConfig.hero.reservationPhoneNumber} onChange={(e) => handleChange('hero', 'reservationPhoneNumber', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó</label>
-                      <input type="text" value={localConfig.hero.reservationButtonText} onChange={(e) => handleChange('hero', 'reservationButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
-                    </div>
+                  <div>
+                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatges de Fons (Slides) - Una URL per línia</label>
+                      <textarea
+                          value={localConfig.hero.backgroundImages?.join('\n')}
+                          onChange={(e) => handleArrayChange('hero', 'backgroundImages', e.target.value)}
+                          rows={4}
+                          className="block w-full border border-gray-300 rounded px-3 py-2 text-xs font-mono focus:border-primary outline-none"
+                          placeholder="https://exemple.com/imatge1.jpg"
+                      ></textarea>
                   </div>
+                </div>
 
-                  <div className="border-t border-gray-100 pt-4 mt-2">
-                      <h4 className="font-bold text-sm text-gray-500 mb-3 flex items-center gap-2"><span className="material-symbols-outlined text-sm">schedule</span> Restriccions de Reserva</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div>
-                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Inici (ex: 13:00)</label>
-                              <input type="time" value={localConfig.hero.reservationTimeStart} onChange={(e) => handleChange('hero', 'reservationTimeStart', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none" />
-                          </div>
-                          <div>
-                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Fi (ex: 15:30)</label>
-                              <input type="time" value={localConfig.hero.reservationTimeEnd} onChange={(e) => handleChange('hero', 'reservationTimeEnd', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none" />
-                          </div>
-                          <div>
-                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Interval (min)</label>
-                              <input type="number" value={localConfig.hero.reservationTimeInterval} onChange={(e) => handleChange('hero', 'reservationTimeInterval', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none" />
-                          </div>
+                {/* 2b. Reserva (Experiència Gastronòmica) - New Separated Block */}
+                <div className="bg-[#fffcf5] p-8 rounded-xl shadow-md border border-[#8b5a2b]/20 relative overflow-hidden">
+                   {/* Decorative Corner */}
+                   <div className="absolute top-0 right-0 w-16 h-16 bg-[#8b5a2b]/5 rounded-bl-full"></div>
+                   
+                   <div className="flex items-center gap-4 mb-8 border-b-2 border-[#8b5a2b]/10 pb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#8b5a2b] to-[#5d3a1a] text-white rounded-lg shadow-lg flex items-center justify-center transform rotate-3">
+                          <span className="material-symbols-outlined text-2xl">restaurant_menu</span>
                       </div>
-                      <div className="mb-4">
-                          <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Missatge d'error (Fora d'horari)</label>
-                          <input type="text" value={localConfig.hero.reservationErrorMessage} onChange={(e) => handleChange('hero', 'reservationErrorMessage', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none" />
-                      </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-4 mt-2">
-                      <div className="mb-4">
-                          <div className="flex justify-between items-center mb-1">
-                              <label className="block text-[10px] font-bold uppercase text-gray-400">Text Nota Enganxada (Post-it)</label>
-                              <span className="text-[10px] text-gray-400">{localConfig.hero.stickyNoteText?.length || 0}/45</span>
-                          </div>
-                          <input 
-                              type="text" 
-                              maxLength={45}
-                              value={localConfig.hero.stickyNoteText} 
-                              onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)} 
-                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none" 
-                          />
-                          <p className="text-[10px] text-gray-400 mt-1 italic">Limitat a 45 caràcters per mantenir el disseny.</p>
-                      </div>
-                      
                       <div>
-                          <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatges de Fons (Slides) - Una URL per línia</label>
-                          <textarea
-                              value={localConfig.hero.backgroundImages?.join('\n')}
-                              onChange={(e) => handleArrayChange('hero', 'backgroundImages', e.target.value)}
-                              rows={4}
-                              className="block w-full border border-gray-300 rounded px-3 py-2 text-xs font-mono focus:border-primary outline-none"
-                              placeholder="https://exemple.com/imatge1.jpg"
-                          ></textarea>
+                          <h3 className="font-serif text-2xl font-bold text-[#2c241b]">Reserva Taula</h3>
+                          <p className="text-xs text-[#8b5a2b] font-bold uppercase tracking-[0.2em]">Experiència Gastronòmica</p>
                       </div>
-                  </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                      {/* Column 1: Texts */}
+                      <div className="md:col-span-7 space-y-5">
+                          <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-2">Textos i Comunicació</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
+                                <input type="text" value={localConfig.hero.reservationFormTitle} onChange={(e) => handleChange('hero', 'reservationFormTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol</label>
+                                <input type="text" value={localConfig.hero.reservationFormSubtitle} onChange={(e) => handleChange('hero', 'reservationFormSubtitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" />
+                            </div>
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Telèfon (Visible al formulari)</label>
+                              <div className="flex items-center">
+                                <span className="bg-gray-100 border border-r-0 border-gray-300 px-3 py-2 text-gray-500 rounded-l"><span className="material-symbols-outlined text-sm">call</span></span>
+                                <input type="text" value={localConfig.hero.reservationPhoneNumber} onChange={(e) => handleChange('hero', 'reservationPhoneNumber', e.target.value)} className="block w-full border border-gray-300 rounded-r px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" />
+                              </div>
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Acció</label>
+                              <input type="text" value={localConfig.hero.reservationButtonText} onChange={(e) => handleChange('hero', 'reservationButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-[#8b5a2b] focus:border-[#8b5a2b] outline-none bg-white shadow-sm" />
+                          </div>
+                      </div>
+
+                      {/* Column 2: Logic & Time */}
+                      <div className="md:col-span-5 space-y-5 bg-white p-5 rounded border border-gray-200 shadow-inner">
+                          <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><span className="material-symbols-outlined text-sm">schedule</span> Lògica de Reserva</h4>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Inici</label>
+                                  <input type="time" value={localConfig.hero.reservationTimeStart} onChange={(e) => handleChange('hero', 'reservationTimeStart', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" />
+                              </div>
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Fi</label>
+                                  <input type="time" value={localConfig.hero.reservationTimeEnd} onChange={(e) => handleChange('hero', 'reservationTimeEnd', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" />
+                              </div>
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Interval (minuts)</label>
+                              <div className="flex items-center gap-2">
+                                <input type="number" value={localConfig.hero.reservationTimeInterval} onChange={(e) => handleChange('hero', 'reservationTimeInterval', e.target.value)} className="block w-20 border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" />
+                                <span className="text-xs text-gray-400">entre taules</span>
+                              </div>
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Missatge Error (Text previ)</label>
+                              <input type="text" value={localConfig.hero.reservationErrorMessage} onChange={(e) => handleChange('hero', 'reservationErrorMessage', e.target.value)} className="block w-full border border-red-200 rounded px-2 py-1 text-xs focus:border-red-500 outline-none bg-red-50 text-red-600 mb-2" />
+                              
+                              {/* --- DYNAMIC TICKET PREVIEW --- */}
+                              <div className="bg-red-100 border border-red-300 border-dashed rounded px-3 py-2 flex items-center justify-between shadow-sm">
+                                  <div className="flex flex-col">
+                                      <span className="text-[9px] uppercase font-bold text-red-400 tracking-wider">Així es veurà el missatge:</span>
+                                      <div className="text-xs text-red-700 font-medium mt-0.5">
+                                          {localConfig.hero.reservationErrorMessage} <span className="bg-white px-1 rounded font-bold border border-red-200">{localConfig.hero.reservationTimeStart}</span> a <span className="bg-white px-1 rounded font-bold border border-red-200">{localConfig.hero.reservationTimeEnd}</span>
+                                      </div>
+                                  </div>
+                                  <span className="material-symbols-outlined text-red-400 text-lg">confirmation_number</span>
+                              </div>
+                          </div>
+                      </div>
+                   </div>
+
+                   {/* --- NEW SECTION: FORM LABELS --- */}
+                   <div className="mt-6 pt-6 border-t border-dashed border-[#8b5a2b]/20">
+                        <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-3">Etiquetes dels Camps (Personalització)</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Nom</label>
+                                <input type="text" value={localConfig.hero.formNameLabel} onChange={(e) => handleChange('hero', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Telèfon</label>
+                                <input type="text" value={localConfig.hero.formPhoneLabel} onChange={(e) => handleChange('hero', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Data/Hora</label>
+                                <input type="text" value={localConfig.hero.formDateLabel} onChange={(e) => handleChange('hero', 'formDateLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Persones</label>
+                                <input type="text" value={localConfig.hero.formPaxLabel} onChange={(e) => handleChange('hero', 'formPaxLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Notes</label>
+                                <input type="text" value={localConfig.hero.formNotesLabel} onChange={(e) => handleChange('hero', 'formNotesLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Privacitat</label>
+                                <input type="text" value={localConfig.hero.formPrivacyLabel} onChange={(e) => handleChange('hero', 'formPrivacyLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text "O truca'ns"</label>
+                                <input type="text" value={localConfig.hero.formCallUsLabel} onChange={(e) => handleChange('hero', 'formCallUsLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" />
+                            </div>
+                        </div>
+                   </div>
+
+                   {/* Sticky Note Feature */}
+                   <div className="mt-6 pt-6 border-t border-dashed border-[#8b5a2b]/20 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                          <div className="bg-[#fef08a] text-[#854d0e] w-12 h-12 flex items-center justify-center shadow-md transform -rotate-3 border border-yellow-400/50">
+                             <span className="material-symbols-outlined">sticky_note_2</span>
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota Adhesiva (Post-it)</label>
+                              <p className="text-[10px] text-gray-400 italic">Un missatge curt i informal (ex: "Obert tot l'any!")</p>
+                          </div>
+                      </div>
+                      <div className="flex-1 max-w-sm">
+                          <div className="relative">
+                            <input 
+                                type="text" 
+                                maxLength={45}
+                                value={localConfig.hero.stickyNoteText} 
+                                onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)} 
+                                className="block w-full border border-yellow-300 rounded-r-full rounded-l-lg px-4 py-2 text-sm focus:border-yellow-500 outline-none bg-yellow-50 text-[#854d0e] font-hand font-bold tracking-wide shadow-inner" 
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-yellow-600/50">{localConfig.hero.stickyNoteText?.length || 0}/45</span>
+                          </div>
+                      </div>
+                   </div>
                 </div>
 
                 {/* 3. Intro Section */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-olive"></div>
                   <h3 className="font-serif text-xl font-semibold text-olive mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined">format_quote</span>
+                    {/* Icon removed to eliminate '99' artifact */}
                     Intro (Frase Inicial)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1206,34 +1338,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
 
                   {/* SPECIALTIES ITEMS EDITOR */}
                   <div className="mt-6 border-t border-gray-100 pt-4">
-                      <label className="block text-xs font-bold uppercase text-gray-500 mb-3">Targetes destacades</label>
-                      <div className="space-y-4">
+                      <label className="block text-xs font-bold uppercase text-gray-500 mb-3">Targetes destacades (Fixes)</label>
+                      <div className="space-y-6">
                           {(localConfig.specialties.items || []).map((item: any, idx: number) => (
                               <div 
                                   key={idx} 
-                                  className={`p-4 rounded border transition-colors relative group ${item.visible === false ? 'bg-gray-200 border-gray-300 opacity-60 grayscale' : 'bg-gray-50 border-gray-200'}`}
+                                  className={`p-6 rounded border transition-colors relative group bg-white border-gray-200 shadow-sm ${item.visible === false ? 'opacity-60 grayscale' : ''}`}
                               >
-                                  <button
-                                      onClick={() => {
-                                          const newItems = [...localConfig.specialties.items];
-                                          // Toggle visibility (undefined is considered true)
-                                          const currentVisibility = newItems[idx].visible !== false;
-                                          newItems[idx] = { ...newItems[idx], visible: !currentVisibility };
-                                          setLocalConfig((prev:any) => ({
-                                              ...prev,
-                                              specialties: { ...prev.specialties, items: newItems }
-                                          }));
-                                      }}
-                                      className={`absolute top-2 right-2 rounded-full p-1 shadow-sm transition-colors ${item.visible === false ? 'bg-gray-800 text-white hover:bg-black' : 'bg-white text-gray-400 hover:text-primary'}`}
-                                      title={item.visible === false ? "Fer visible" : "Ocultar"}
-                                  >
-                                      <span className="material-symbols-outlined text-lg">
-                                          {item.visible === false ? 'visibility_off' : 'visibility'}
-                                      </span>
-                                  </button>
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                                      <div>
+                                  {/* Row 1: Title & Subtitle + Visibility */}
+                                  <div className="flex gap-4 mb-4">
+                                      <div className="flex-1">
                                           <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol</label>
                                           <input
                                               value={item.title}
@@ -1245,10 +1359,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                                                       specialties: { ...prev.specialties, items: newItems }
                                                   }));
                                               }}
-                                              className="block w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-yellow-600 font-bold"
+                                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-yellow-600 font-bold"
                                           />
                                       </div>
-                                      <div>
+                                      <div className="flex-1 relative">
                                           <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol</label>
                                           <input
                                               value={item.subtitle}
@@ -1260,13 +1374,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                                                       specialties: { ...prev.specialties, items: newItems }
                                                   }));
                                               }}
-                                              className="block w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-yellow-600 font-hand text-gray-600"
+                                              className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-yellow-600 font-hand text-gray-600 pr-10"
                                           />
+                                          {/* Visibility Toggle inside the row */}
+                                          <button
+                                              onClick={() => {
+                                                  const newItems = [...localConfig.specialties.items];
+                                                  const currentVisibility = newItems[idx].visible !== false;
+                                                  newItems[idx] = { ...newItems[idx], visible: !currentVisibility };
+                                                  setLocalConfig((prev:any) => ({
+                                                      ...prev,
+                                                      specialties: { ...prev.specialties, items: newItems }
+                                                  }));
+                                              }}
+                                              className={`absolute right-2 top-7 p-1 rounded-full transition-colors ${item.visible === false ? 'text-gray-300 hover:text-gray-500' : 'text-gray-400 hover:text-primary'}`}
+                                              title={item.visible === false ? "Fer visible" : "Ocultar"}
+                                          >
+                                              <span className="material-symbols-outlined text-lg">
+                                                  {item.visible === false ? 'visibility_off' : 'visibility'}
+                                              </span>
+                                          </button>
                                       </div>
                                   </div>
                                   
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div className="md:col-span-2">
+                                  {/* Row 2: Image & Badge */}
+                                  <div className="flex gap-4 mb-4">
+                                      <div className="flex-[2]"> {/* Takes up 2/3 space */}
                                           <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">URL Imatge</label>
                                           <input
                                               value={item.image}
@@ -1278,10 +1411,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                                                       specialties: { ...prev.specialties, items: newItems }
                                                   }));
                                               }}
-                                              className="block w-full border border-gray-300 rounded px-2 py-1 text-xs font-mono outline-none focus:border-yellow-600 text-gray-500"
+                                              className="block w-full border border-gray-300 rounded px-3 py-2 text-xs font-mono outline-none focus:border-yellow-600 text-gray-500 truncate"
                                           />
                                       </div>
-                                      <div>
+                                      <div className="flex-1">
                                           <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta (Badge)</label>
                                           <input
                                               value={item.badge || ''}
@@ -1294,24 +1427,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                                                   }));
                                               }}
                                               placeholder="Ex: TEMPORADA"
-                                              className="block w-full border border-gray-300 rounded px-2 py-1 text-xs font-bold outline-none focus:border-yellow-600 text-center uppercase tracking-wider"
+                                              className="block w-full border border-gray-300 rounded px-3 py-2 text-xs font-bold outline-none focus:border-yellow-600 text-center uppercase tracking-wider"
                                           />
                                       </div>
                                   </div>
+
+                                  {/* Row 3: Description */}
+                                  <div>
+                                      <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció Targeta</label>
+                                      <textarea 
+                                          value={item.description || ''} 
+                                          onChange={(e) => {
+                                              const newItems = [...localConfig.specialties.items];
+                                              newItems[idx] = { ...newItems[idx], description: e.target.value };
+                                              setLocalConfig((prev:any) => ({
+                                                  ...prev,
+                                                  specialties: { ...prev.specialties, items: newItems }
+                                                  }));
+                                          }}
+                                          rows={2}
+                                          className="block w-full border border-gray-300 rounded px-3 py-2 text-xs outline-none focus:border-yellow-600 resize-none"
+                                      />
+                                  </div>
                               </div>
                           ))}
-                          <button
-                              onClick={() => {
-                                  const newItems = [...(localConfig.specialties.items || []), { title: "Nou Plat", subtitle: "Descripció", image: "", badge: "", visible: true }];
-                                  setLocalConfig((prev:any) => ({
-                                      ...prev,
-                                      specialties: { ...prev.specialties, items: newItems }
-                                  }));
-                              }}
-                              className="text-xs font-bold text-yellow-600 uppercase flex items-center gap-1 hover:underline tracking-wider"
-                          >
-                              <span className="material-symbols-outlined text-sm">add_circle</span> Afegir Especialitat
-                          </button>
                       </div>
                   </div>
                 </div>
@@ -1465,35 +1604,249 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                       </div>
                   </div>
 
-                  {/* Social & Form */}
-                  <div>
-                      <h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Xarxes i Formulari</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Xarxes</label>
-                              <input type="text" value={localConfig.contact.socialTitle} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" />
+                  {/* Social & Form - NOW WITH INSTAGRAM STYLING */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      
+                      {/* Instagram / Socials Column */}
+                      <div className="p-4 rounded-xl border border-pink-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-orange-50 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-2 opacity-10">
+                              <span className="material-symbols-outlined text-6xl text-purple-800">photo_camera</span>
                           </div>
-                          <div>
-                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Xarxes</label>
-                              <input type="text" value={localConfig.contact.socialDescription} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" />
+                          <h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-orange-600 mb-3 text-sm uppercase flex items-center gap-2">
+                              <span className="material-symbols-outlined text-purple-600">group_work</span>
+                              Xarxes Socials (Instagram)
+                          </h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Títol Xarxes</label>
+                                  <input type="text" value={localConfig.contact.socialTitle} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" />
+                              </div>
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Descripció</label>
+                                  <input type="text" value={localConfig.contact.socialDescription} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" />
+                              </div>
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Text Botó</label>
+                                  <input type="text" value={localConfig.contact.socialButtonText} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" />
+                              </div>
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">URL Instagram</label>
+                                  <input type="text" value={localConfig.contact.instagramUrl} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-xs focus:border-purple-500 outline-none bg-white/80 text-purple-700" />
+                              </div>
                           </div>
-                          <div>
-                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Xarxes</label>
-                              <input type="text" value={localConfig.contact.socialButtonText} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">URL Instagram</label>
-                              <input type="text" value={localConfig.contact.instagramUrl} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" />
-                          </div>
-                          <div>
-                              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Formulari</label>
-                              <input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" />
+                      </div>
+
+                      {/* Contact Form Column */}
+                      <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                          <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2">
+                              <span className="material-symbols-outlined">edit_note</span>
+                              Formulari de Contacte
+                          </h4>
+                          <div className="space-y-3">
+                              <div>
+                                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
+                                  <input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" />
+                              </div>
+                              <p className="text-[10px] text-gray-400 italic mt-2">
+                                  * Els camps del formulari (nom, email, etc.) són fixes per motius de programació i no es poden editar aquí.
+                              </p>
                           </div>
                       </div>
                   </div>
                 </div>
 
              </div>
+          )}
+
+          {/* ... MENU TAB RENDERED ABOVE ... */}
+          {/* ... */}
+          {activeTab === 'menu' && (
+              <div className="animate-[fadeIn_0.3s_ease-out]">
+                  {/* ... logic for menu dashboard view ... */}
+                  {menuViewState === 'dashboard' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {/* CARD 1: MAIN FOOD MENU */}
+                          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                              <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
+                                  <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span>
+                                  <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span>
+                              </div>
+                              <div className="p-6">
+                                  <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
+                                  <button 
+                                      onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }}
+                                      className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"
+                                  >
+                                      <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                  </button>
+                              </div>
+                          </div>
+
+                          {/* CARD 2: MAIN WINE MENU */}
+                          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                              <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
+                                  <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span>
+                                  <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span>
+                              </div>
+                              <div className="p-6">
+                                  <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
+                                  <button 
+                                      onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }}
+                                      className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"
+                                  >
+                                      <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                  </button>
+                              </div>
+                          </div>
+
+                          {/* CARD 3: MAIN GROUP MENU */}
+                          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                              <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
+                                  <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span>
+                                  <span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span>
+                              </div>
+                              <div className="p-6">
+                                  <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
+                                  <button 
+                                      onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }}
+                                      className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"
+                                  >
+                                      <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                  </button>
+                              </div>
+                          </div>
+
+                          {/* DYNAMIC EXTRA MENUS */}
+                          {(localConfig.extraMenus || []).map((menu, idx) => {
+                              let headerColor = "bg-gray-700";
+                              let icon = "restaurant";
+                              if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; }
+                              if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; }
+
+                              return (
+                                  <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                                      <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
+                                          <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span>
+                                          <div className="text-center px-2">
+                                              <span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span>
+                                              <span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">
+                                                  {menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}
+                                              </span>
+                                          </div>
+                                      </div>
+                                      <div className="p-6">
+                                          <button 
+                                              onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }}
+                                              className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"
+                                          >
+                                              <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                          </button>
+                                      </div>
+                                  </div>
+                              );
+                          })}
+
+                          {/* ADD NEW BUTTON */}
+                          <button 
+                              onClick={() => setMenuViewState('type_selection')}
+                              className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all group min-h-[200px]"
+                          >
+                              <div className="w-16 h-16 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                                  <span className="material-symbols-outlined text-3xl">add</span>
+                              </div>
+                              <span className="font-bold uppercase text-xs tracking-widest">Crear Nova Carta</span>
+                          </button>
+                      </div>
+                  )}
+
+                  {/* TYPE SELECTION VIEW */}
+                  {menuViewState === 'type_selection' && (
+                      <div className="max-w-2xl mx-auto py-10">
+                          <div className="flex items-center gap-2 mb-8">
+                              <button onClick={() => setMenuViewState('dashboard')} className="text-gray-400 hover:text-gray-600"><span className="material-symbols-outlined">arrow_back</span></button>
+                              <h3 className="text-2xl font-serif font-bold text-gray-800">Quina mena de carta vols crear?</h3>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <button onClick={() => handleCreateNewCard('food')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-primary hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4">
+                                  <span className="material-symbols-outlined text-5xl text-[#2c241b]">restaurant_menu</span>
+                                  <span className="font-bold text-gray-800">Carta de Menjar</span>
+                                  <span className="text-xs text-gray-500">Per a entrants, plats principals, tapes o postres.</span>
+                              </button>
+                              <button onClick={() => handleCreateNewCard('wine')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-[#8b5a2b] hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4">
+                                  <span className="material-symbols-outlined text-5xl text-[#8b5a2b]">wine_bar</span>
+                                  <span className="font-bold text-gray-800">Carta de Vins</span>
+                                  <span className="text-xs text-gray-500">Per a referències de vins, caves i licors.</span>
+                              </button>
+                              <button onClick={() => handleCreateNewCard('group')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-olive hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4">
+                                  <span className="material-symbols-outlined text-5xl text-olive">diversity_3</span>
+                                  <span className="font-bold text-gray-800">Menú de Grup</span>
+                                  <span className="text-xs text-gray-500">Menú tancat amb preu fix i seccions.</span>
+                              </button>
+                          </div>
+                      </div>
+                  )}
+
+                  {/* EDITOR VIEW */}
+                  {menuViewState === 'editor' && editingMenuId && (
+                      <div className="space-y-6">
+                          <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                              <div className="flex items-center gap-3">
+                                  <button onClick={() => { setMenuViewState('dashboard'); setEditingMenuId(null); }} className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                      <span className="material-symbols-outlined">arrow_back</span>
+                                  </button>
+                                  <div>
+                                      <h3 className="font-serif text-2xl font-bold text-gray-800">
+                                          {editingMenuId.startsWith('extra_') 
+                                              ? (localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || 'Editant Carta') 
+                                              : (editingMenuId === 'main_food' ? 'Carta Principal' : editingMenuId === 'main_wine' ? 'Carta Vins' : 'Menú Grup')
+                                          }
+                                      </h3>
+                                      {/* If editing extra menu, allow title change */}
+                                      {editingMenuId.startsWith('extra_') && (
+                                          <input 
+                                              type="text" 
+                                              className="mt-1 border-b border-gray-300 focus:border-primary outline-none text-sm text-gray-500 w-64 bg-transparent"
+                                              value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || ''}
+                                              onChange={(e) => {
+                                                  const idx = parseInt(editingMenuId.replace('extra_',''));
+                                                  const newExtras = [...localConfig.extraMenus];
+                                                  newExtras[idx].title = e.target.value;
+                                                  setLocalConfig((prev:any) => ({ ...prev, extraMenus: newExtras }));
+                                              }}
+                                              placeholder="Nom de la carta (Ex: Menú Calçotada)"
+                                          />
+                                      )}
+                                  </div>
+                              </div>
+                              
+                              {/* DELETE BUTTON FOR EXTRA MENUS */}
+                              {editingMenuId.startsWith('extra_') && (
+                                  <button 
+                                      onClick={handleDeleteCurrentCard}
+                                      className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"
+                                  >
+                                      <span className="material-symbols-outlined text-lg">delete</span>
+                                      Esborrar Carta
+                                  </button>
+                              )}
+                          </div>
+
+                          {/* RENDER SPECIFIC EDITOR */}
+                          <div className="bg-gray-50/50 p-1 rounded-lg">
+                              {(editingMenuId === 'main_food' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'food')) && (
+                                  <FoodEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                              )}
+                              {(editingMenuId === 'main_wine' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'wine')) && (
+                                  <WineEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                              )}
+                              {(editingMenuId === 'main_group' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'group')) && (
+                                  <GroupEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                              )}
+                          </div>
+                      </div>
+                  )}
+              </div>
           )}
           
         </div>
@@ -1506,9 +1859,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
           >
             Tancar
           </button>
-          {activeTab !== 'inbox' && (
+          {activeTab !== 'inbox' && activeTab !== 'reservations' && (
             <button
-              onClick={handlePreSave}
+              onClick={handleSaveClick}
               disabled={isSaving}
               className={`px-8 py-3 border border-transparent rounded shadow-lg text-sm font-bold uppercase tracking-wider text-white bg-primary hover:bg-accent transition-all transform hover:-translate-y-1 flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
             >

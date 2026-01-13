@@ -7,7 +7,7 @@ interface NavbarProps {
   scrolled: boolean;
   onOpenMenu: (tab: string) => void;
   onScrollToSection: (id: string) => void;
-  onOpenAdminPanel: (tab?: 'config' | 'inbox') => void; 
+  onOpenAdminPanel: (tab?: 'config' | 'inbox' | 'reservations') => void; 
   isAdminMode: boolean; // Means "Is Logged In"
   onLogout?: () => void;
 }
@@ -15,23 +15,44 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection, onOpenAdminPanel, isAdminMode, onLogout }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { config, isLoading } = useConfig(); 
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [totalUnread, setTotalUnread] = useState(0);
 
-  // Listen for unread messages only if in Admin Mode
+  // Listen for unread messages AND pending reservations only if in Admin Mode
   useEffect(() => {
     if (isAdminMode) {
       const messagesRef = ref(db, 'contactMessages');
-      const unsubscribe = onValue(messagesRef, (snapshot) => {
+      const reservationsRef = ref(db, 'reservations');
+
+      let unreadMessages = 0;
+      let pendingReservations = 0;
+
+      const updateCount = () => setTotalUnread(unreadMessages + pendingReservations);
+
+      const unsubscribeMessages = onValue(messagesRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          // Count messages where read is false
-          const count = Object.values(data).filter((msg: any) => !msg.read).length;
-          setUnreadCount(count);
+          unreadMessages = Object.values(data).filter((msg: any) => !msg.read).length;
         } else {
-          setUnreadCount(0);
+          unreadMessages = 0;
         }
+        updateCount();
       });
-      return () => unsubscribe();
+
+      const unsubscribeReservations = onValue(reservationsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          // Count reservations where status is 'pending'
+          pendingReservations = Object.values(data).filter((res: any) => res.status === 'pending').length;
+        } else {
+          pendingReservations = 0;
+        }
+        updateCount();
+      });
+
+      return () => {
+        unsubscribeMessages();
+        unsubscribeReservations();
+      };
     }
   }, [isAdminMode]);
 
@@ -75,21 +96,25 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             <div className="hidden md:flex items-center gap-3">
               <div className="flex items-center gap-1 bg-green-600/90 text-white px-3 py-1 rounded shadow-lg border border-green-400 cursor-default">
                  <span className="material-symbols-outlined text-sm">verified_user</span>
-                 <span className="text-[10px] uppercase font-bold tracking-widest">Admin Actiu</span>
+                 <span className="text-[10px] uppercase font-bold tracking-widest">
+                    {config.adminSettings?.customDisplayName 
+                        ? `Hola ${config.adminSettings.customDisplayName}` 
+                        : "Hola Admin"}
+                 </span>
               </div>
               
-              {/* Notification Bell - Opens Inbox Directly */}
+              {/* Notification Bell - Opens Reservations (priority) or Inbox */}
               <button 
-                onClick={() => onOpenAdminPanel('inbox')}
+                onClick={() => onOpenAdminPanel('reservations')}
                 className="relative group bg-white/10 p-1.5 rounded-full hover:bg-white/20 transition-colors border border-white/10"
-                title="Obrir Missatges"
+                title="Notificacions"
               >
-                 <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${unreadCount > 0 ? 'text-primary animate-pulse' : 'text-gray-400'}`}>
+                 <span className={`material-symbols-outlined text-xl transition-transform duration-300 ${totalUnread > 0 ? 'text-primary animate-pulse' : 'text-gray-400'}`}>
                     notifications
                  </span>
-                 {unreadCount > 0 && (
+                 {totalUnread > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 border border-white text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm">
-                      {unreadCount}
+                      {totalUnread > 9 ? '9+' : totalUnread}
                     </span>
                  )}
               </button>
@@ -114,7 +139,8 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
                    Menjar
-                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">arrow_forward</span>
+                   {/* CHANGED ICON HERE FROM ARROW_FORWARD TO RESTAURANT_MENU */}
+                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">restaurant_menu</span>
                  </button>
                  <button 
                    onClick={() => onOpenMenu('wine')} 
@@ -195,7 +221,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
               className="text-3xl flex items-center gap-3 p-1"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {isAdminMode && unreadCount > 0 && (
+              {isAdminMode && totalUnread > 0 && (
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -217,10 +243,10 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  <span className="material-symbols-outlined text-sm">verified_user</span>
                  <span className="text-[10px] uppercase font-bold tracking-widest">Sessió Iniciada</span>
                </div>
-               {unreadCount > 0 && (
-                  <div className="bg-white/10 px-3 py-1 rounded-full text-xs flex items-center gap-2" onClick={() => { onOpenAdminPanel('inbox'); setMobileMenuOpen(false); }}>
+               {totalUnread > 0 && (
+                  <div className="bg-white/10 px-3 py-1 rounded-full text-xs flex items-center gap-2" onClick={() => { onOpenAdminPanel('reservations'); setMobileMenuOpen(false); }}>
                     <span className="material-symbols-outlined text-primary text-sm">notifications</span>
-                    <span className="text-primary font-bold">{unreadCount} missatges nous</span>
+                    <span className="text-primary font-bold">{totalUnread} notificacions</span>
                   </div>
                )}
              </div>

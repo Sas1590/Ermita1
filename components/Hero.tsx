@@ -346,6 +346,9 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   // Group Warning Modal State
   const [showGroupWarning, setShowGroupWarning] = useState(false);
 
+  // Construct dynamic error message from config
+  const dynamicErrorMsg = `${config.hero.reservationErrorMessage} ${config.hero.reservationTimeStart} a ${config.hero.reservationTimeEnd}`;
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
       
@@ -423,13 +426,11 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           });
 
           setFormStatus('success');
-          // Reset form after 3 seconds or allow user to see success
-          setTimeout(() => {
-              setFormStatus('idle');
-              setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
-              setDateTime("");
-              setPhoneError("");
-          }, 4000);
+          // No automatic timeout anymore. User must close it manually.
+          // We reset form data here so if they reopen or click 'Make another', it's clean.
+          setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
+          setDateTime("");
+          setPhoneError("");
 
       } catch (error) {
           console.error("Error saving reservation:", error);
@@ -554,13 +555,22 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                            <span className="material-symbols-outlined text-4xl text-green-600">check</span>
                        </div>
                        <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Reserva Enviada!</h3>
-                       <p className="font-sans text-gray-600 mb-6">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
-                       <button 
-                           onClick={() => setFormStatus('idle')}
-                           className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
-                       >
-                           Fer una altra reserva
-                       </button>
+                       <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
+                       
+                       <div className="flex flex-col items-center gap-3">
+                           <button 
+                               onClick={() => setFormStatus('idle')}
+                               className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
+                           >
+                               Fer una altra reserva
+                           </button>
+                           <button
+                                onClick={() => setFormStatus('idle')}
+                                className="text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
+                            >
+                                Tancar
+                            </button>
+                       </div>
                    </div>
               ) : (
                 <>
@@ -572,7 +582,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                   <form className="space-y-4 font-marker text-lg text-secondary">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">Nom:</label>
+                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNameLabel}</label>
                         <input 
                             type="text" 
                             name="name"
@@ -584,7 +594,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         />
                       </div>
                       <div className="flex flex-col relative">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">Telèfon:</label>
+                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
                         <input 
                             type="tel" 
                             name="phone"
@@ -604,7 +614,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
                     <div className="grid grid-cols-2 gap-4 relative z-40">
                       <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">Dia i hora:</label>
+                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
                         {/* CUSTOM DATE PICKER IMPLEMENTATION */}
                         <CustomDateTimePicker 
                             value={dateTime}
@@ -612,13 +622,13 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                             configStart={config.hero.reservationTimeStart}
                             configEnd={config.hero.reservationTimeEnd}
                             configInterval={config.hero.reservationTimeInterval}
-                            errorMsg={config.hero.reservationErrorMessage}
+                            errorMsg={dynamicErrorMsg}
                         />
                       </div>
                       
                       {/* --- MODIFIED PAX INPUT (Gent + Handwritten Style) --- */}
                       <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">Gent:</label>
+                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
                         <input 
                             type="number" 
                             name="pax"
@@ -634,7 +644,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                     </div>
 
                     <div className="flex flex-col relative z-0">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">Notes:</label>
+                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNotesLabel}</label>
                         <input 
                             type="text" 
                             name="notes"
@@ -653,13 +663,13 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         onChange={handleCheckboxChange}
                         className="accent-olive h-4 w-4" 
                       />
-                      <label htmlFor="privacy" className="text-sm font-hand text-gray-600">Sí, accepto la privacitat.</label>
+                      <label htmlFor="privacy" className="text-sm font-hand text-gray-600">{config.hero.formPrivacyLabel}</label>
                     </div>
 
                     <div className="border-t border-dashed border-gray-400 my-4"></div>
 
                     <div className="flex justify-between items-end mb-4">
-                      <div className="text-sm font-sans text-gray-500">O truca'ns:</div>
+                      <div className="text-sm font-sans text-gray-500">{config.hero.formCallUsLabel}</div>
                       <div className="font-bold font-hand text-xl">{config.hero.reservationPhoneNumber}</div>
                     </div>
 

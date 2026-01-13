@@ -6,13 +6,15 @@ interface SpecialtyCardProps {
   subtitle: string;
   image: string;
   badge?: string;
+  description?: string;
 }
 
 const SpecialtyCard: React.FC<SpecialtyCardProps> = ({ 
   title, 
   subtitle, 
   image, 
-  badge 
+  badge,
+  description
 }) => (
   <div className="group relative h-[500px] w-full overflow-hidden bg-black cursor-pointer shadow-xl">
     {/* Image with zoom effect */}
@@ -41,7 +43,7 @@ const SpecialtyCard: React.FC<SpecialtyCardProps> = ({
       <div className="h-0.5 w-12 bg-primary mb-4 transition-all duration-500 group-hover:w-full"></div>
       
       <p className="text-gray-300 font-sans text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 max-w-xs leading-relaxed">
-        Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.
+        {description || "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte."}
       </p>
     </div>
   </div>
@@ -85,6 +87,7 @@ const Specialties: React.FC = () => {
                subtitle={item.subtitle}
                image={item.image}
                badge={item.badge}
+               description={item.description}
              />
           ))}
         </div>
