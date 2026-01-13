@@ -26,6 +26,9 @@ const App: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<'config' | 'inbox'>('config');
 
+  // Success Feedback State (The "Green Check" after closing admin)
+  const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
+
   // Modals
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showCookiesModal, setShowCookiesModal] = useState(false);
@@ -95,6 +98,15 @@ const App: React.FC = () => {
     }
   };
 
+  // Callback when Admin Panel saves successfully
+  const handleAdminSaveSuccess = () => {
+      setShowAdminPanel(false);
+      setShowSuccessFeedback(true);
+      setTimeout(() => {
+          setShowSuccessFeedback(false);
+      }, 3000);
+  };
+
   return (
     <div className="font-sans relative overflow-x-hidden">
       <Navbar 
@@ -130,10 +142,23 @@ const App: React.FC = () => {
         />
       )}
       
+      {/* GLOBAL SUCCESS FEEDBACK MODAL (AFTER ADMIN SAVE) */}
+      {showSuccessFeedback && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
+              <div className="bg-white/90 backdrop-blur-md border-2 border-green-500 px-8 py-6 rounded-xl shadow-2xl flex flex-col items-center gap-3 animate-[fadeIn_0.5s_ease-out] transform scale-110">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                      <span className="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-gray-800">Canvis Guardats!</h3>
+                  <p className="text-gray-500 text-sm font-sans">La web s'ha actualitzat correctament.</p>
+              </div>
+          </div>
+      )}
+
       {showAdminPanel && user && (
         <AdminPanel 
             initialTab={adminInitialTab}
-            onSaveAndClose={() => setShowAdminPanel(false)} 
+            onSaveSuccess={handleAdminSaveSuccess}
             onClose={() => setShowAdminPanel(false)} 
         />
       )}
