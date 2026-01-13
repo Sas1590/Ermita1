@@ -96,7 +96,8 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             <div className="hidden md:flex items-center gap-3">
               <div className="flex items-center gap-1 bg-green-600/90 text-white px-3 py-1 rounded shadow-lg border border-green-400 cursor-default">
                  <span className="material-symbols-outlined text-sm">verified_user</span>
-                 <span className="text-[10px] uppercase font-bold tracking-widest">
+                 {/* REMOVED 'uppercase' CLASS HERE */}
+                 <span className="text-[10px] font-bold tracking-widest">
                     {config.adminSettings?.customDisplayName 
                         ? `Hola ${config.adminSettings.customDisplayName}` 
                         : "Hola Admin"}

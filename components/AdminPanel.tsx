@@ -411,6 +411,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
       return initial;
   });
 
+  // Capture initial state string to detect changes
+  const initialConfigRef = useRef(JSON.stringify(localConfig));
+
   const [isSaving, setIsSaving] = useState(false);
   
   // Tab State
@@ -430,8 +433,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
   
   // --- CONFIRMATION STATES ---
   const [showDeleteCardConfirmation, setShowDeleteCardConfirmation] = useState(false);
-  // NEW: Save Confirmation Modal
+  // Save Confirmation Modal
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  // No Changes Toast
+  const [showNoChangesToast, setShowNoChangesToast] = useState(false);
+  // Success Toast
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // --- INBOX STATE ---
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -669,9 +676,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
 
   // --- SAVE LOGIC ---
   
-  // 1. Trigger Modal
+  // 1. Trigger Modal Logic
   const handleSaveClick = () => {
-      setShowSaveConfirmation(true);
+      const currentConfigString = JSON.stringify(localConfig);
+      
+      // Compare current stringified state with initial one
+      if (currentConfigString === initialConfigRef.current) {
+          // NO CHANGES DETECTED: Show Toast
+          setShowNoChangesToast(true);
+          // Wait 2s then close panel automatically as per user request
+          setTimeout(() => {
+              setShowNoChangesToast(false);
+              onClose(); // Close the admin panel
+          }, 2000);
+      } else {
+          // CHANGES DETECTED: Show Confirmation Modal
+          setShowSaveConfirmation(true);
+      }
   };
 
   // 2. Perform Save (Called from Modal)
@@ -695,7 +716,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
 
         await updateConfig(dataToSave);
         setIsSaving(false);
-        onSaveAndClose();
+        
+        // Show Success Toast
+        setShowSuccessToast(true);
+        
+        // Wait 2s then close panel
+        setTimeout(() => {
+            setShowSuccessToast(false);
+            onSaveAndClose();
+        }, 2000);
+
     } catch (error) {
         console.error("Error saving:", error);
         setIsSaving(false);
@@ -709,6 +739,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4 overflow-auto">
       
+      {/* --- NO CHANGES TOAST (Self Fading & Auto Close) --- */}
+      {showNoChangesToast && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center pointer-events-none">
+               <div className="bg-black/80 backdrop-blur-md text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 animate-[pulse_2s_ease-in-out]">
+                  <span className="material-symbols-outlined text-yellow-400">info</span>
+                  <span className="font-bold tracking-wide">No s'han realitzat canvis</span>
+               </div>
+          </div>
+      )}
+
+      {/* --- SUCCESS TOAST (Changes Saved & Auto Close) --- */}
+      {showSuccessToast && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center pointer-events-none">
+               <div className="bg-black/80 backdrop-blur-md text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 animate-[pulse_2s_ease-in-out]">
+                  <span className="material-symbols-outlined text-green-400">check_circle</span>
+                  <span className="font-bold tracking-wide">Canvis realitzats</span>
+               </div>
+          </div>
+      )}
+
       {/* --- SAVE CONFIRMATION MODAL (High Z-Index) --- */}
       {showSaveConfirmation && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
@@ -717,10 +767,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                   <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="material-symbols-outlined text-3xl text-primary">save</span>
                   </div>
-                  <h3 className="font-serif text-xl font-bold text-secondary mb-2">¿Estàs segur de guardar els canvis realitzats?</h3>
-                  <p className="font-sans text-gray-600 mb-6 text-sm">
-                      Pensa que això és irreversible.
-                  </p>
+                  <h3 className="font-serif text-xl font-bold text-secondary mb-6">¿Estàs segur de guardar els canvis realitzats?</h3>
                   <div className="flex gap-3 justify-center">
                       <button 
                           onClick={() => setShowSaveConfirmation(false)}
@@ -988,7 +1035,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
               </div>
           )}
 
-          {/* --- INBOX TAB (BLUE REDESIGN) --- */}
+          {/* --- INBOX TAB --- */}
           {activeTab === 'inbox' && (
               <div className="space-y-6 animate-[fadeIn_0.3s_ease-out] max-w-4xl mx-auto">
                   <div className="flex justify-between items-center">
@@ -1080,8 +1127,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
               </div>
           )}
 
-          {/* ... OTHER TABS ... */}
-          {/* ... CONFIG TAB RENDERED ABOVE ... */}
+          {/* ... CONFIG TAB ... */}
           {activeTab === 'config' && (
              <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
                 
@@ -1094,21 +1140,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                   </h3>
                   <div>
                       <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Nom a mostrar (Navbar)</label>
-                      <input
-                        type="text"
-                        value={localConfig.adminSettings?.customDisplayName || ''}
-                        onChange={(e) => {
-                            setLocalConfig((prev: any) => ({
-                                ...prev,
-                                adminSettings: {
-                                    ...prev.adminSettings,
-                                    customDisplayName: e.target.value
-                                }
-                            }));
-                        }}
-                        className="block w-full md:w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:border-green-500 outline-none"
-                        placeholder="Ex: Elena (Deixar buit per 'Hola Admin')"
-                      />
+                      <div className="relative">
+                        <input
+                            type="text"
+                            maxLength={15} // Added Max Length
+                            value={localConfig.adminSettings?.customDisplayName || ''}
+                            onChange={(e) => {
+                                setLocalConfig((prev: any) => ({
+                                    ...prev,
+                                    adminSettings: {
+                                        ...prev.adminSettings,
+                                        customDisplayName: e.target.value
+                                    }
+                                }));
+                            }}
+                            className="block w-full md:w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:border-green-500 outline-none pr-10" // added pr-10 for counter
+                            placeholder="Ex: Elena"
+                        />
+                        {/* Character Counter */}
+                        <span className="absolute top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none right-3 md:left-[calc(50%-2.5rem)] md:right-auto">
+                             {(localConfig.adminSettings?.customDisplayName || '').length}/15
+                        </span>
+                      </div>
                       <p className="text-[10px] text-gray-400 mt-1 italic">Si escrius "Elena", a dalt posarà "Hola Elena". Si està buit, posarà "Hola Admin".</p>
                   </div>
                 </div>
@@ -1132,7 +1185,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                   </div>
                 </div>
 
-                {/* 2. Portada (Imatges de Fons) - Separate */}
+                {/* 2. Portada (Imatges de Fons) */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
                   <h3 className="font-serif text-xl font-semibold text-primary mb-4 flex items-center gap-2">
@@ -1151,7 +1204,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveAndClose, onClose,
                   </div>
                 </div>
 
-                {/* 2b. Reserva (Experiència Gastronòmica) - New Separated Block */}
+                {/* 2b. Reserva (Experiència Gastronòmica) */}
                 <div className="bg-[#fffcf5] p-8 rounded-xl shadow-md border border-[#8b5a2b]/20 relative overflow-hidden">
                    {/* Decorative Corner */}
                    <div className="absolute top-0 right-0 w-16 h-16 bg-[#8b5a2b]/5 rounded-bl-full"></div>
