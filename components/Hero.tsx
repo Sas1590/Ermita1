@@ -342,6 +342,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   
   // Validation State
   const [phoneError, setPhoneError] = useState('');
+  const [privacyError, setPrivacyError] = useState(false);
 
   // Group Warning Modal State
   const [showGroupWarning, setShowGroupWarning] = useState(false);
@@ -366,11 +367,11 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           }
       }
 
-      // PAX Logic check (Group Menu Warning)
+      // PAX Logic check (Group Menu Warning) - UPDATED TO INCLUDE 10 (>= 10)
       if (name === 'pax') {
           const num = parseInt(value, 10);
-          // Check immediately if number is valid and greater than 10
-          if (!isNaN(num) && num > 10) {
+          // Check immediately if number is valid and greater than or equal to 10
+          if (!isNaN(num) && num >= 10) {
               setShowGroupWarning(true);
           }
       }
@@ -380,6 +381,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData(prev => ({ ...prev, privacy: e.target.checked }));
+      if (e.target.checked) setPrivacyError(false); // Clear error when checked
   };
 
   const handleGroupRedirect = (shouldRedirect: boolean) => {
@@ -405,8 +407,9 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           return;
       }
 
+      // Privacy Validation - Visual Error, no alert
       if (!formData.privacy) {
-          alert("Has d'acceptar la política de privacitat.");
+          setPrivacyError(true);
           return;
       }
 
@@ -434,6 +437,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
           setDateTime("");
           setPhoneError("");
+          setPrivacyError(false);
 
       } catch (error) {
           console.error("Error saving reservation:", error);
@@ -571,18 +575,13 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
                         
                         <div className="flex flex-col items-center gap-3">
+                            {/* UPDATED BUTTON: CLEANER, CORPORATE BROWN */}
                             <button 
                                 onClick={() => setFormStatus('idle')}
-                                className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
+                                className="px-8 py-3 bg-[#8b5a2b] hover:bg-[#6b4521] text-white font-sans font-bold text-sm uppercase tracking-widest rounded shadow-md transition-all transform hover:-translate-y-0.5"
                             >
-                                Fer una altra reserva
+                                Tancar
                             </button>
-                            <button
-                                    onClick={() => setFormStatus('idle')}
-                                    className="text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
-                                >
-                                    Tancar
-                                </button>
                         </div>
                     </div>
                 ) : (
@@ -668,15 +667,22 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 pt-2">
-                        <input 
-                            type="checkbox" 
-                            id="privacy" 
-                            checked={formData.privacy}
-                            onChange={handleCheckboxChange}
-                            className="accent-olive h-4 w-4" 
-                        />
-                        <label htmlFor="privacy" className="text-sm font-hand text-gray-600">{config.hero.formPrivacyLabel}</label>
+                        {/* PRIVACY SECTION WITH ERROR VALIDATION */}
+                        <div className="flex flex-col pt-2">
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="privacy" 
+                                    checked={formData.privacy}
+                                    onChange={handleCheckboxChange}
+                                    className="accent-olive h-4 w-4" 
+                                />
+                                <label htmlFor="privacy" className={`text-sm font-hand ${privacyError ? 'text-red-500 font-bold' : 'text-gray-600'}`}>{config.hero.formPrivacyLabel}</label>
+                            </div>
+                            {/* Visual Error Message */}
+                            {privacyError && (
+                                <p className="text-red-500 text-xs font-sans pl-6 mt-1 animate-pulse font-bold">Has d'acceptar la política de privacitat.</p>
+                            )}
                         </div>
 
                         <div className="border-t border-dashed border-gray-400 my-4"></div>
@@ -687,7 +693,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
                                 className="font-bold font-hand text-4xl text-secondary hover:text-accent transition-colors leading-none"
                             >
-                                {config.hero.reservationPhoneNumber}
+                                {config.hero.reservationPhoneNumber.replace(/^\+34\s?/, '')}
                             </a>
                         </div>
 
@@ -730,7 +736,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                   <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="material-symbols-outlined text-3xl text-primary">groups</span>
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-secondary mb-2">Més de 10 persones?</h3>
+                  <h3 className="font-serif text-2xl font-bold text-secondary mb-2">10 o més persones?</h3>
                   <p className="font-sans text-gray-600 mb-6 text-sm">
                       Sembla que sou un grup gran. Potser us interessa fer un cop d'ull al nostre <strong>Menú de Grup</strong> abans de reservar.
                   </p>

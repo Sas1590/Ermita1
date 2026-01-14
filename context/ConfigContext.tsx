@@ -127,16 +127,19 @@ export interface AppConfig {
     card1: {
       title: string;
       subtitle: string;
-      footerText: string;
+      description: string; // Added for consistency
       price: string;
+      footerText: string;
       image: string;
       buttonText: string;
-      targetTab: string; // which menu tab to open (e.g., 'extra_0', 'food')
+      targetTab: string; 
     };
     card2: {
       title: string;
       subtitle: string;
       description: string;
+      price: string; // Added for consistency
+      footerText: string; // Added for consistency
       image: string;
       buttonText: string;
       targetTab: string;
@@ -220,7 +223,7 @@ export const defaultAppConfig: AppConfig = {
     reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
     reservationFormSubtitle: "omple'l o truca'ns!",
-    reservationPhoneNumber: "+34 977 84 08 70",
+    reservationPhoneNumber: "977 84 08 70",
     reservationButtonText: "Reservar Ara!",
     stickyNoteText: "Obert tot l'any!",
     backgroundImages: [
@@ -306,16 +309,19 @@ export const defaultAppConfig: AppConfig = {
     card1: {
       title: "Menú Diari",
       subtitle: "DE DIMARTS A DIVENDRES",
+      description: "", // Added default
       footerText: "Cuina de mercat segons temporada",
       price: "18€",
       image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2080&auto=format&fit=crop",
       buttonText: "VEURE MENÚ",
-      targetTab: "daily" // UPDATED TO POINT TO DAILY MENU
+      targetTab: "daily"
     },
     card2: {
       title: "Carta Completa",
       subtitle: "CAPS DE SETMANA I FESTIUS",
       description: "Especialitats a la brasa, carns madurades i els clàssics de la cuina catalana.",
+      price: "", // Added default
+      footerText: "", // Added default
       image: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=2069&auto=format&fit=crop",
       buttonText: "DESCOBRIR CARTA",
       targetTab: "food"
@@ -364,7 +370,138 @@ export const defaultAppConfig: AppConfig = {
     infoAllergy: "Si tens alguna al·lèrgia, informa el nostre personal.",
     footerText: "Cuina de mercat"
   },
-  foodMenu: [],
+  
+  // --- UPDATED FOOD MENU INTEGRATION (EXACT CARTA 2) ---
+  foodMenu: [
+    // 1. TAPES / TAPAS
+    {
+      id: "sec_tapas",
+      category: "TAPES · TAPAS",
+      icon: "tapas",
+      items: [
+        { nameCa: "Gilda d'anxova de Perellò 1898", nameEs: "Anxova 00, oliva gordal, piparra de Navarra i tomàquet sec (1 unitat).", price: "3.50€" },
+        { nameCa: "Patates braves", nameEs: "Patatas bravas.", price: "8.00€" },
+        { nameCa: "Croquetes de carn d'olla, 6 unitats", nameEs: "Croquetas de cocido, 6 unidades.", price: "10.00€" },
+        { nameCa: "Camembert al forn amb peres rostides, nous i oli d'avellana", nameEs: "Camembert al horno con peras asadas, nueces y aceite de avellanas.", price: "16.00€" },
+        { nameCa: "Ous estrellats sobre niu de patates i pernil ibèric amb Foie", nameEs: "Huevos estrellados sobre nido de patatas y jamón ibérico con Foie.", price: "17.00€" },
+        { nameCa: "Ous estrellats sobre niu de patates i cua de bou", nameEs: "Huevos estrellados sobre nido de patatas y rabo de toro.", price: "18.00€" }
+      ]
+    },
+    // 2. ENTRANTS / ENTRANTES
+    {
+      id: "sec_entrants",
+      category: "ENTRANTS · ENTRANTES",
+      icon: "soup_kitchen",
+      items: [
+        { nameCa: "Ració de pa torrat, alls i tomacons", nameEs: "Ración de pan tostado, ajos y tomates.", price: "5.00€" },
+        { nameCa: "Amanida verda de l'horta", nameEs: "Ensalada verde de la huerta.", price: "12.00€" },
+        { nameCa: "Timbal d'escalivada amb patata i bolets", nameEs: "Timbal de escalivada con patata y setas.", price: "14.00€" },
+        { nameCa: "Canelons de carn casolans, gratinats", nameEs: "Canelones caseros de carne, gratinados.", price: "14.00€" },
+        { nameCa: "Escarola amb romesco i bacallà", nameEs: "Escarola con romesco y bacalao.", price: "16.00€" },
+        { nameCa: "Amanida tèbia de formatge de cabra amb pasta brick, carabassa caramel·litzada, bolets i vinagreta de mel de romaní", nameEs: "Ensalada tibia de queso de cabra con pasta brick, calabaza caramelizada, setas y vinagreta de miel de romero.", price: "16.00€" },
+        { nameCa: "Coca amb crema de xirivia, bolets, fonoll caramel·litzat i verdures a la brasa", nameEs: "Coca con crema de chirivía, setas, hinojo caramelizado y verduras a la brasa.", price: "16.00€" },
+        { nameCa: "Coca amb crema de xirivia, bolets, fonoll caramel·litzat i verdures a la brasa amb formatge de cabra", nameEs: "Coca con crema de chirivía, setas, hinojo caramelizado y verduras a la brasa con queso de cabra.", price: "18.00€" },
+        { nameCa: "Coca de carxofa confitada, foie i pernil ibèric", nameEs: "Coca de alcachofa confitada, foie y jamón ibérico.", price: "18.00€" },
+        { nameCa: "Carpaccio de xuleta de vaca madurada Okelan", nameEs: "Carpaccio de chuleta de ternera madurada Okelan.", price: "18.00€" },
+        { nameCa: "Cargols a la llauna fets a la brasa", nameEs: "Caracoles a la \"llauna\" hechos a la brasa.", price: "19.00€" },
+        { nameCa: "Cabrit arrebossat", nameEs: "Cabrito rebozado.", price: "22.00€" }
+      ]
+    },
+    // 3. PLATS CUINATS / PLATOS COCINADOS
+    {
+      id: "sec_plats_cuinats",
+      category: "PLATS CUINATS · PLATOS COCINADOS",
+      icon: "skillet",
+      items: [
+        { nameCa: "Escudella catalana", nameEs: "Escudella catalana.", price: "13.00€" },
+        { nameCa: "Galta de vedella al toc de vi", nameEs: "Carrillera de ternera con toque de vino.", price: "18.00€" },
+        { nameCa: "Cassola de peus de porc amb escamarlans", nameEs: "Cazuela de pies de cerdo con cigalas.", price: "19.00€" },
+        { nameCa: "Cabrit km0 a baixa temperatura amb ametlles i farigola", nameEs: "Cabrito km0 a baja temperatura con almendras y tomillo.", price: "29.00€" }
+      ]
+    },
+    // 4. CARNS A LA BRASA / CARNES A LA BRASA
+    {
+      id: "sec_carns",
+      category: "CARNS A LA BRASA · CARNES A LA BRASA",
+      icon: "outdoor_grill",
+      items: [
+        { nameCa: "Cuixa de pollastre", nameEs: "Muslo de pollo.", price: "12.00€" },
+        { nameCa: "Llonganissa de la Selva", nameEs: "Longaniza de la Selva.", price: "14.00€" },
+        { nameCa: "Peus de porc de Can Pistraques", nameEs: "Pies de cerdo de Can Pistraques.", price: "16.00€" },
+        { nameCa: "Presa ibèrica a la brasa", nameEs: "Presa ibérica a la brasa.", price: "18.00€" },
+        { nameCa: "Llodrigó a la brasa amb all i oli", nameEs: "Gazapo a la brasa con ali oli.", price: "19.00€" },
+        { nameCa: "Costelles de xai", nameEs: "Costillas de cordero.", price: "20.00€" },
+        { nameCa: "Entrecot de vedella de 300 gr.", nameEs: "Entrecot de ternera de 300 gr.", price: "22.00€" },
+        { nameCa: "Txuletó \"Simmental\" 500gr madurat 30 dies", nameEs: "Chuletón \"Simmental\" 500gr madurado 30 días.", price: "24.00€" },
+        { nameCa: "Graellada de carn (llonganissa, cansalada, butifarra negra i xai)", nameEs: "Parrillada de carne (longaniza, panceta, morcilla negra y cordero).", price: "25.00€" },
+        { nameCa: "Filet de vedella de 280 gr.", nameEs: "Solomillo de ternera de 280 gr.", price: "26.00€" },
+        { nameCa: "Txuletó \"Simmental\" 1kg madurat 30 dies", nameEs: "Chuletón \"Simmental\" 1kg madurado 30 días.", price: "43.00€" }
+      ]
+    },
+    // 5. PEIX / PESCADO
+    {
+      id: "sec_peix",
+      category: "PEIX · PESCADO",
+      icon: "set_meal",
+      items: [
+        { nameCa: "Bacallà al pil-pil de bolets i calçots confitats", nameEs: "Bacalao al pil-pil de setas y calçots confitados.", price: "19.00€" },
+        { nameCa: "Llenguado a la brasa regat amb oli a l'Orio", nameEs: "Lenguado a la brasa regado con aceite al Orio.", price: "20.00€" },
+        { nameCa: "Pota de pop a la brasa", nameEs: "Pata de pulpo a la brasa.", price: "25.00€" }
+      ]
+    },
+    // 6. GUARNICIÓ / GUARNICIÓN
+    {
+      id: "sec_guarnicio",
+      category: "GUARNICIÓ · GUARNICIÓN",
+      icon: "rice_bowl",
+      items: [
+        { nameCa: "Plat de fesols", nameEs: "Plato de alubias.", price: "4.00€" },
+        { nameCa: "Plat de patates fregides casolanes", nameEs: "Plato de patatas fritas caseras.", price: "4.00€" },
+        { nameCa: "Plat d'escalivada", nameEs: "Plato de escalivada.", price: "5.00€" }
+      ]
+    },
+    // 7. PLATS INFANTILS / PLATOS INFANTILES
+    {
+      id: "sec_infantils",
+      category: "PLATS INFANTILS · PLATOS INFANTILES",
+      icon: "child_care",
+      items: [
+        { nameCa: "Macarrons a la bolonyesa", nameEs: "Macarrones a la boloñesa.", price: "10.00€" },
+        { nameCa: "Escalopa de pollastre amb patates", nameEs: "Escalopa de pollo con patatas.", price: "10.00€" },
+        { nameCa: "Combinat amb escalopa de pollastre, macarrons i patates", nameEs: "Combinado con escalopa de pollo, macarrones y patatas.", price: "15.00€" }
+      ],
+      footer: "MÀXIM FINS A 12 ANYS I NO ES POT COMPARTIR / MÁXIMO HASTA 12 AÑOS Y NO SE PUEDE COMPARTIR."
+    },
+    // 8. POSTRES / POSTRES
+    {
+      id: "sec_postres",
+      category: "POSTRES · POSTRES",
+      icon: "cake",
+      items: [
+        { nameCa: "Crema catalana", nameEs: "Crema catalana.", price: "6.00€" },
+        { nameCa: "Torrija d'orxata amb gelat de canyella", nameEs: "Torrija de horchata con helado de canela.", price: "6.00€" },
+        { nameCa: "Coulant de xocolata amb gelat de vainilla", nameEs: "Coulant de chocolate con helado de vainilla.", price: "6.00€" },
+        { nameCa: "Profiterols farcits de crema amb bany de xocolata", nameEs: "Profiteroles rellenos de crema con baño de chocolate.", price: "6.00€" },
+        { nameCa: "Pastís de pastanaga", nameEs: "Tarta de zanahoria.", price: "6.00€" },
+        { nameCa: "Pastís de formatge (sense gluten)", nameEs: "Tarta de queso (sin gluten).", price: "7.00€" },
+        { nameCa: "Coulant d'avellana de la Selva", nameEs: "Coulant de avellana de la Selva.", price: "7.00€" },
+        { nameCa: "Cafè irlandes", nameEs: "Café irlandes.", price: "7.00€" },
+        { nameCa: "Postre de músic amb fruits secs i porró de moscatell", nameEs: "Postre de músico con frutos secos y porrón de moscatel.", price: "10.00€" }
+      ]
+    },
+    // 9. BOLES DE GELAT / BOLAS DE HELADO
+    {
+      id: "sec_gelats",
+      category: "BOLES DE GELAT · BOLAS DE HELADO",
+      icon: "icecream",
+      items: [
+        { nameCa: "Vainilla", nameEs: "Vainilla.", price: "6.00€" },
+        { nameCa: "Xocolata", nameEs: "Chocolate.", price: "6.00€" },
+        { nameCa: "Sorbet de llimona", nameEs: "Sorbete de limón.", price: "7.00€" }
+      ]
+    }
+  ],
+  
   wineMenu: [],
   groupMenu: {
     title: "Menú de Grup",

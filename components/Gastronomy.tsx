@@ -23,7 +23,8 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
                     <h2 className="font-serif italic text-5xl md:text-7xl text-white font-medium">
                         {gastronomy.mainTitle}
                     </h2>
-                    <p className="text-gray-400 font-light max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+                    {/* Fixed overflow: Added whitespace-pre-wrap for line breaks and break-words for long words */}
+                    <p className="text-gray-400 font-light max-w-2xl mx-auto text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
                         {gastronomy.description}
                     </p>
                 </div>
@@ -47,15 +48,22 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
                             </div>
                             
                             <div>
-                                <p className="font-serif italic text-2xl text-white/90 mb-8">{gastronomy.card1.footerText}</p>
+                                {gastronomy.card1.description && (
+                                    <p className="font-serif italic text-xl text-white/90 mb-4 max-w-sm leading-snug whitespace-pre-wrap break-words">{gastronomy.card1.description}</p>
+                                )}
+                                {gastronomy.card1.footerText && (
+                                    <p className="font-sans text-xs tracking-widest text-gray-400 uppercase mb-6">{gastronomy.card1.footerText}</p>
+                                )}
                                 <button className="border border-white/30 hover:bg-primary hover:border-primary hover:text-black text-white px-8 py-3 text-xs tracking-widest uppercase transition-colors duration-300">
                                     {gastronomy.card1.buttonText}
                                 </button>
                             </div>
 
-                            <span className="absolute bottom-10 right-10 font-serif italic text-6xl text-primary font-bold">
-                                {gastronomy.card1.price}
-                            </span>
+                            {gastronomy.card1.price && (
+                                <span className="absolute bottom-10 right-10 font-serif italic text-6xl text-primary font-bold">
+                                    {gastronomy.card1.price}
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -75,13 +83,22 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
                             </div>
                             
                             <div>
-                                <p className="font-serif italic text-2xl text-white/90 mb-8 max-w-sm leading-snug">
-                                    {gastronomy.card2.description}
-                                </p>
+                                {gastronomy.card2.description && (
+                                    <p className="font-serif italic text-xl text-white/90 mb-4 max-w-sm leading-snug whitespace-pre-wrap break-words">{gastronomy.card2.description}</p>
+                                )}
+                                {gastronomy.card2.footerText && (
+                                    <p className="font-sans text-xs tracking-widest text-gray-400 uppercase mb-6">{gastronomy.card2.footerText}</p>
+                                )}
                                 <button className="bg-white text-black hover:bg-primary px-8 py-3 text-xs tracking-widest uppercase transition-colors duration-300 font-bold">
                                     {gastronomy.card2.buttonText}
                                 </button>
                             </div>
+
+                            {gastronomy.card2.price && (
+                                <span className="absolute bottom-10 right-10 font-serif italic text-6xl text-white font-bold">
+                                    {gastronomy.card2.price}
+                                </span>
+                            )}
                         </div>
                     </div>
 

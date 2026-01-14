@@ -12,6 +12,37 @@ interface AdminPanelProps {
   initialTab?: 'config' | 'inbox' | 'reservations'; 
 }
 
+// Helper to validate if an image URL actually loads
+const validateImageUrl = (url: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+        if (!url || url.trim() === '') {
+            resolve(false);
+            return;
+        }
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+    });
+};
+
+const filterValidImages = async (images: string[]): Promise<string[]> => {
+    if (!Array.isArray(images)) return [];
+    
+    const validImages: string[] = [];
+    // Process in parallel for speed, but preserve order logic if needed
+    // However, checking sequentially is safer to avoid browser limit issues if many images
+    // Given max 10 images, Promise.all is fine.
+    
+    const checks = images.map(async (url) => {
+        const isValid = await validateImageUrl(url);
+        return isValid ? url : null;
+    });
+
+    const results = await Promise.all(checks);
+    return results.filter((url): url is string => url !== null);
+};
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, initialTab = 'config' }) => {
   const { config, updateConfig } = useConfig();
   
@@ -79,16 +110,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
   const confirmSave = async () => {
       setIsSaving(true);
       try {
-          await updateConfig(localConfig);
-          // Update ref to new saved state
-          initialConfigRef.current = JSON.stringify(localConfig);
+          // --- DATA SANITIZATION (CLEANUP BEFORE SAVE) ---
+          const configToSave = JSON.parse(JSON.stringify(localConfig));
+
+          // Validar i netejar Imatges de Fons (Hero)
+          if (configToSave.hero && Array.isArray(configToSave.hero.backgroundImages)) {
+              configToSave.hero.backgroundImages = await filterValidImages(configToSave.hero.backgroundImages);
+          }
+
+          // Validar i netejar Imatges Filosofia (Producte i Història)
+          if (configToSave.philosophy) {
+              if (Array.isArray(configToSave.philosophy.productImages)) {
+                  configToSave.philosophy.productImages = await filterValidImages(configToSave.philosophy.productImages);
+              }
+              if (Array.isArray(configToSave.philosophy.historicImages)) {
+                  configToSave.philosophy.historicImages = await filterValidImages(configToSave.philosophy.historicImages);
+              }
+          }
+
+          // --- SAVE PROCESS ---
+          await updateConfig(configToSave);
+          
+          // Update ref to new saved state (using the cleaned version)
+          setLocalConfig(configToSave);
+          initialConfigRef.current = JSON.stringify(configToSave);
+          
           setHasChanges(false);
           setShowSaveConfirmation(false);
           // Trigger success on parent (which closes panel and shows checkmark)
           onSaveSuccess();
       } catch (e) {
           console.error(e);
-          alert("Error guardant.");
+          alert("Error guardant. Si us plau, revisa la connexió.");
           setIsSaving(false);
           setShowSaveConfirmation(false);
       }
@@ -201,7 +254,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
                             disabled={isSaving}
                             className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent shadow-md transition-colors flex items-center justify-center gap-2"
                         >
-                            {isSaving ? 'Guardant...' : 'Acceptar'}
+                            {isSaving ? 'Validant...' : 'Acceptar'}
                         </button>
                     </div>
                 </div>

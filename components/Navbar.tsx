@@ -138,10 +138,10 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-10 text-xs font-bold tracking-[0.2em] uppercase">
           
-          {/* Dropdown for MENÚS (formerly La Carta) */}
+          {/* Dropdown for CARTA / MENU (formerly Menús) */}
           <div className="relative group">
             <button className="hover:text-primary transition-colors flex items-center gap-1 py-4">
-              Menús
+              Carta / Menú
               <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover:rotate-180">expand_more</span>
             </button>
             {/* Added pt-4 to create a safe hover bridge so dropdown doesn't close easily */}
@@ -161,7 +161,6 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
                    Carta de Menjar
-                   {/* CHANGED ICON HERE FROM ARROW_FORWARD TO RESTAURANT_MENU */}
                    <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">restaurant_menu</span>
                  </button>
                  <button 
@@ -283,7 +282,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           )}
 
           <div className="flex flex-col items-center gap-4 w-full">
-            <span className="text-white/50 text-xs tracking-widest uppercase">Menús</span>
+            <span className="text-white/50 text-xs tracking-widest uppercase">Carta / Menú</span>
             <button onClick={() => { onOpenMenu('daily'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm text-primary font-bold hover:text-white">Menú Diari</button>
             <button onClick={() => { onOpenMenu('food'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Menjar</button>
             <button onClick={() => { onOpenMenu('wine'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Vins</button>

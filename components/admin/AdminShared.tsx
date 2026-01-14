@@ -108,6 +108,7 @@ export const ImageArrayEditor = ({
     labelPrefix?: string; 
 }) => {
     const safeImages = Array.isArray(images) ? images : [];
+    const MAX_IMAGES = 10;
 
     const handleChange = (index: number, val: string) => {
         const newArr = [...safeImages];
@@ -122,7 +123,9 @@ export const ImageArrayEditor = ({
     };
 
     const handleAdd = () => {
-        onChange([...safeImages, ""]);
+        if (safeImages.length < MAX_IMAGES) {
+            onChange([...safeImages, ""]);
+        }
     };
 
     return (
@@ -167,10 +170,15 @@ export const ImageArrayEditor = ({
 
             <button 
                 onClick={handleAdd} 
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 font-bold text-xs uppercase hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                disabled={safeImages.length >= MAX_IMAGES}
+                className={`w-full py-2 border-2 border-dashed rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2 transition-all
+                    ${safeImages.length >= MAX_IMAGES 
+                        ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50' 
+                        : 'border-gray-300 text-gray-400 hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer'
+                    }`}
             >
                 <span className="material-symbols-outlined text-sm">add_photo_alternate</span>
-                Afegir Nova Imatge
+                {safeImages.length >= MAX_IMAGES ? 'Màxim assolit (10)' : 'Afegir Nova Imatge'}
             </button>
         </div>
     );

@@ -88,7 +88,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     }, [activeTab]);
 
     // --- ACTIONS ---
-    const handleUpdateReservationStatus = async (resId: string, newStatus: 'confirmed' | 'cancelled') => {
+    const handleUpdateReservationStatus = async (resId: string, newStatus: 'confirmed' | 'cancelled' | 'pending') => {
         try { await update(ref(db, `reservations/${resId}`), { status: newStatus }); } catch (e) { console.error(e); }
     };
     const handleDeleteReservation = async (resId: string) => {
@@ -117,10 +117,12 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
             try { await updateConfig(backup.data); setLocalConfig(backup.data); alert("Restauració completada."); } catch(e) { alert("Error restaurant."); }
         }
     };
+    
+    // --- FULL FACTORY RESET ---
     const handleFactoryReset = async () => {
         if (!updateConfig || !setLocalConfig) return;
-        if (window.confirm("ATENCIÓ: Aquesta acció esborrarà TOTA la configuració. Estàs segur?")) {
-            try { await updateConfig(defaultAppConfig); setLocalConfig(defaultAppConfig); alert("Restaurat a fàbrica."); } catch (e) { console.error(e); }
+        if (window.confirm("ATENCIÓ: Aquesta acció esborrarà TOTA la configuració i carregarà la CARTA 2 (fàbrica). Estàs segur?")) {
+            try { await updateConfig(defaultAppConfig); setLocalConfig(defaultAppConfig); alert("Web restaurada amb la nova CARTA 2."); } catch (e) { console.error(e); }
         }
     };
 
@@ -151,22 +153,31 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 ) : (
                     <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead><tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider"><th className="p-4">Estat</th><th className="p-4">Dia i Hora</th><th className="p-4">Pax</th><th className="p-4">Nom</th><th className="p-4">Telèfon</th><th className="p-4">Notes</th><th className="p-4 text-right">Accions</th></tr></thead>
+                            <table className="w-full text-left border-collapse table-fixed">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th className="p-4 w-24">Estat</th>
+                                        <th className="p-4 w-32">Dia i Hora</th>
+                                        <th className="p-4 w-20">Pax</th>
+                                        <th className="p-4 w-40">Nom</th>
+                                        <th className="p-4 w-32">Telèfon</th>
+                                        <th className="p-4">Notes</th>
+                                        <th className="p-4 text-right w-32">Accions</th>
+                                    </tr>
+                                </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {filtered.map((res) => (
                                         <tr key={res.id} className={`hover:bg-gray-50 transition-colors ${res.status === 'pending' ? 'bg-yellow-50/10' : ''}`}>
-                                            <td className="p-4"><span className={`text-[10px] font-bold px-2 py-1 rounded-full ${res.status === 'pending' ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : res.status === 'confirmed' ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-50 text-red-400 border border-red-100 decoration-line-through"}`}>{res.status === 'pending' ? "PENDENT" : res.status === 'confirmed' ? "CONFIRMADA" : "CANCEL·LADA"}</span></td>
-                                            <td className="p-4"><div className="flex flex-col"><span className="font-bold text-gray-800">{new Date(res.date).toLocaleDateString('ca-ES')}</span><span className="text-xs text-gray-500 font-mono bg-gray-100 px-1 rounded w-fit">{res.time}</span></div></td>
-                                            <td className="p-4 font-bold text-lg text-secondary">{res.pax} <span className="text-xs font-normal text-gray-400">pers.</span></td>
-                                            <td className="p-4 font-medium text-gray-700">{res.name}</td>
-                                            <td className="p-4"><a href={`tel:${res.phone}`} className="text-primary hover:underline font-mono text-sm">{res.phone}</a></td>
-                                            <td className="p-4 text-sm text-gray-500 max-w-xs truncate" title={res.notes}>{res.notes || '-'}</td>
-                                            <td className="p-4 text-right"><div className="flex justify-end gap-2">
+                                            <td className="p-4 align-middle"><span className={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${res.status === 'pending' ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : res.status === 'confirmed' ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-50 text-red-400 border border-red-100 decoration-line-through"}`}>{res.status === 'pending' ? "PENDENT" : res.status === 'confirmed' ? "CONFIRMADA" : "CANCEL·LADA"}</span></td>
+                                            <td className="p-4 align-middle"><div className="flex flex-col"><span className="font-bold text-gray-800">{new Date(res.date).toLocaleDateString('ca-ES')}</span><span className="text-xs text-gray-500 font-mono bg-gray-100 px-1 rounded w-fit">{res.time}</span></div></td>
+                                            <td className="p-4 align-middle font-bold text-lg text-secondary">{res.pax} <span className="text-xs font-normal text-gray-400">pers.</span></td>
+                                            <td className="p-4 align-middle font-medium text-gray-700 truncate" title={res.name}>{res.name}</td>
+                                            <td className="p-4 align-middle truncate"><a href={`tel:${res.phone}`} className="text-primary hover:underline font-mono text-sm">{res.phone}</a></td>
+                                            <td className="p-4 align-middle text-sm text-gray-500 truncate" title={res.notes}>{res.notes || '-'}</td>
+                                            <td className="p-4 align-middle text-right"><div className="flex justify-end gap-2">
                                                 {res.status === 'pending' && (<><button onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')} className="bg-green-500 hover:bg-green-600 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">check</span></button><button onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')} className="bg-red-400 hover:bg-red-500 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">close</span></button></>)}
                                                 {res.status === 'confirmed' && (<button onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')} className="border border-red-300 text-red-400 hover:bg-red-50 p-2 rounded transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">block</span></button>)}
-                                                {res.status === 'cancelled' && (<button onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')} className="border border-gray-300 text-gray-400 hover:text-green-600 hover:bg-green-50 p-2 rounded transition-colors"><span className="material-symbols-outlined text-sm">restore</span></button>)}
-                                                <button onClick={() => handleDeleteReservation(res.id)} className="text-gray-300 hover:text-red-500 p-2 transition-colors ml-2"><span className="material-symbols-outlined text-sm">delete</span></button>
+                                                {res.status === 'cancelled' && (<button onClick={() => handleUpdateReservationStatus(res.id, 'pending')} title="Tornar a Pendent" className="border border-yellow-300 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 p-2 rounded transition-colors"><span className="material-symbols-outlined text-sm">restore</span></button>)}
                                             </div></td>
                                         </tr>
                                     ))}
@@ -202,7 +213,12 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 </div>
                 <div className="bg-red-50 p-6 rounded shadow-sm border border-red-200">
                     <h4 className="font-bold text-red-800 mb-2 flex items-center gap-2"><span className="material-symbols-outlined">warning</span> Zona de Perill</h4>
-                    <button onClick={handleFactoryReset} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-xs font-bold uppercase shadow flex items-center gap-2 w-full justify-center sm:w-auto"><span className="material-symbols-outlined text-sm">restart_alt</span> Restaurar Fàbrica</button>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        {/* REMOVED MENU RESET BUTTON AS REQUESTED */}
+                        <button onClick={handleFactoryReset} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-xs font-bold uppercase shadow flex items-center gap-2 w-full justify-center sm:w-auto">
+                            <span className="material-symbols-outlined text-sm">restart_alt</span> Restaurar TOTA la Web
+                        </button>
+                    </div>
                 </div>
             </div>
         );
