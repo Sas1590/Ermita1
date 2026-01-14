@@ -346,6 +346,9 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   // Group Warning Modal State
   const [showGroupWarning, setShowGroupWarning] = useState(false);
 
+  // Check if reservation form should be visible
+  const isFormVisible = config.hero?.reservationVisible !== false;
+
   // Construct dynamic error message from config
   const dynamicErrorMsg = `${config.hero.reservationErrorMessage} ${config.hero.reservationTimeStart} a ${config.hero.reservationTimeEnd}`;
 
@@ -487,11 +490,18 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         
-        {/* Left Content */}
-        <div className="lg:col-span-7 text-white flex flex-col items-center lg:items-start mt-12 lg:mt-0">
+        {/* Left Content - Dynamic Size if Form is hidden */}
+        <div className={`text-white flex flex-col items-center mt-12 lg:mt-0 transition-all duration-500
+            ${isFormVisible 
+                ? 'lg:col-span-7 lg:items-start' 
+                : 'lg:col-span-12 items-center text-center'
+            }
+        `}>
           
           {/* Logo Section */}
-          <div className="flex flex-col items-center lg:items-start mb-8 transition-transform duration-700 w-full min-h-[200px] justify-center lg:justify-start">
+          <div className={`flex flex-col items-center mb-8 transition-transform duration-700 w-full min-h-[200px] 
+              ${isFormVisible ? 'lg:justify-start lg:items-start' : 'justify-center'}
+          `}>
              
              {isLoading ? (
                <div className="w-[200px] h-[200px] flex items-center justify-center">
@@ -503,11 +513,11 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                       <img 
                         src={config.brand.logoUrl} 
                         alt="Ermita Paret Delgada" 
-                        className="w-full max-w-[550px] md:max-w-[900px] h-auto object-contain mb-8 drop-shadow-2xl"
+                        className={`w-full max-w-[550px] md:max-w-[900px] h-auto object-contain mb-8 drop-shadow-2xl transition-all duration-500 ${!isFormVisible ? 'scale-110' : ''}`}
                       />
                   ) : (
                       <div className="mb-4 text-white opacity-90">
-                          <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-lg mx-auto lg:mx-0">
+                          <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`drop-shadow-lg mx-auto ${isFormVisible ? 'lg:mx-0' : ''}`}>
                             <circle cx="100" cy="100" r="90" stroke="white" strokeWidth="4" />
                             <circle cx="100" cy="100" r="60" stroke="white" strokeWidth="2" strokeDasharray="5 5" />
                             <path d="M70 60 V 120 Q 70 140 100 140 V 170" stroke="white" strokeWidth="6" strokeLinecap="round" />
@@ -527,175 +537,184 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
              )}
           </div>
 
-          <p className="font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed text-center lg:text-left mt-4 animate-fade-in-slow" style={{ animationDelay: '0.3s' }}>
+          <p className={`font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed mt-4 animate-fade-in-slow 
+                ${isFormVisible ? 'text-center lg:text-left' : 'text-center mx-auto'}
+          `} style={{ animationDelay: '0.3s' }}>
             Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.
           </p>
 
           {/* Schedule Display */}
-          <div className="mt-8 flex flex-col items-center lg:items-start animate-fade-in-slow" style={{ animationDelay: '0.5s' }}>
+          <div className={`mt-8 flex flex-col items-center animate-fade-in-slow ${isFormVisible ? 'lg:items-start' : ''}`} style={{ animationDelay: '0.5s' }}>
              <div className="h-px w-24 bg-primary/40 mb-4"></div>
-             <p className="font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center lg:text-left">
+             <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : ''}`}>
                {config.contact.schedule}
              </p>
           </div>
         </div>
 
-        {/* Right Content - Sticky Note Reservation Form */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow" style={{ animationDelay: '0.6s' }}>
-          <div className="relative w-full max-w-md transform rotate-1 hover:rotate-0 transition-transform duration-500">
-            
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-red-700 rounded-full shadow-md z-20 border-2 border-red-900"></div>
+        {/* Right Content - Sticky Note Reservation Form - CONDITIONALLY RENDERED */}
+        {isFormVisible && (
+            <div className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow" style={{ animationDelay: '0.6s' }}>
+            <div className="relative w-full max-w-md transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-red-700 rounded-full shadow-md z-20 border-2 border-red-900"></div>
 
-            <div className="bg-paper bg-paper-texture p-8 shadow-paper relative">
-              <div className="absolute bottom-0 right-0 border-t-[30px] border-r-[30px] border-t-black/5 border-r-transparent pointer-events-none"></div>
+                <div className="bg-paper bg-paper-texture p-8 shadow-paper relative">
+                <div className="absolute bottom-0 right-0 border-t-[30px] border-r-[30px] border-t-black/5 border-r-transparent pointer-events-none"></div>
 
-              {formStatus === 'success' ? (
-                   <div className="text-center py-10 animate-[fadeIn_0.5s_ease-out]">
-                       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500">
-                           <span className="material-symbols-outlined text-4xl text-green-600">check</span>
-                       </div>
-                       <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Reserva Enviada!</h3>
-                       <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
-                       
-                       <div className="flex flex-col items-center gap-3">
-                           <button 
-                               onClick={() => setFormStatus('idle')}
-                               className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
-                           >
-                               Fer una altra reserva
-                           </button>
-                           <button
+                {formStatus === 'success' ? (
+                    <div className="text-center py-10 animate-[fadeIn_0.5s_ease-out]">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500">
+                            <span className="material-symbols-outlined text-4xl text-green-600">check</span>
+                        </div>
+                        <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Reserva Enviada!</h3>
+                        <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
+                        
+                        <div className="flex flex-col items-center gap-3">
+                            <button 
                                 onClick={() => setFormStatus('idle')}
-                                className="text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
+                                className="bg-primary text-white font-bold py-2 px-6 rounded shadow hover:bg-accent transition-colors"
                             >
-                                Tancar
+                                Fer una altra reserva
                             </button>
-                       </div>
-                   </div>
-              ) : (
-                <>
-                  <div className="text-center mb-6">
-                    <h2 className="font-hand text-4xl font-bold text-secondary mb-1">{config.hero.reservationFormTitle}</h2>
-                    <p className="font-marker text-gray-500 text-lg">{config.hero.reservationFormSubtitle}</p>
-                  </div>
+                            <button
+                                    onClick={() => setFormStatus('idle')}
+                                    className="text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
+                                >
+                                    Tancar
+                                </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                    <div className="text-center mb-6">
+                        <h2 className="font-hand text-4xl font-bold text-secondary mb-1">{config.hero.reservationFormTitle}</h2>
+                        <p className="font-marker text-gray-500 text-lg">{config.hero.reservationFormSubtitle}</p>
+                    </div>
 
-                  <form className="space-y-4 font-marker text-lg text-secondary">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNameLabel}</label>
+                    <form className="space-y-4 font-marker text-lg text-secondary">
+                        <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col">
+                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNameLabel}</label>
+                            <input 
+                                type="text" 
+                                name="name"
+                                maxLength={40} // Limit added
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="Pere..." 
+                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                            />
+                        </div>
+                        <div className="flex flex-col relative">
+                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
+                            <input 
+                                type="tel" 
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="6..." 
+                                className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
+                            />
+                            {/* Mensaje de error flotante */}
+                            {phoneError && (
+                                <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
+                                    {phoneError}
+                                </span>
+                            )}
+                        </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 relative z-40">
+                        <div className="flex flex-col">
+                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
+                            {/* CUSTOM DATE PICKER IMPLEMENTATION */}
+                            <CustomDateTimePicker 
+                                value={dateTime}
+                                onChange={setDateTime}
+                                configStart={config.hero.reservationTimeStart}
+                                configEnd={config.hero.reservationTimeEnd}
+                                configInterval={config.hero.reservationTimeInterval}
+                                errorMsg={dynamicErrorMsg}
+                            />
+                        </div>
+                        
+                        {/* --- MODIFIED PAX INPUT (Gent + Handwritten Style) --- */}
+                        <div className="flex flex-col">
+                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
+                            <input 
+                                type="number" 
+                                name="pax"
+                                min="1"
+                                max="50"
+                                placeholder="2"
+                                value={formData.pax}
+                                onChange={handleInputChange}
+                                // Applied same styling as phone input (font-marker, bg, border, padding)
+                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
+                            />
+                        </div>
+                        </div>
+
+                        <div className="flex flex-col relative z-0">
+                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNotesLabel}</label>
+                            <input 
+                                type="text" 
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleInputChange}
+                                placeholder="Algèrgies, terrassa..." 
+                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2">
                         <input 
-                            type="text" 
-                            name="name"
-                            maxLength={40} // Limit added
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Pere..." 
-                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                            type="checkbox" 
+                            id="privacy" 
+                            checked={formData.privacy}
+                            onChange={handleCheckboxChange}
+                            className="accent-olive h-4 w-4" 
                         />
-                      </div>
-                      <div className="flex flex-col relative">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
-                        <input 
-                            type="tel" 
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="6..." 
-                            className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
-                        />
-                        {/* Mensaje de error flotante */}
-                        {phoneError && (
-                            <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
-                                {phoneError}
-                            </span>
-                        )}
-                      </div>
+                        <label htmlFor="privacy" className="text-sm font-hand text-gray-600">{config.hero.formPrivacyLabel}</label>
+                        </div>
+
+                        <div className="border-t border-dashed border-gray-400 my-4"></div>
+
+                        <div className="flex justify-between items-end mb-4">
+                        <div className="text-sm font-sans text-gray-500">{config.hero.formCallUsLabel}</div>
+                        <a 
+                            href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
+                            className="font-bold font-hand text-xl hover:text-accent transition-colors"
+                        >
+                            {config.hero.reservationPhoneNumber}
+                        </a>
+                        </div>
+
+                        <button 
+                            type="button" 
+                            onClick={handleSubmit}
+                            disabled={formStatus === 'loading'}
+                            className={`w-full bg-[#4a403a] hover:bg-[#3a302a] text-white font-marker text-2xl py-2 shadow-md transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 ${formStatus === 'loading' ? 'opacity-70 cursor-wait' : ''}`}
+                        >
+                        {formStatus === 'loading' ? 'Enviant...' : config.hero.reservationButtonText}
+                        {formStatus !== 'loading' && <span className="material-symbols-outlined">arrow_forward</span>}
+                        </button>
+                        {formStatus === 'error' && <p className="text-red-500 text-center text-sm font-sans">Error enviant. Truca'ns!</p>}
+                    </form>
+                    </>
+                )}
+
+                {config.hero.stickyNoteText && config.hero.stickyNoteText.trim() !== '' && (
+                    <div className="absolute -bottom-6 -left-14 bg-[#fef08a] text-[#854d0e] p-4 shadow-lg transform -rotate-6 font-hand font-bold text-xl leading-none text-center max-w-[160px] break-words whitespace-pre-line z-50">
+                    {config.hero.stickyNoteText}
                     </div>
+                )}
 
-                    <div className="grid grid-cols-2 gap-4 relative z-40">
-                      <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
-                        {/* CUSTOM DATE PICKER IMPLEMENTATION */}
-                        <CustomDateTimePicker 
-                            value={dateTime}
-                            onChange={setDateTime}
-                            configStart={config.hero.reservationTimeStart}
-                            configEnd={config.hero.reservationTimeEnd}
-                            configInterval={config.hero.reservationTimeInterval}
-                            errorMsg={dynamicErrorMsg}
-                        />
-                      </div>
-                      
-                      {/* --- MODIFIED PAX INPUT (Gent + Handwritten Style) --- */}
-                      <div className="flex flex-col">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
-                        <input 
-                            type="number" 
-                            name="pax"
-                            min="1"
-                            max="50"
-                            placeholder="2"
-                            value={formData.pax}
-                            onChange={handleInputChange}
-                            // Applied same styling as phone input (font-marker, bg, border, padding)
-                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col relative z-0">
-                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNotesLabel}</label>
-                        <input 
-                            type="text" 
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleInputChange}
-                            placeholder="Algèrgies, terrassa..." 
-                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <input 
-                        type="checkbox" 
-                        id="privacy" 
-                        checked={formData.privacy}
-                        onChange={handleCheckboxChange}
-                        className="accent-olive h-4 w-4" 
-                      />
-                      <label htmlFor="privacy" className="text-sm font-hand text-gray-600">{config.hero.formPrivacyLabel}</label>
-                    </div>
-
-                    <div className="border-t border-dashed border-gray-400 my-4"></div>
-
-                    <div className="flex justify-between items-end mb-4">
-                      <div className="text-sm font-sans text-gray-500">{config.hero.formCallUsLabel}</div>
-                      <div className="font-bold font-hand text-xl">{config.hero.reservationPhoneNumber}</div>
-                    </div>
-
-                    <button 
-                        type="button" 
-                        onClick={handleSubmit}
-                        disabled={formStatus === 'loading'}
-                        className={`w-full bg-[#4a403a] hover:bg-[#3a302a] text-white font-marker text-2xl py-2 shadow-md transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 ${formStatus === 'loading' ? 'opacity-70 cursor-wait' : ''}`}
-                    >
-                      {formStatus === 'loading' ? 'Enviant...' : config.hero.reservationButtonText}
-                      {formStatus !== 'loading' && <span className="material-symbols-outlined">arrow_forward</span>}
-                    </button>
-                    {formStatus === 'error' && <p className="text-red-500 text-center text-sm font-sans">Error enviant. Truca'ns!</p>}
-                  </form>
-                </>
-              )}
-
-              {config.hero.stickyNoteText && config.hero.stickyNoteText.trim() !== '' && (
-                <div className="absolute -bottom-6 -left-14 bg-[#fef08a] text-[#854d0e] p-4 shadow-lg transform -rotate-6 font-hand font-bold text-xl leading-none text-center max-w-[160px] break-words whitespace-pre-line z-50">
-                  {config.hero.stickyNoteText}
                 </div>
-              )}
-
             </div>
-          </div>
-        </div>
+            </div>
+        )}
       </div>
       
       <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center animate-bounce z-20 transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`}>

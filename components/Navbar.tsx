@@ -17,6 +17,18 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
   const { config, isLoading } = useConfig(); 
   const [totalUnread, setTotalUnread] = useState(0);
 
+  // Visibility Flags
+  const showHistoryLink = config.philosophy?.visible !== false;
+  const showReservationButton = config.hero?.reservationVisible !== false;
+  
+  // Check if Contact Section has any visible content
+  const showContactLink = (
+      config.contact?.importantNoteVisible !== false ||
+      config.contact?.infoVisible !== false ||
+      config.contact?.socialVisible !== false ||
+      config.contact?.formVisible !== false
+  );
+
   // Listen for unread messages AND pending reservations only if in Admin Mode
   useEffect(() => {
     if (isAdminMode) {
@@ -173,15 +185,21 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             </div>
           </div>
 
-          {/* History link - Programmatic scroll */}
-          <button onClick={() => onScrollToSection('historia')} className="hover:text-primary transition-colors uppercase">Història</button>
+          {/* History link - Programmatic scroll - Conditional Visibility */}
+          {showHistoryLink && (
+             <button onClick={() => onScrollToSection('historia')} className="hover:text-primary transition-colors uppercase">Història</button>
+          )}
           
-          {/* Contact link - Programmatic scroll */}
-          <button onClick={() => onScrollToSection('contacte')} className="hover:text-primary transition-colors uppercase">Contacte</button>
+          {/* Contact link - Programmatic scroll - Conditional Visibility */}
+          {showContactLink && (
+            <button onClick={() => onScrollToSection('contacte')} className="hover:text-primary transition-colors uppercase">Contacte</button>
+          )}
 
-          <button onClick={() => onScrollToSection('reserva')} className="border border-white/30 px-6 py-3 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300">
-            {config.navbar.reserveButtonText}
-          </button>
+          {showReservationButton && (
+            <button onClick={() => onScrollToSection('reserva')} className="border border-white/30 px-6 py-3 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300">
+                {config.navbar.reserveButtonText}
+            </button>
+          )}
 
           {/* Admin Panel Toggle Button - Red Styled */}
           {isAdminMode ? (
@@ -206,16 +224,18 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
         {/* Mobile Controls (Menu + Reservation) */}
         <div className="flex items-center gap-3 md:hidden">
             {/* Mobile Reservation Button - Always visible but styled differently when scrolled */}
-            <button 
-              onClick={() => onScrollToSection('reserva')} 
-              className={`uppercase tracking-widest text-[10px] font-bold px-3 py-1.5 border transition-all duration-300 ${
-                  scrolled 
-                    ? 'border-primary text-primary bg-transparent' 
-                    : 'border-white/50 text-white bg-black/20 backdrop-blur-sm'
-              }`}
-            >
-              {config.navbar.reserveButtonText}
-            </button>
+            {showReservationButton && (
+                <button 
+                onClick={() => onScrollToSection('reserva')} 
+                className={`uppercase tracking-widest text-[10px] font-bold px-3 py-1.5 border transition-all duration-300 ${
+                    scrolled 
+                        ? 'border-primary text-primary bg-transparent' 
+                        : 'border-white/50 text-white bg-black/20 backdrop-blur-sm'
+                }`}
+                >
+                {config.navbar.reserveButtonText}
+                </button>
+            )}
 
             {/* Mobile Toggle */}
             <button 
@@ -266,16 +286,22 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           
           <div className="w-12 h-px bg-white/20"></div>
           
-          <button onClick={() => { onScrollToSection('historia'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Història</button>
-          <button onClick={() => { onScrollToSection('contacte'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Contacte</button>
+          {showHistoryLink && (
+              <button onClick={() => { onScrollToSection('historia'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Història</button>
+          )}
+          {showContactLink && (
+            <button onClick={() => { onScrollToSection('contacte'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Contacte</button>
+          )}
           
           {/* Reserve Button inside Menu (Duplicate for ease of access if menu is open) */}
-          <button 
-            onClick={() => { onScrollToSection('reserva'); setMobileMenuOpen(false); }} 
-            className="border border-white/30 px-8 py-3 mt-4 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300 uppercase tracking-widest text-sm"
-          >
-            {config.navbar.reserveButtonText}
-          </button>
+          {showReservationButton && (
+            <button 
+                onClick={() => { onScrollToSection('reserva'); setMobileMenuOpen(false); }} 
+                className="border border-white/30 px-8 py-3 mt-4 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300 uppercase tracking-widest text-sm"
+            >
+                {config.navbar.reserveButtonText}
+            </button>
+          )}
 
           {isAdminMode && ( // Also conditional in mobile menu
              <div className="flex flex-col gap-4 mt-4 w-full px-12">

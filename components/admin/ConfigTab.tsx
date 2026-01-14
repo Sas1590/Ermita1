@@ -29,6 +29,22 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
         }
     };
 
+    // Helper for Section Visibility Toggle (Compact Style)
+    const renderVisibilityToggle = (isVisible: boolean, onToggle: () => void, labelOn = "Visible", labelOff = "Ocult") => (
+        <button 
+            onClick={onToggle}
+            className={`absolute top-0 left-0 px-4 py-2 flex items-center gap-2 rounded-br-2xl shadow-sm transition-all z-10 cursor-pointer border-b border-r
+                ${!isVisible
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200' 
+                    : 'bg-[#8b5a2b] text-white border-[#6b4521] hover:bg-[#7a4e25]'
+                }`} 
+            title={!isVisible ? "Mostrar Secció" : "Ocultar Secció"}
+        >
+            <span className="material-symbols-outlined text-lg">{!isVisible ? 'visibility_off' : 'visibility'}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">{!isVisible ? labelOff : labelOn}</span>
+        </button>
+    );
+
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
             {/* 0. NEW: ADMIN CUSTOMIZATION */}
@@ -100,7 +116,15 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
             </div>
 
             {/* 2b. Reserva (Experiència Gastronòmica) */}
-            <div className="bg-[#fffcf5] p-8 rounded-xl shadow-md border border-[#8b5a2b]/20 relative overflow-hidden">
+            <div className={`bg-[#fffcf5] p-8 pt-16 rounded-xl shadow-md border border-[#8b5a2b]/20 relative overflow-hidden transition-all ${localConfig.hero.reservationVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                {/* VISIBILITY TOGGLE - RESERVATION FORM */}
+                {renderVisibilityToggle(
+                    localConfig.hero.reservationVisible !== false, 
+                    () => setLocalConfig((prev:any) => ({ ...prev, hero: { ...prev.hero, reservationVisible: !prev.hero.reservationVisible } })),
+                    "Reserves Visibles",
+                    "Reserves Ocultes"
+                )}
+
                 <div className="absolute top-0 right-0 w-16 h-16 bg-[#8b5a2b]/5 rounded-bl-full"></div>
                 <div className="flex items-center gap-4 mb-8 border-b-2 border-[#8b5a2b]/10 pb-4"><div className="w-12 h-12 bg-gradient-to-br from-[#8b5a2b] to-[#5d3a1a] text-white rounded-lg shadow-lg flex items-center justify-center transform rotate-3"><span className="material-symbols-outlined text-2xl">restaurant_menu</span></div><div><h3 className="font-serif text-2xl font-bold text-[#2c241b]">Reserva Taula</h3><p className="text-xs text-[#8b5a2b] font-bold uppercase tracking-[0.2em]">Experiència Gastronòmica</p></div></div>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -125,12 +149,24 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
             </div>
 
             {/* 3. Intro Section */}
-            <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+            <div className={`bg-white p-6 pt-16 rounded shadow-sm border border-gray-200 relative overflow-hidden transition-all ${localConfig.intro.visible === false ? 'opacity-60 grayscale' : ''}`}>
+                {/* VISIBILITY TOGGLE - INTRO */}
+                {renderVisibilityToggle(
+                    localConfig.intro.visible !== false, 
+                    () => setLocalConfig((prev:any) => ({ ...prev, intro: { ...prev.intro, visible: !prev.intro.visible } }))
+                )}
+
                 <div className="absolute top-0 left-0 w-1 h-full bg-olive"></div><h3 className="font-serif text-xl font-semibold text-olive mb-4 flex items-center gap-2">Intro (Frase Inicial)</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit</label><input type="text" value={localConfig.intro.smallTitle} onChange={(e) => handleChange('intro', 'smallTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label><input type="text" value={localConfig.intro.mainTitle} onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none" /></div></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció (Cita)</label><textarea value={localConfig.intro.description} onChange={(e) => handleChange('intro', 'description', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none"></textarea></div>
             </div>
 
             {/* 4. Specialties Section */}
-            <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+            <div className={`bg-white p-6 pt-16 rounded shadow-sm border border-gray-200 relative overflow-hidden transition-all ${localConfig.specialties.visible === false ? 'opacity-60 grayscale' : ''}`}>
+                {/* VISIBILITY TOGGLE - WHOLE SPECIALTIES SECTION */}
+                {renderVisibilityToggle(
+                    localConfig.specialties.visible !== false, 
+                    () => setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, visible: !prev.specialties.visible } }))
+                )}
+
                 <div className="absolute top-0 left-0 w-1 h-full bg-yellow-600"></div>
                 <h3 className="font-serif text-xl font-semibold text-yellow-600 mb-4 flex items-center gap-2">
                     <span className="material-symbols-outlined">stars</span> Especialitats
@@ -145,7 +181,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                         {(localConfig.specialties.items || []).map((item: any, idx: number) => (
                             <div key={idx} className={`p-6 pt-12 rounded border transition-colors relative group bg-white border-gray-200 shadow-sm overflow-hidden ${item.visible === false ? 'opacity-60 grayscale' : ''}`}>
                                 
-                                {/* VISIBILITY TOGGLE - UPDATED (Compact & Labeled) */}
+                                {/* VISIBILITY TOGGLE - ITEM LEVEL (Compact & Labeled) */}
                                 <button 
                                     onClick={() => { const newItems = [...localConfig.specialties.items]; const currentVisibility = newItems[idx].visible !== false; newItems[idx] = { ...newItems[idx], visible: !currentVisibility }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} 
                                     className={`absolute top-0 left-0 px-4 py-2 flex items-center gap-2 rounded-br-2xl shadow-sm transition-all z-10 cursor-pointer border-b border-r
@@ -190,7 +226,13 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
             </div>
 
             {/* 5. Philosophy Section - UPDATED WITH ImageArrayEditor */}
-            <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
+            <div className={`bg-white p-6 pt-16 rounded shadow-sm border border-gray-200 relative overflow-hidden transition-all ${localConfig.philosophy.visible === false ? 'opacity-60 grayscale' : ''}`}>
+                {/* VISIBILITY TOGGLE - PHILOSOPHY */}
+                {renderVisibilityToggle(
+                    localConfig.philosophy.visible !== false, 
+                    () => setLocalConfig((prev:any) => ({ ...prev, philosophy: { ...prev.philosophy, visible: !prev.philosophy.visible } }))
+                )}
+
                 <div className="absolute top-0 left-0 w-1 h-full bg-stone-600"></div>
                 <h3 className="font-serif text-xl font-semibold text-stone-600 mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined">history_edu</span>
@@ -255,9 +297,51 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                 </div>
             </div>
 
-            {/* 6. Contact Section */}
+            {/* 6. Contact Section - UPDATED WITH INDIVIDUAL VISIBILITY TOGGLES */}
             <div className="bg-white p-6 rounded shadow-sm border border-gray-200 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-red-800"></div><h3 className="font-serif text-xl font-semibold text-red-800 mb-4 flex items-center gap-2"><span className="material-symbols-outlined">call</span> Contacte</h3><div className="mb-6 border-b border-gray-100 pb-4"><h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Nota Important (Post-it)</h4><div className="mb-3"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Nota</label><input type="text" value={localConfig.contact.importantNoteTitle} onChange={(e) => handleChange('contact', 'importantNoteTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Missatge 1</label><input type="text" value={localConfig.contact.importantNoteMessage1} onChange={(e) => handleChange('contact', 'importantNoteMessage1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Missatge 2</label><input type="text" value={localConfig.contact.importantNoteMessage2} onChange={(e) => handleChange('contact', 'importantNoteMessage2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div></div><div className="mb-6 border-b border-gray-100 pb-4"><h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Informació General</h4><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label><input type="text" value={localConfig.contact.sectionTitle} onChange={(e) => handleChange('contact', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Localització</label><input type="text" value={localConfig.contact.locationTitle} onChange={(e) => handleChange('contact', 'locationTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 1</label><input type="text" value={localConfig.contact.addressLine1} onChange={(e) => handleChange('contact', 'addressLine1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 2</label><input type="text" value={localConfig.contact.addressLine2} onChange={(e) => handleChange('contact', 'addressLine2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Horari</label><input type="text" value={localConfig.contact.schedule} onChange={(e) => handleChange('contact', 'schedule', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Telèfons (separats per coma)</label><input type="text" value={localConfig.contact.phoneNumbers.join(', ')} onChange={(e) => handleChange('contact', 'phoneNumbers', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div><div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Google Maps</label><input type="text" value={localConfig.contact.mapUrl} onChange={(e) => handleChange('contact', 'mapUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6"><div className="p-4 rounded-xl border border-pink-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-orange-50 relative overflow-hidden"><div className="absolute top-0 right-0 p-2 opacity-10"><span className="material-symbols-outlined text-6xl text-purple-800">photo_camera</span></div><h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-orange-600 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-purple-600">group_work</span> Xarxes Socials (Instagram)</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Títol Xarxes</label><input type="text" value={localConfig.contact.socialTitle} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Descripció</label><input type="text" value={localConfig.contact.socialDescription} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Text Botó</label><input type="text" value={localConfig.contact.socialButtonText} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">URL Instagram</label><input type="text" value={localConfig.contact.instagramUrl} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-xs focus:border-purple-500 outline-none bg-white/80 text-purple-700" /></div></div></div><div className="p-4 rounded-xl border border-gray-100 bg-gray-50"><h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" /></div><p className="text-[10px] text-gray-400 italic mt-2">* Els camps del formulari (nom, email, etc.) són fixes per motius de programació i no es poden editar aquí.</p></div></div></div>
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-800"></div>
+                <h3 className="font-serif text-xl font-semibold text-red-800 mb-4 flex items-center gap-2">
+                    <span className="material-symbols-outlined">call</span> Contacte
+                </h3>
+                
+                {/* Important Note Block - INCREASED PADDING TO PT-16 */}
+                <div className={`mb-6 border-b border-gray-100 pb-4 relative pl-2 pt-16 transition-all ${localConfig.contact.importantNoteVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                    {renderVisibilityToggle(
+                        localConfig.contact.importantNoteVisible !== false, 
+                        () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, importantNoteVisible: !prev.contact.importantNoteVisible } }))
+                    )}
+                    <h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Nota Important (Post-it)</h4>
+                    <div className="mb-3"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Nota</label><input type="text" value={localConfig.contact.importantNoteTitle} onChange={(e) => handleChange('contact', 'importantNoteTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Missatge 1</label><input type="text" value={localConfig.contact.importantNoteMessage1} onChange={(e) => handleChange('contact', 'importantNoteMessage1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Missatge 2</label><input type="text" value={localConfig.contact.importantNoteMessage2} onChange={(e) => handleChange('contact', 'importantNoteMessage2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div>
+                </div>
+
+                {/* Info Block - INCREASED PADDING TO PT-16 */}
+                <div className={`mb-6 border-b border-gray-100 pb-4 relative pl-2 pt-16 transition-all ${localConfig.contact.infoVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                    {renderVisibilityToggle(
+                        localConfig.contact.infoVisible !== false, 
+                        () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, infoVisible: !prev.contact.infoVisible } }))
+                    )}
+                    <h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Informació General</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label><input type="text" value={localConfig.contact.sectionTitle} onChange={(e) => handleChange('contact', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Localització</label><input type="text" value={localConfig.contact.locationTitle} onChange={(e) => handleChange('contact', 'locationTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 1</label><input type="text" value={localConfig.contact.addressLine1} onChange={(e) => handleChange('contact', 'addressLine1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 2</label><input type="text" value={localConfig.contact.addressLine2} onChange={(e) => handleChange('contact', 'addressLine2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Horari</label><input type="text" value={localConfig.contact.schedule} onChange={(e) => handleChange('contact', 'schedule', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Telèfons (separats per coma)</label><input type="text" value={localConfig.contact.phoneNumbers.join(', ')} onChange={(e) => handleChange('contact', 'phoneNumbers', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div><div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Google Maps</label><input type="text" value={localConfig.contact.mapUrl} onChange={(e) => handleChange('contact', 'mapUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    {/* Social Block - INCREASED PADDING TO PT-16 */}
+                    <div className={`p-4 pt-16 rounded-xl border border-pink-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-orange-50 relative overflow-hidden transition-all ${localConfig.contact.socialVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                        {renderVisibilityToggle(
+                            localConfig.contact.socialVisible !== false, 
+                            () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, socialVisible: !prev.contact.socialVisible } }))
+                        )}
+                        <div className="absolute top-0 right-0 p-2 opacity-10"><span className="material-symbols-outlined text-6xl text-purple-800">photo_camera</span></div><h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-orange-600 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-purple-600">group_work</span> Xarxes Socials (Instagram)</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Títol Xarxes</label><input type="text" value={localConfig.contact.socialTitle} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Descripció</label><input type="text" value={localConfig.contact.socialDescription} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Text Botó</label><input type="text" value={localConfig.contact.socialButtonText} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">URL Instagram</label><input type="text" value={localConfig.contact.instagramUrl} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-xs focus:border-purple-500 outline-none bg-white/80 text-purple-700" /></div></div>
+                    </div>
+                    {/* Form Block - INCREASED PADDING TO PT-16 */}
+                    <div className={`p-4 pt-16 rounded-xl border border-gray-100 bg-gray-50 relative transition-all ${localConfig.contact.formVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                        {renderVisibilityToggle(
+                            localConfig.contact.formVisible !== false, 
+                            () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, formVisible: !prev.contact.formVisible } }))
+                        )}
+                        <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" /></div><p className="text-[10px] text-gray-400 italic mt-2">* Els camps del formulari (nom, email, etc.) són fixes per motius de programació i no es poden editar aquí.</p></div>
+                    </div>
+                </div>
             </div>
         </div>
     );

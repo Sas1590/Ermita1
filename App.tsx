@@ -14,6 +14,7 @@ import CookiesModal from './components/CookiesModal';
 import LegalModal from './components/LegalModal';
 import { auth } from './firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { useConfig } from './context/ConfigContext';
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -33,6 +34,9 @@ const App: React.FC = () => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showCookiesModal, setShowCookiesModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
+
+  // Config for conditional rendering
+  const { config } = useConfig();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -117,12 +121,22 @@ const App: React.FC = () => {
         isAdminMode={!!user} // Pass boolean if user is logged in
         onLogout={handleLogout}
       />
+      
       <Hero onRedirectToMenu={handleOpenMenu} />
-      <Intro />
+      
+      {/* Conditionally Render Intro */}
+      {config.intro?.visible !== false && <Intro />}
+      
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
-      <Specialties />
-      <Philosophy />
+      
+      {/* Conditionally Render Specialties */}
+      {config.specialties?.visible !== false && <Specialties />}
+      
+      {/* Conditionally Render Philosophy (History) */}
+      {config.philosophy?.visible !== false && <Philosophy />}
+      
       <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
+      
       <Footer 
         onEnableAdmin={() => openAdminPanel('config')} 
         onOpenPrivacy={() => setShowPrivacyModal(true)}

@@ -64,6 +64,7 @@ export interface AppConfig {
     customDisplayName: string;
   };
   hero: {
+    reservationVisible?: boolean; // NEW: Toggle Reservation Form
     reservationFormTitle: string;
     reservationFormSubtitle: string;
     reservationPhoneNumber: string;
@@ -84,11 +85,13 @@ export interface AppConfig {
     formCallUsLabel: string;
   };
   intro: {
+    visible?: boolean; // NEW: Toggle Intro Section
     smallTitle: string;
     mainTitle: string;
     description: string;
   };
   specialties: {
+    visible?: boolean; // NEW: Toggle Whole Section
     sectionTitle: string;
     mainTitle: string;
     description: string;
@@ -97,11 +100,12 @@ export interface AppConfig {
       subtitle: string;
       image: string;
       badge?: string;
-      description?: string; // Added description
+      description?: string; 
       visible?: boolean;
     }>;
   };
   philosophy: {
+    visible?: boolean; // NEW: Toggle Philosophy Section
     sectionTitle: string;
     titleLine1: string;
     titleLine2: string;
@@ -116,8 +120,8 @@ export interface AppConfig {
     historicImages: string[];
   };
   
-  foodMenu: MenuSection[]; // Refactored Dynamic Menu
-  wineMenu: WineCategory[]; // New Dynamic Wine Menu
+  foodMenu: MenuSection[]; 
+  wineMenu: WineCategory[]; 
   
   groupMenu: {
     title: string;
@@ -131,10 +135,15 @@ export interface AppConfig {
     footerText?: string;
   };
 
-  // NEW: Support for multiple additional menus
   extraMenus: ExtraMenu[];
 
   contact: {
+    // Visibility Flags
+    importantNoteVisible?: boolean;
+    infoVisible?: boolean;
+    socialVisible?: boolean;
+    formVisible?: boolean;
+
     importantNoteTitle: string;
     importantNoteMessage1: string;
     importantNoteMessage2: string;
@@ -172,6 +181,7 @@ export const defaultAppConfig: AppConfig = {
     customDisplayName: ""
   },
   hero: {
+    reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
     reservationFormSubtitle: "omple'l o truca'ns!",
     reservationPhoneNumber: "+34 654 321 987",
@@ -184,8 +194,7 @@ export const defaultAppConfig: AppConfig = {
     reservationTimeStart: "13:00",
     reservationTimeEnd: "15:30",
     reservationTimeInterval: 15,
-    reservationErrorMessage: "Ho sentim, l'horari de reserva és de", // Removed hardcoded times
-    // Default labels
+    reservationErrorMessage: "Ho sentim, l'horari de reserva és de", 
     formNameLabel: "Nom:",
     formPhoneLabel: "Telèfon:",
     formDateLabel: "Dia i hora:",
@@ -195,11 +204,13 @@ export const defaultAppConfig: AppConfig = {
     formCallUsLabel: "O truca'ns:"
   },
   intro: {
+    visible: true,
     smallTitle: "Filosofia",
     mainTitle: "Menjar típic català i casolà.",
     description: "\"Calçotades com al mas, cuina tradicional catalana i carns a la brasa amb llenya d’olivera. Gaudint de l'entorn històric i la tranquil·litat de la nostra terra.\""
   },
   specialties: {
+    visible: true,
     sectionTitle: "Autèntics Sabors",
     mainTitle: "Les Nostres Especialitats",
     description: "Una selecció de plats i vins que representen l'essència de la nostra terra, cuinats amb passió i producte de proximitat.",
@@ -231,6 +242,7 @@ export const defaultAppConfig: AppConfig = {
     ]
   },
   philosophy: {
+    visible: true,
     sectionTitle: "Filosofia i Entorn",
     titleLine1: "Cuina amb ànima,",
     titleLine2: "arrelada a la terra.",
@@ -250,391 +262,46 @@ export const defaultAppConfig: AppConfig = {
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_2.png"
     ]
   },
-  foodMenu: [
-    {
-      id: "sec_1",
-      category: "ENTRANTS · ENTRANTES",
-      icon: "soup_kitchen",
-      items: [
-        { nameCa: "Amanida verda de l'horta", nameEs: "Ensalada verde de la huerta.", price: "12.00" },
-        { nameCa: "Amanida de formatge de cabra amb pasta brick, préssec al forn i vinagreta de mel.", nameEs: "Ensalada de queso de cabra con pasta brick, melocotón al horno y vinagreta de miel.", price: "16.00" },
-        { nameCa: "Coca de carxofa confitada, foie i pernil ibèric", nameEs: "Coca de alcachofa confitada, foie y jamón ibérico.", price: "18.00" },
-        { nameCa: "Tartar de bacallà amb taronja i vinagreta d'olives negres.", nameEs: "Tartar de bacalao con naranja y vinagreta de olivas negras.", price: "16.00" },
-        { nameCa: "Canelons de carn casolans, gratinats", nameEs: "Canelones caseros de carne, gratinados.", price: "14.00" },
-        { nameCa: "Canelons de bolets silvestres gratinats amb parmesà", nameEs: "Canelones de setas silvestres gratinados con parmesano.", price: "13.00" },
-        { nameCa: "Carpaccio de xuleta de vaca madurada Okelan", nameEs: "Carpaccio de chuleta de ternera madurada Okelan.", price: "18.00" },
-        { nameCa: "Cargols a la llauna fets a la brasa", nameEs: "Caracoles a la \"llauna\" hechos a la brasa.", price: "19.00" },
-        { nameCa: "Ració de pa de vidre i tomacons", nameEs: "Ración de pan de cristal y tomates.", price: "4.00" },
-        { nameCa: "Ració de pa torrat, alls i tomacons", nameEs: "Ración de pan tostado, ajos y tomates.", price: "5.00" },
-        { nameCa: "Ració de panet de 65 gr.", nameEs: "Ración de panecillo de 65gr.", price: "0.60" },
-      ]
-    },
-    {
-      id: "sec_2",
-      category: "TAPES · TAPAS",
-      icon: "tapas",
-      items: [
-        { nameCa: "Patates braves", nameEs: "Patatas bravas.", price: "8.00" },
-        { nameCa: "Croquetes de carn d'olla, 6 unitats", nameEs: "Croquetas de cocido, 6 unidades.", price: "10.00" },
-        { nameCa: "Cassoleta de xistorra de Navarra amb mel i sèsam", nameEs: "Cazuela de chisttorra de Navarra con miel y sésamo.", price: "10.00" },
-        { nameCa: "Camembert al forn amb raïm, nous i melmelada de pebrot escalivat", nameEs: "Camembert al horno con uvas, nueces y mermelada de pimiento escalivado.", price: "16.00" },
-        { nameCa: "Ous estrellats sobre niu de patates i pernil ibèric", nameEs: "Huevos estrellados sobre nido de patatas y jamón ibérico.", price: "16.00" },
-        { nameCa: "Calamars a l'andalusa amb ceba caramelitzada", nameEs: "Calamares a la andaluza con cebolla caramelizada.", price: "12.00" },
-        { nameCa: "Albergínia fregida a la mel i pebrot del padró", nameEs: "Berenjena frita con miel y pimiento del padrón.", price: "12.00" },
-        { nameCa: "Sépia amb all i oli", nameEs: "Sepia con alioli.", price: "15.00" },
-      ]
-    },
-    {
-      id: "sec_3",
-      category: "PLATS CUINATS · PLATOS COCINADOS",
-      icon: "skillet",
-      items: [
-        { nameCa: "Galta de vedella amb caramel de vi i patata gratinada", nameEs: "Carrillera de ternera con caramelo de vino y patata gratinada.", price: "18.00" },
-        { nameCa: "Filets de cérvol adobat a la planxa", nameEs: "Filetes de ciervo adobado a la plancha.", price: "20.00" },
-        { nameCa: "Cabrit arrebossat (mitjanes i costelletes)", nameEs: "Cabrito rebozado (medianas y costillitas).", price: "22.00" },
-        { nameCa: "Cassola de peus de porc amb escamarlans", nameEs: "Cazuela de pies de cerdo con cigalas.", price: "19.00" },
-        { nameCa: "Espatlla de cabrit al forn", nameEs: "Paletilla de cabrito al horno.", price: "28.00" },
-      ]
-    },
-    {
-      id: "sec_4",
-      category: "CARNS A LA BRASA · CARNES A LA BRASA",
-      icon: "outdoor_grill",
-      items: [
-        { nameCa: "Llonganissa de la Selva", nameEs: "Longaniza de la Selva.", price: "14.00" },
-        { nameCa: "Cuixa de pollastre", nameEs: "Muslo de pollo.", price: "12.00" },
-        { nameCa: "Llodrigó a la brasa amb all i oli", nameEs: "Gazapo a la brasa con ali oli.", price: "19.00" },
-        { nameCa: "Peus de porc de Can Pistraques", nameEs: "Pies de cerdo de Can Pistraques.", price: "16.00" },
-        { nameCa: "Costelles de xai.", nameEs: "Costillas de cordero.", price: "20.00" },
-        { nameCa: "Entrecot de vedella de 300 gr.", nameEs: "Entrecot de ternera de 300 gr.", price: "24.00" },
-        { nameCa: "Filet de vedella de 280 gr.", nameEs: "Solomillo de ternera de 280 gr.", price: "26.00" },
-        { nameCa: "Graellada de carn (llonganissa, cansalada, butifarra negra i xai)", nameEs: "Parrillada de carne (longaniza, panceta, morcilla negra y cordero).", price: "25.00" },
-        { nameCa: "Lagarto de porc gallec alimentat amb castanyes", nameEs: "Lagarto de cerdo gallego alimentado con castañas.", price: "19.00" },
-        { nameCa: "Tarrina d'allioli", nameEs: "Tarrina de \"alioli\".", price: "2.50" },
-        { nameCa: "Tarrina de romesco", nameEs: "Tarrina de \"romesco\".", price: "2.50" },
-        { nameCa: "Salsa de pebre verd o roquefort", nameEs: "Salsa de pimienta verde o roquefort.", price: "2.50" },
-        { nameCa: "Plat patates fregides", nameEs: "Plato patatas fritas.", price: "4.50" },
-      ]
-    },
-    {
-      id: "sec_5",
-      category: "PEIX · PESCADO",
-      icon: "set_meal",
-      items: [
-        { nameCa: "Pota de pop a la brasa amb patata confitada", nameEs: "Pata de pulpo a la brasa con patata confitada.", price: "25.00" },
-        { nameCa: "Bacallà al forn amb crema d'alls tendres i xerris", nameEs: "Bacalao al horno con crema de ajos tiernos y cherrys.", price: "19.00" },
-        { nameCa: "Llenguado a la brasa regat amb oli a l'Orio", nameEs: "Lenguado a la brasa regado con aceite al Orio.", price: "20.00" },
-      ]
-    },
-    {
-      id: "sec_6",
-      category: "VEGETARIANS · VEGANS",
-      icon: "eco",
-      items: [
-        { nameCa: "Timbal d'escalivada amb patata i bolets", nameEs: "Timbal de escalivada con patata y setas.", price: "14.00" },
-        { nameCa: "Amanida amb fruita i vinagreta de cítrics", nameEs: "Ensalada con fruta y vinagreta de cítricos.", price: "14.00" },
-        { nameCa: "Parrillada de verdures", nameEs: "Parrillada de verduras.", price: "15.00" },
-        { nameCa: "Hummus amb albergínia i pebrot escalivat", nameEs: "Hummus con berenjena y pimientos escalivados.", price: "15.00" },
-      ]
-    },
-    {
-      id: "sec_7",
-      category: "LLESQUES I HAMBURGUESES · LLESCAS Y HAMBURGUESAS",
-      icon: "lunch_dining",
-      items: [
-        { nameCa: "Esperdenya de llonganissa amb salsa de tomaquet escalivat", nameEs: "Llesca de longaniza con salsa de tomate escalivado.", price: "15.00" },
-        { nameCa: "Esperdenya amb anxoves i olives", nameEs: "Llesca con anchoas y aceitunas.", price: "13.00" },
-        { nameCa: "Torrada amb sobrassada, formatge de cabra i mel", nameEs: "Tostada con sobrasada, queso de cabra y miel.", price: "14.00" },
-        { nameCa: "Hamburguesa amb formatge gouda, enciam i tomàquet", nameEs: "Hamburguesa con queso gouda, lechuga y tomate.", price: "12.00" },
-        { nameCa: "Hamburguesa amb formatge gouda, melmelada, beicon, ceba encurtida, cogombrets i mahonesa de chimichurri", nameEs: "Hamburguesa con queso gouda, mermelada, beicon, cebolla encurtida, pepinillos y mayonesa de chimichurri.", price: "15.00" },
-      ]
-    },
-    {
-      id: "sec_8",
-      category: "PLATS INFANTILS · PLATOS INFANTILES",
-      icon: "child_care",
-      items: [
-        { nameCa: "Macarrons a la bolonyesa", nameEs: "Macarrones a la boloñesa.", price: "10.00" },
-        { nameCa: "Combinat amb escalopa de pollastre, macarrons i patates", nameEs: "Combinado con escalopa de pollo, macarrones y patatas.", price: "15.00" },
-        { nameCa: "Combinat amb hamburguesa de vedella, macarrons i patates", nameEs: "Combinado con hamburguesa de ternera, macarrones y patatas.", price: "16.00" },
-        { nameCa: "Escalopa de pollastre amb patates", nameEs: "Escalopa de pollo con patatas.", price: "10.00" },
-        { nameCa: "Hamburguesa de vedella amb patates", nameEs: "Hamburguesa de ternera con patatas.", price: "10.00" },
-      ],
-      footer: "MÀXIM FINS A 12 ANYS I NO ES POT COMPARTIR / MÁXIMO HASTA 12 AÑOS Y NO SE PUEDE COMPARTIR."
-    },
-    {
-      id: "sec_9",
-      category: "POSTRES · POSTRES",
-      icon: "icecream",
-      items: [
-        { nameCa: "Crema catalana", nameEs: "Crema catalana.", price: "6.00" },
-        { nameCa: "Torrija d'orxata amb gelat de canyella", nameEs: "Torrija de horchata con helado de canela.", price: "6.50" },
-        { nameCa: "Coulant de xocolata sense gluten amb gelat de vainilla", nameEs: "Coulant de chocolate sin gluten con helado de vainilla.", price: "7.50" },
-        { nameCa: "Coulant de xocolata amb gelat de vainilla", nameEs: "Coulant de chocolate con helado de vainilla.", price: "6.00" },
-        { nameCa: "Pastís de formatge amb fruits del bosc", nameEs: "Tarta de queso con frutos del bosque.", price: "7.00" },
-        { nameCa: "Lioneses farcides de nata amb xocolata calenta", nameEs: "Lionesas rellenas de nata con chocolate caliente.", price: "6.50" },
-        { nameCa: "Postre de músic amb fruits secs i porró de moscatell", nameEs: "Postre de músico con frutos secos y porrón de moscatel.", price: "10.50" },
-        { nameCa: "Cafè irlandes", nameEs: "Café irlandes.", price: "7.00" },
-      ]
-    },
-    {
-      id: "sec_10",
-      category: "BOLES DE GELAT · BOLAS DE HELADO",
-      icon: "icecream",
-      items: [
-        { nameCa: "Vainilla", nameEs: "Vainilla.", price: "6.00" },
-        { nameCa: "Xocolata", nameEs: "Chocolate.", price: "6.00" },
-        { nameCa: "Avellana", nameEs: "Avellana.", price: "7.00" },
-        { nameCa: "Sorbet de llimona", nameEs: "Sorbete de limón.", price: "7.00" },
-        { nameCa: "Sorbet de mandarina", nameEs: "Sorbete de mandarina.", price: "7.00" },
-      ]
-    }
-  ],
-  wineMenu: [
-    {
-      category: "Negres",
-      groups: [
-        {
-          sub: "D.O. Terra Alta",
-          items: [
-            { name: "Portal Negra (Afruitat)", desc: "12 mesos garnatxa, carinyena, syrah, merlot.", price: "17.50" },
-            { name: "Llàgrimes de Tardor (Afruitat)", desc: "12 mesos garnatxa, carinyena, syrah i cabernet sauvignon.", price: "16.50" },
-          ]
-        },
-        {
-          sub: "D.O.Q Priorat",
-          items: [
-            { name: "Els Pics (Afruitat)", desc: "14 mesos garnatxa, carinyena, merlot i syrah.", price: "22.00" },
-            { name: "Brùixola (Afruitat)", desc: "5 mesos garnatxa, carinyena, syrah.", price: "21.00" },
-            { name: "Artigas (Madur)", desc: "16 mesos garnatxa, carinyena, cabernet sauvignon.", price: "26.00" },
-          ]
-        },
-        {
-          sub: "D.O. Montsant",
-          items: [
-            { name: "Blau (Afruitat)", desc: "4 mesos Garnatxa, Sansó, Syrah.", price: "16.00" },
-            { name: "Sileo (Afruitat)", desc: "9 mesos Garnatxa, Carinyena.", price: "17.00" },
-            { name: "Volador (Afruitat)", desc: "9 mesos Garnatxa, Carinyena.", price: "18.00" },
-            { name: "Bona Nit (Afruitat)", desc: "4 mesos Garnatxa, Carinyena, Syrah.", price: "18.50" },
-            { name: "Perlat Syrach (Lleuger)", desc: "Syrah.", price: "15.00" },
-          ]
-        },
-        {
-          sub: "D.O. Ribera del Duero",
-          items: [
-            { name: "Figuero 12 (Afruitat)", desc: "12/24 mesos Tempranillo", price: "25.00" },
-          ]
-        },
-        {
-          sub: "D.O. Rioja",
-          items: [
-            { name: "Marqués de Riscal Reserva", desc: "25 mesos Tempranillo, Graciano, Mazuelo", price: "23.00" },
-            { name: "Muriel Crianza", desc: "12 mesos", price: "13.00" },
-          ]
-        },
-        {
-          sub: "D. O. Conca de Barberà",
-          items: [
-            { name: "Josep Foraster Trepat (Especiat)", desc: "7 mesos trepat", price: "20.00" },
-          ]
-        },
-      ]
-    },
-    {
-      category: "Vins Ecològics",
-      groups: [
-        {
-          sub: "D.O. Tarragona",
-          items: [
-            { name: "Pilanot Negre", desc: "45 dies de maceració amb pells, 6 mesos en bota de roure...", price: "15.00" },
-            { name: "Pilanot Rosat", desc: "Passat per bota.", price: "13.00" },
-            { name: "Pilanot Blanc", desc: "Passat per bota.", price: "13.00" },
-          ]
-        },
-        {
-          sub: "Mas de la Basserola",
-          items: [
-            { name: "Vi Negre L'Origen", desc: "Garnatxa, Merlot, Sumoll.", price: "13.00" },
-            { name: "Vi Blanc L'Essència", desc: "Parellada, Macabeu, Sauvignon.", price: "12.00" },
-          ]
-        }
-      ]
-    },
-    {
-      category: "Blancs",
-      groups: [
-        {
-          sub: "D.O. Montsant",
-          items: [
-            { name: "Cairats Frescal (Afruitat)", desc: "4 mesos, Garnatxa.", price: "17.50" },
-            { name: "Perlat (Lleuger)", desc: "Macabeu, Garnatxa.", price: "15.00" },
-          ]
-        },
-        {
-          sub: "D.O. Terra Alta",
-          items: [
-            { name: "Petites Estones (Lleuger)", desc: "Garnatxa.", price: "16.50" },
-            { name: "Ennat (Afruitat)", desc: "Garnatxa, Macabeu.", price: "16.00" },
-          ]
-        },
-        {
-          sub: "D.O. Penedès",
-          items: [
-            { name: "La Volada (Afruitat)", desc: "Variats florals i aromàtiques.", price: "19.50" },
-          ]
-        },
-        {
-          sub: "D.O. Rueda",
-          items: [
-            { name: "Palomo Cojo (Afruitat)", desc: "Verdejo.", price: "16.50" },
-          ]
-        }
-      ]
-    },
-    {
-      category: "Rosats",
-      groups: [
-        {
-          sub: "D.O. Terra Alta",
-          items: [
-            { name: "Flor de Nit (Lleuger)", desc: "Garnatxa.", price: "17.50" },
-          ]
-        },
-        {
-          sub: "D.O. Conca de Barberà",
-          items: [
-            { name: "Els Nanos Rosats (Lleuger)", desc: "Trepat.", price: "14.50" },
-          ]
-        }
-      ]
-    },
-    {
-      category: "Cava",
-      groups: [
-        {
-          sub: "",
-          items: [
-            { name: "Rimat 24 Brut Natura Reserva (Eco)", desc: "madur 30 mesos, Macabeu, Perellada, Xarel·lo", price: "18.50" },
-            { name: "Clos la Soleya Brut Natura (Lleuger)", desc: "Macabeu, Xarel·lo, Parellada.", price: "14.00" },
-          ]
-        },
-        {
-          sub: "",
-          items: [
-            { name: "Sangria de Vi de la casa", desc: "", price: "9.50" }
-          ]
-        }
-      ]
-    }
-  ],
+  foodMenu: [],
+  wineMenu: [],
   groupMenu: {
-    title: "MENÚ DE GRUP",
-    price: "39 EUROS",
-    vat: "IVA INCLÒS",
-    disclaimer: "*Qualsevol beguda no inclosa al menú es cobrarà a part.",
-    sections: [
-        {
-            title: "PER PICAR AL MIG DE LA TAULA",
-            items: [
-                { 
-                    nameCa: "Amanida de fumats amb vinagreta d'avellana.", 
-                    nameEs: "Ensalada de ahumados con vinagreta de avellana." 
-                },
-                { 
-                    nameCa: "Caneló cruixent de confit d'ànec i bolets.", 
-                    nameEs: "Canelón crujiente de confit de pato y setas." 
-                },
-                { 
-                    nameCa: "Assortiment de formatges i embotits.", 
-                    nameEs: "Surtido de quesos y embutidos." 
-                },
-                { 
-                    nameCa: "Patates braves de l'Ermita.", 
-                    nameEs: "Patatas bravas de la Ermita." 
-                }
-            ]
-        },
-        {
-            title: "SEGONS A TRIAR",
-            items: [
-                { 
-                    nameCa: "Llobarro farcit de verdures fetes a la brasa amb orio de tomaquets xerrys.", 
-                    nameEs: "Lubina rellena de verduras a la brasa con orio de tomates cherry." 
-                },
-                { 
-                    nameCa: "Espatlla de xai al forn al estil tradicional.", 
-                    nameEs: "Paletilla de cordero al horno al estilo tradicional." 
-                },
-                { 
-                    nameCa: "Timbal d'escalivada amb patata confitada i ceps.", 
-                    nameEs: "Timbal de escalivada con patata confitada y setas." 
-                },
-                { 
-                    nameCa: "Presa duroc a la brasa amb guarnició.", 
-                    nameEs: "Presa duroc a la brasa con guarnición." 
-                }
-            ]
-        },
-        {
-            title: "POSTRES",
-            items: [
-                { 
-                    nameCa: "Torrija d'orxata amb xocolata calenta i gelat de canyella.", 
-                    nameEs: "Torrija de horchata con chocolate caliente y helado de canela." 
-                },
-                { 
-                    nameCa: "Caneló amb trufa i salsa toffe.", 
-                    nameEs: "Canelón con trufa y salsa toffee." 
-                },
-                { 
-                    nameCa: "Pannacotta amb fruits vermells.", 
-                    nameEs: "Pannacotta con frutos rojos." 
-                },
-                { 
-                    nameCa: "Sorbet de llimona amb coulis de menta.", 
-                    nameEs: "Sorbete de limón con coulis de menta." 
-                }
-            ]
-        }
-    ],
-    drinks: [
-        "Vi negre o Vi blanc, 1 ampolla per cada 4 persones",
-        "Aigua d'un litre, 1 ampolla per cada 2 persones",
-        "Pa, cafè i infusió."
-    ],
-    infoIntro: "A l’Ermita t’oferim un menú especial per a grups, una selecció de les nostres millors receptes a preus per a qualsevol pressupost.",
-    infoAllergy: "En el cas que algun comensal tingués algun tipus d’intolerància alimentària, no dubtis a dir-nos, el nostre equip de cuina s’encarregarà d’oferir les millors alternatives perquè pugui gaudir del menjar.",
-    footerText: "Celebracions amb ànima"
+    title: "Menú de Grup",
+    price: "Consultar",
+    vat: "IVA inclòs",
+    disclaimer: "Mínim 10 persones",
+    sections: [],
+    drinks: ["Aigua", "Vi de la casa"],
+    infoIntro: "El menú inclou...",
+    infoAllergy: "Consulteu al·lèrgens."
   },
   extraMenus: [],
   contact: {
-    importantNoteTitle: "Important!",
-    importantNoteMessage1: "Només acceptem reserves per telèfon.",
-    importantNoteMessage2: "Per altres consultes, envieu el formulari. Gràcies!",
-    phoneNumbers: ["977 84 08 70", "619 685 156"],
-    
-    // Default Location
-    sectionTitle: "Estem a prop teu",
-    locationTitle: "Localització",
-    addressLine1: "Carretera de la Selva-Villalonga, Km 2",
-    addressLine2: "43470 La Selva del Camp",
-    schedule: "De dimarts a diumenge de 11:00 a 17:00 h.",
-    directionsButtonText: "PORTA'M-HI",
-    mapUrl: "https://www.google.com/maps/dir/?api=1&destination=Ermita+Paret+Delgada+Restaurant",
-
-    // Social Media Defaults
-    instagramUrl: "https://www.instagram.com/paret_delgada/",
-    socialTitle: "Xarxes Socials",
-    socialDescription: "Segueix el nostre dia a dia.",
-    socialButtonText: "SEGUEIX-NOS",
-
-    formTitle: "Formulari de Contacte",
-    formNameLabel: "El teu nom",
-    formEmailLabel: "El teu email",
-    formPhoneLabel: "El teu telèfon",
+    importantNoteVisible: true,
+    infoVisible: true,
+    socialVisible: true,
+    formVisible: true,
+    importantNoteTitle: "Nota Important",
+    importantNoteMessage1: "Obert caps de setmana i festius.",
+    importantNoteMessage2: "Reserves recomanades.",
+    phoneNumbers: ["+34 977 84 08 70"],
+    sectionTitle: "Contacte i Ubicació",
+    locationTitle: "On som",
+    addressLine1: "Ctra. de la Selva a Vilallonga, Km 2",
+    addressLine2: "43470 La Selva del Camp, Tarragona",
+    schedule: "Dimarts a Diumenge 13:00 - 16:00",
+    directionsButtonText: "Com arribar-hi",
+    mapUrl: "https://goo.gl/maps/example",
+    instagramUrl: "https://instagram.com/example",
+    socialTitle: "Segueix-nos",
+    socialDescription: "Per estar al dia de les nostres novetats.",
+    socialButtonText: "Instagram",
+    formTitle: "Envia'ns un missatge",
+    formNameLabel: "Nom",
+    formEmailLabel: "Email",
+    formPhoneLabel: "Telèfon",
     formSubjectLabel: "Assumpte",
     formMessageLabel: "Missatge",
-    formButtonText: "Enviar Missatge"
+    formButtonText: "Enviar"
   },
   navbar: {
     reserveButtonText: "Reserva",
@@ -685,7 +352,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            // Arrays need fallback if empty in DB
            foodMenu: data.foodMenu || prev.foodMenu,
            wineMenu: data.wineMenu || prev.wineMenu,
-           extraMenus: data.extraMenus || prev.extraMenus || [], // Ensure array
+           extraMenus: data.extraMenus || prev.extraMenus || [], 
            groupMenu: data.groupMenu ? {
                 ...prev.groupMenu,
                 ...data.groupMenu,
@@ -693,7 +360,6 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            } : prev.groupMenu
         }));
       } else {
-        // Si no existe (es la primera vez), subimos la configuración por defecto
         try {
           set(dbRef, defaultAppConfig);
           console.log("Created default configuration in Realtime Database");
@@ -711,13 +377,11 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   }, []);
 
   const updateConfig = async (newConfig: Partial<AppConfig>) => {
-    // 1. Optimistic update (for UI responsiveness)
     setConfig(prev => {
         const merged = { ...prev, ...newConfig };
         return merged;
     });
 
-    // 2. Save to Realtime Database
     try {
       const dbRef = ref(db, 'websiteConfig');
       const configToSave = { ...config, ...newConfig };
