@@ -3,46 +3,132 @@ import { IconPicker } from './AdminShared';
 
 // --- ISOLATED EDITOR COMPONENTS ---
 
+// 1. PRICE HEADER EDITOR (Preu i IVA)
+const PriceHeaderEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
+    // Default showPrice to true if price exists, or false if not set
+    const showPrice = data.showPrice !== undefined ? data.showPrice : (!!data.price);
+
+    const updateField = (field: string, val: any) => {
+        onChange({ ...data, [field]: val });
+    };
+
+    return (
+        <div className={`bg-emerald-50 p-6 rounded shadow-sm border ${showPrice ? 'border-emerald-200' : 'border-gray-200 bg-gray-50 opacity-60'} mb-6`}>
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-emerald-800 flex items-center gap-2 text-sm uppercase">
+                    <span className="material-symbols-outlined">payments</span> Preu Global i Condicions
+                </h4>
+                <button 
+                    onClick={() => updateField('showPrice', !showPrice)}
+                    className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showPrice ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                >
+                    {showPrice ? 'Visible' : 'Ocult'}
+                </button>
+            </div>
+            {showPrice && (
+                <div className="grid grid-cols-2 gap-4 animate-[fadeIn_0.2s_ease-out]">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-emerald-600 mb-1">Preu del Menú</label>
+                        <input value={data.price || ''} onChange={(e) => updateField('price', e.target.value)} className="block w-full border border-emerald-200 rounded px-3 py-2 text-sm outline-none focus:border-emerald-400 bg-white" placeholder="Ex: 35€" />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-emerald-600 mb-1">Text IVA / Impostos</label>
+                        <input value={data.vat || ''} onChange={(e) => updateField('vat', e.target.value)} className="block w-full border border-emerald-200 rounded px-3 py-2 text-sm outline-none focus:border-emerald-400 bg-white" placeholder="Ex: IVA INCLÒS" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// 2. INFO BLOCK EDITOR (Intro i Al·lèrgens)
+const InfoBlockEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
+    const showInfo = data.showInfo !== undefined ? data.showInfo : (!!data.infoIntro || !!data.infoAllergy);
+
+    const updateField = (field: string, val: any) => {
+        onChange({ ...data, [field]: val });
+    };
+
+    return (
+        <div className={`bg-blue-50 p-6 rounded shadow-sm border ${showInfo ? 'border-blue-200' : 'border-gray-200 bg-gray-50 opacity-60'} mb-6`}>
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-blue-800 flex items-center gap-2 text-sm uppercase">
+                    <span className="material-symbols-outlined">info</span> Informació i Al·lèrgens
+                </h4>
+                <button 
+                    onClick={() => updateField('showInfo', !showInfo)}
+                    className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showInfo ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                >
+                    {showInfo ? 'Visible' : 'Ocult'}
+                </button>
+            </div>
+            {showInfo && (
+                <div className="space-y-4 animate-[fadeIn_0.2s_ease-out]">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-blue-400 mb-1">Text Introducció (Inclou...)</label>
+                        <textarea value={data.infoIntro || ''} onChange={(e) => updateField('infoIntro', e.target.value)} rows={2} className="block w-full border border-blue-200 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white" placeholder="Ex: El menú inclou primer, segon, postres..." />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-blue-400 mb-1">Text Al·lèrgens</label>
+                        <textarea value={data.infoAllergy || ''} onChange={(e) => updateField('infoAllergy', e.target.value)} rows={2} className="block w-full border border-blue-200 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 bg-white" placeholder="Ex: Si tens alguna al·lèrgia, informa'ns." />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    const safeData = Array.isArray(data) ? data : [];
+    // Normalizar datos: Si es array (formato antiguo), lo convertimos a objeto con secciones.
+    const isLegacy = Array.isArray(data);
+    const sections = isLegacy ? data : (data?.sections || []);
+    const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
+    const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
+
+    // Merge existing data with structure
+    const currentData = isLegacy ? { sections, disclaimer, showDisclaimer } : data;
+
+    const updateData = (newData: any) => {
+        onChange({ ...currentData, ...newData });
+    };
 
     const handleSectionChange = (idx: number, field: string, val: string) => {
-        const newData = safeData.map((section: any, i: number) => 
+        const newSections = sections.map((section: any, i: number) => 
             i === idx ? { ...section, [field]: val } : section
         );
-        onChange(newData);
+        updateData({ sections: newSections });
     };
     const handleItemChange = (sIdx: number, iIdx: number, field: string, val: string) => {
-        const newData = safeData.map((section: any, i: number) => {
+        const newSections = sections.map((section: any, i: number) => {
             if (i !== sIdx) return section;
             const newItems = (section.items || []).map((item: any, j: number) => 
                 j === iIdx ? { ...item, [field]: val } : item
             );
             return { ...section, items: newItems };
         });
-        onChange(newData);
+        updateData({ sections: newSections });
     };
-    const addSection = () => onChange([...safeData, { id: `sec_${Date.now()}`, category: "NOVA SECCIÓ", icon: "restaurant", items: [] }]);
+    const addSection = () => updateData({ sections: [...sections, { id: `sec_${Date.now()}`, category: "NOVA SECCIÓ", icon: "restaurant", items: [] }] });
     const removeSection = (idx: number) => {
-        const newData = [...safeData];
-        newData.splice(idx, 1);
-        onChange(newData);
+        const newSections = [...sections];
+        newSections.splice(idx, 1);
+        updateData({ sections: newSections });
     };
     const addItem = (sIdx: number) => {
-        const newData = safeData.map((section: any, i: number) => {
+        const newSections = sections.map((section: any, i: number) => {
             if (i !== sIdx) return section;
             return { ...section, items: [...(section.items || []), { nameCa: "", nameEs: "", price: "" }] };
         });
-        onChange(newData);
+        updateData({ sections: newSections });
     };
     const removeItem = (sIdx: number, iIdx: number) => {
-        const newData = safeData.map((section: any, i: number) => {
+        const newSections = sections.map((section: any, i: number) => {
             if (i !== sIdx) return section;
             const newItems = [...(section.items || [])];
             newItems.splice(iIdx, 1);
             return { ...section, items: newItems };
         });
-        onChange(newData);
+        updateData({ sections: newSections });
     };
 
     return (
@@ -52,7 +138,13 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                     <span className="material-symbols-outlined text-sm">add</span> Nova Secció
                 </button>
             </div>
-            {safeData.map((section: any, sIdx: number) => (
+            
+            {/* SEPARATED PRICE & INFO EDITORS */}
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+
+            {/* SECTIONS LOOP */}
+            {sections.map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
                         <div className="flex-1">
@@ -80,31 +172,75 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                         <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#8b5a2b] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu</label>
+                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (opcional)</label>
                         <input type="text" value={section.footer || ''} onChange={(e) => handleSectionChange(sIdx, 'footer', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none" />
                     </div>
                 </div>
             ))}
+
+            {/* GLOBAL DISCLAIMER SECTION */}
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase">
+                        <span className="material-symbols-outlined">info</span> Info Final / Disclaimer
+                    </h4>
+                    <button 
+                        onClick={() => updateData({ showDisclaimer: !showDisclaimer })}
+                        className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                    >
+                        {showDisclaimer ? 'Visible' : 'Ocult'}
+                    </button>
+                </div>
+                {showDisclaimer && (
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label>
+                        <input 
+                            type="text" 
+                            value={disclaimer} 
+                            onChange={(e) => updateData({ disclaimer: e.target.value })}
+                            className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none"
+                            placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    const safeData = Array.isArray(data) ? data : [];
+    // Normalizar datos para vinos
+    const isLegacy = Array.isArray(data);
+    const categories = isLegacy ? data : (data?.categories || data || []); 
+    const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
+    const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
+
+    const currentData = isLegacy ? { categories, disclaimer, showDisclaimer } : data;
+
+    const updateData = (newData: any) => {
+        onChange({ ...currentData, ...newData });
+    };
 
     const handleCategoryChange = (idx: number, val: string) => {
-        const newData = safeData.map((cat:any, i:number) => i === idx ? {...cat, category: val} : cat);
-        onChange(newData);
+        const newCats = categories.map((cat:any, i:number) => i === idx ? {...cat, category: val} : cat);
+        updateData({ categories: newCats });
     };
-    const addCategory = () => onChange([...safeData, {category:"NOVA", groups:[]}]);
+    const addCategory = () => updateData({ categories: [...categories, {category:"NOVA", groups:[]}] });
     const removeCategory = (idx: number) => { 
-        const n=[...safeData]; n.splice(idx,1); onChange(n); 
+        const n=[...categories]; n.splice(idx,1); 
+        updateData({ categories: n }); 
     };
     
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
             <div className="flex justify-end"><button onClick={addCategory} className="bg-olive text-white px-3 py-2 rounded text-xs font-bold uppercase">Nova Categoria</button></div>
-            {safeData.map((cat: any, cIdx: number) => (
+            
+            {/* SEPARATED PRICE & INFO EDITORS */}
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+
+            {/* CATEGORIES LOOP */}
+            {categories.map((cat: any, cIdx: number) => (
                 <div key={cIdx} className="bg-white border border-gray-200 rounded p-4">
                     <div className="flex justify-between mb-4 border-b pb-2">
                         <input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" />
@@ -117,15 +253,15 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                     <input value={grp.sub} onChange={(e)=>{
                                         const newCat = {...cat};
                                         newCat.groups = (cat.groups || []).map((g:any, gi:number) => gi === gIdx ? {...g, sub: e.target.value} : g);
-                                        const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                        onChange(newData);
+                                        const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                        updateData({ categories: newCats });
                                     }} placeholder="Subgrup (ex: D.O. Terra Alta)" className="italic w-full outline-none" />
                                     <button onClick={()=>{
                                         const newCat = {...cat};
                                         newCat.groups = [...(cat.groups || [])];
                                         newCat.groups.splice(gIdx,1);
-                                        const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                        onChange(newData);
+                                        const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                        updateData({ categories: newCats });
                                     }} className="text-red-300"><span className="material-symbols-outlined text-sm">remove_circle</span></button>
                                 </div>
                                 {(grp.items || []).map((it:any,iIdx:number)=>(
@@ -137,8 +273,8 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                             newItems[iIdx] = {...newItems[iIdx], name: e.target.value};
                                             newGroups[gIdx] = {...newGroups[gIdx], items: newItems};
                                             newCat.groups = newGroups;
-                                            const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                            onChange(newData);
+                                            const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                            updateData({ categories: newCats });
                                         }} className="w-1/3 border-b text-sm" placeholder="Nom" />
                                         <input value={it.desc} onChange={(e)=>{
                                             const newCat = {...cat};
@@ -147,8 +283,8 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                             newItems[iIdx] = {...newItems[iIdx], desc: e.target.value};
                                             newGroups[gIdx] = {...newGroups[gIdx], items: newItems};
                                             newCat.groups = newGroups;
-                                            const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                            onChange(newData);
+                                            const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                            updateData({ categories: newCats });
                                         }} className="w-1/3 border-b text-xs text-gray-500" placeholder="Desc" />
                                         <input value={it.price} onChange={(e)=>{
                                             const newCat = {...cat};
@@ -157,8 +293,8 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                             newItems[iIdx] = {...newItems[iIdx], price: e.target.value};
                                             newGroups[gIdx] = {...newGroups[gIdx], items: newItems};
                                             newCat.groups = newGroups;
-                                            const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                            onChange(newData);
+                                            const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                            updateData({ categories: newCats });
                                         }} className="w-1/6 border-b text-right text-sm" placeholder="€" />
                                         <button onClick={()=>{
                                             const newCat = {...cat};
@@ -167,8 +303,8 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                             newItems.splice(iIdx, 1);
                                             newGroups[gIdx] = {...newGroups[gIdx], items: newItems};
                                             newCat.groups = newGroups;
-                                            const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                            onChange(newData);
+                                            const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                            updateData({ categories: newCats });
                                         }} className="text-red-200"><span className="material-symbols-outlined text-sm">close</span></button>
                                     </div>
                                 ))}
@@ -178,47 +314,85 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                                     const newItems = [...(newGroups[gIdx].items || []), {name:"",desc:"",price:""}];
                                     newGroups[gIdx] = {...newGroups[gIdx], items: newItems};
                                     newCat.groups = newGroups;
-                                    const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                                    onChange(newData);
+                                    const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                                    updateData({ categories: newCats });
                                 }} className="text-xs text-olive font-bold">+ Vi</button>
                             </div>
                         ))}
                         <button onClick={()=>{
                             const newCat = {...cat};
                             newCat.groups = [...(cat.groups || []), {sub:"",items:[]}];
-                            const newData = safeData.map((c:any, ci:number) => ci === cIdx ? newCat : c);
-                            onChange(newData);
+                            const newCats = categories.map((c:any, ci:number) => ci === cIdx ? newCat : c);
+                            updateData({ categories: newCats });
                         }} className="text-xs font-bold mt-2">+ Grup</button>
                     </div>
                 </div>
             ))}
+
+            {/* GLOBAL DISCLAIMER SECTION (WINE) */}
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase">
+                        <span className="material-symbols-outlined">info</span> Info Final / Disclaimer
+                    </h4>
+                    <button 
+                        onClick={() => updateData({ showDisclaimer: !showDisclaimer })}
+                        className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                    >
+                        {showDisclaimer ? 'Visible' : 'Ocult'}
+                    </button>
+                </div>
+                {showDisclaimer && (
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label>
+                        <input 
+                            type="text" 
+                            value={disclaimer} 
+                            onChange={(e) => updateData({ disclaimer: e.target.value })}
+                            className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none"
+                            placeholder="Ex: I.V.A. Inclòs. Consulteu al·lèrgens."
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     if (!data) return <div>Carregant editor...</div>;
+
+    const showDisclaimer = data.showDisclaimer !== false; // Default true
+
+    const updateField = (field: string, value: any) => {
+        onChange({ ...data, [field]: value });
+    };
+
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <div className="bg-white p-6 rounded shadow border-gray-200">
                 <h4 className="font-bold mb-4 text-[#8b5a2b]">Info General</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="block text-xs text-gray-400 font-bold mb-1">Preu</label><input value={data.price} onChange={(e)=>{onChange({...data, price:e.target.value})}} className="border p-2 rounded w-full" placeholder="Ex: 35€" /></div>
-                    <div><label className="block text-xs text-gray-400 font-bold mb-1">Títol Menú</label><input value={data.title} onChange={(e)=>{onChange({...data, title:e.target.value})}} className="border p-2 rounded w-full" placeholder="Títol" /></div>
-                    <div className="md:col-span-2"><label className="block text-xs text-red-400 font-bold mb-1">Disclaimer</label><input value={data.disclaimer} onChange={(e)=>{onChange({...data, disclaimer:e.target.value})}} className="border border-red-100 bg-red-50 p-2 rounded w-full text-red-600 text-sm" /></div>
+                    {/* Price moved to InfoHeaderEditor */}
+                    <div><label className="block text-xs text-gray-400 font-bold mb-1">Títol Menú</label><input value={data.title || ''} onChange={(e)=>updateField('title', e.target.value)} className="border p-2 rounded w-full" placeholder="Títol" /></div>
                 </div>
             </div>
+            
+            {/* SEPARATED PRICE & INFO EDITORS - Handles Price, VAT, Intro, Allergies */}
+            <PriceHeaderEditor data={data} onChange={(newData) => onChange({...data, ...newData})} />
+            <InfoBlockEditor data={data} onChange={(newData) => onChange({...data, ...newData})} />
+
             {(data.sections || []).map((sec:any,sIdx:number)=>(
                 <div key={sIdx} className="bg-white p-6 rounded shadow border-gray-200">
                     <div className="flex justify-between mb-4 border-b pb-2">
                         <input value={sec.title} onChange={(e)=>{
                             const newSections = (data.sections || []).map((s:any, si:number) => si === sIdx ? {...s, title: e.target.value} : s);
-                            onChange({...data, sections: newSections});
+                            updateField('sections', newSections);
                         }} className="font-bold outline-none text-lg text-olive w-full" placeholder="Títol Secció" />
                         <button onClick={()=>{
                             const newSections = [...(data.sections || [])];
                             newSections.splice(sIdx, 1);
-                            onChange({...data, sections: newSections});
+                            updateField('sections', newSections);
                         }} className="text-red-400"><span className="material-symbols-outlined">delete</span></button>
                     </div>
                     <div className="space-y-2">
@@ -229,21 +403,21 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                                     const newItems = [...(newSections[sIdx].items || [])];
                                     newItems[iIdx] = {...newItems[iIdx], nameCa: e.target.value};
                                     newSections[sIdx] = {...newSections[sIdx], items: newItems};
-                                    onChange({...data, sections: newSections});
+                                    updateField('sections', newSections);
                                 }} className="w-1/2 bg-transparent border-b text-sm font-bold" placeholder="Plat (Català)" />
                                 <input value={it.nameEs} onChange={(e)=>{
                                     const newSections = [...(data.sections || [])];
                                     const newItems = [...(newSections[sIdx].items || [])];
                                     newItems[iIdx] = {...newItems[iIdx], nameEs: e.target.value};
                                     newSections[sIdx] = {...newSections[sIdx], items: newItems};
-                                    onChange({...data, sections: newSections});
+                                    updateField('sections', newSections);
                                 }} className="w-1/2 bg-transparent border-b text-sm text-gray-500" placeholder="Plato (Castellano)" />
                                 <button onClick={()=>{
                                     const newSections = [...(data.sections || [])];
                                     const newItems = [...(newSections[sIdx].items || [])];
                                     newItems.splice(iIdx, 1);
                                     newSections[sIdx] = {...newSections[sIdx], items: newItems};
-                                    onChange({...data, sections: newSections});
+                                    updateField('sections', newSections);
                                 }} className="text-red-300"><span className="material-symbols-outlined text-sm">remove_circle</span></button>
                             </div>
                         ))}
@@ -251,41 +425,78 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                             const newSections = [...(data.sections || [])];
                             const newItems = [...(newSections[sIdx].items || []), {nameCa:"",nameEs:""}];
                             newSections[sIdx] = {...newSections[sIdx], items: newItems};
-                            onChange({...data, sections: newSections});
+                            updateField('sections', newSections);
                         }} className="text-xs font-bold text-olive flex items-center gap-1 mt-2"><span className="material-symbols-outlined text-sm">add</span> Afegir Plat</button>
                     </div>
                 </div>
             ))}
             <button onClick={()=>{
                 const newSections = [...(data.sections || []), {title:"NOVA SECCIÓ",items:[]}];
-                onChange({...data, sections: newSections});
+                updateField('sections', newSections);
             }} className="bg-olive text-white px-4 py-2 rounded text-xs font-bold w-full">NOVA SECCIÓ DE PLATS</button>
+
+            {/* GLOBAL DISCLAIMER SECTION (GROUP) */}
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase">
+                        <span className="material-symbols-outlined">info</span> Info Final / Disclaimer
+                    </h4>
+                    <button 
+                        onClick={() => updateField('showDisclaimer', !showDisclaimer)}
+                        className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                    >
+                        {showDisclaimer ? 'Visible' : 'Ocult'}
+                    </button>
+                </div>
+                {showDisclaimer && (
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label>
+                        <input 
+                            type="text" 
+                            value={data.disclaimer || ''} 
+                            onChange={(e) => updateField('disclaimer', e.target.value)}
+                            className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none"
+                            placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
 // --- DATA TEMPLATES ---
-export const getBlankFoodMenu = () => ([
-    {
+export const getBlankFoodMenu = () => ({
+    sections: [{
       id: `sec_${Date.now()}`,
       category: "NOVA SECCIÓ",
       icon: "restaurant",
       items: [{ nameCa: "", nameEs: "", price: "" }]
-    }
-]);
+    }],
+    disclaimer: "",
+    showDisclaimer: true,
+    showInfo: false,
+    showPrice: false
+});
 
-export const getBlankWineMenu = () => ([
-    {
+export const getBlankWineMenu = () => ({
+    categories: [{
         category: "NOVA CATEGORIA",
         groups: [{ sub: "", items: [{ name: "", desc: "", price: "" }] }]
-    }
-]);
+    }],
+    disclaimer: "",
+    showDisclaimer: true,
+    showInfo: false,
+    showPrice: false
+});
 
 export const getBlankGroupMenu = () => ({
     title: "NOU MENÚ DE GRUP",
     price: "00 EUROS",
     vat: "IVA INCLÒS",
     disclaimer: "",
+    showInfo: true, 
+    showPrice: true,
     sections: [{ title: "PRIMERS", items: [{ nameCa: "", nameEs: "" }] }],
     drinks: ["Aigua i Vi"],
     infoIntro: "Informació del menú...",
@@ -300,7 +511,7 @@ interface MenuManagerProps {
     setMenuViewState: (view: 'dashboard' | 'type_selection' | 'editor') => void;
     editingMenuId: string | null;
     setEditingMenuId: (id: string | null) => void;
-    onDeleteCard: () => void;
+    onDeleteCard: (id?: string) => void; 
 }
 
 export const MenuManager: React.FC<MenuManagerProps> = ({
@@ -309,7 +520,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
     const getCurrentMenuData = () => {
         if (!editingMenuId) return null;
-        if (editingMenuId === 'main_daily') return localConfig.dailyMenu; // NEW HANDLER
+        if (editingMenuId === 'main_daily') return localConfig.dailyMenu; 
         if (editingMenuId === 'main_food') return localConfig.foodMenu;
         if (editingMenuId === 'main_wine') return localConfig.wineMenu;
         if (editingMenuId === 'main_group') return localConfig.groupMenu;
@@ -324,7 +535,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
     const updateCurrentMenuData = (newData: any) => {
         if (!editingMenuId) return;
         if (editingMenuId === 'main_daily') {
-            setLocalConfig((prev:any) => ({ ...prev, dailyMenu: newData })); // NEW HANDLER
+            setLocalConfig((prev:any) => ({ ...prev, dailyMenu: newData })); 
         } else if (editingMenuId === 'main_food') {
             setLocalConfig((prev:any) => ({ ...prev, foodMenu: newData }));
         } else if (editingMenuId === 'main_wine') {
@@ -368,89 +579,110 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
     return (
         <div className="animate-[fadeIn_0.3s_ease-out]">
             {menuViewState === 'dashboard' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* NEW DAILY MENU CARD */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative border-l-4 border-l-primary">
-                        <div className="h-24 bg-primary flex items-center justify-center relative overflow-hidden">
-                            <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">lunch_dining</span>
-                            <span className="text-black font-serif font-bold text-xl relative z-10">Menú Diari</span>
+                <div className="space-y-8">
+                    {/* TOP ACTION PANEL */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 className="font-serif text-2xl font-bold text-[#2c241b] flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#8b5a2b]">restaurant_menu</span>
+                                Gestor de Cartes
+                            </h3>
+                            <p className="text-gray-500 text-sm mt-1">Administra els menús fixes i crea cartes addicionals (temporada, esdeveniments...).</p>
                         </div>
-                        <div className="p-6">
-                            <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
-                            <button onClick={() => { setEditingMenuId('main_daily'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                <span className="material-symbols-outlined text-sm">edit</span> Editar
-                            </button>
-                        </div>
+                        <button 
+                            onClick={() => setMenuViewState('type_selection')} 
+                            className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-6 py-3 rounded-lg shadow-md font-bold uppercase text-xs tracking-widest flex items-center gap-2 transition-transform transform hover:-translate-y-0.5"
+                        >
+                            <span className="material-symbols-outlined text-lg">add_circle</span>
+                            Crear Nova Carta
+                        </button>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                        <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
-                            <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span>
-                            <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* NEW DAILY MENU CARD */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative border-l-4 border-l-primary">
+                            <div className="h-24 bg-primary flex items-center justify-center relative overflow-hidden">
+                                <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">lunch_dining</span>
+                                <span className="text-black font-serif font-bold text-xl relative z-10">Menú Diari</span>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
+                                <button onClick={() => { setEditingMenuId('main_daily'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                </button>
+                            </div>
                         </div>
-                        <div className="p-6">
-                            <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
-                            <button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                <span className="material-symbols-outlined text-sm">edit</span> Editar
-                            </button>
+
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                            <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
+                                <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
+                                <button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                        <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
-                            <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span>
-                            <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span>
+                        
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                            <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
+                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
+                                <button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                </button>
+                            </div>
                         </div>
-                        <div className="p-6">
-                            <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
-                            <button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                <span className="material-symbols-outlined text-sm">edit</span> Editar
-                            </button>
+                        
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                            <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
+                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
+                                <button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                        <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
-                            <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span>
-                            <span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span>
-                        </div>
-                        <div className="p-6">
-                            <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
-                            <button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                <span className="material-symbols-outlined text-sm">edit</span> Editar
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {(localConfig.extraMenus || []).map((menu:any, idx:number) => { 
-                        let headerColor = "bg-gray-700"; 
-                        let icon = "restaurant"; 
-                        if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
-                        if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
-                        return (
-                            <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                                <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
-                                    <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span>
-                                    <div className="text-center px-2">
-                                        <span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span>
-                                        <span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
+                        
+                        {(localConfig.extraMenus || []).map((menu:any, idx:number) => { 
+                            let headerColor = "bg-gray-700"; 
+                            let icon = "restaurant"; 
+                            if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
+                            if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                            return (
+                                <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                                    <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
+                                        <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span>
+                                        {/* ICON BUTTON REMOVED FROM HEADER */}
+                                        <div className="text-center px-2">
+                                            <span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span>
+                                            <span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-6 space-y-3">
+                                        <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                            <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                        </button>
+                                        {/* NEW FULL WIDTH DELETE BUTTON IN BODY */}
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); onDeleteCard(`extra_${idx}`); }} 
+                                            className="w-full py-1 text-red-300 hover:text-red-500 rounded font-bold uppercase text-[10px] flex items-center justify-center gap-1 transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">delete</span> Esborrar
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                    </button>
-                                </div>
-                            </div>
-                        ); 
-                    })}
-                    
-                    <button onClick={() => setMenuViewState('type_selection')} className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all group min-h-[200px]">
-                        <div className="w-16 h-16 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
-                            <span className="material-symbols-outlined text-3xl">add</span>
-                        </div>
-                        <span className="font-bold uppercase text-xs tracking-widest">Crear Nova Carta</span>
-                    </button>
+                            ); 
+                        })}
+                    </div>
                 </div>
             )}
             
@@ -470,7 +702,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 {editingMenuId.startsWith('extra_') && (<input type="text" className="mt-1 border-b border-gray-300 focus:border-primary outline-none text-sm text-gray-500 w-64 bg-transparent" value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || ''} onChange={(e) => { const idx = parseInt(editingMenuId.replace('extra_','')); const newExtras = [...localConfig.extraMenus]; newExtras[idx].title = e.target.value; setLocalConfig((prev:any) => ({ ...prev, extraMenus: newExtras })); }} placeholder="Nom de la carta (Ex: Menú Calçotada)" />)}
                             </div>
                         </div>
-                        {editingMenuId.startsWith('extra_') && (<button onClick={onDeleteCard} className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"><span className="material-symbols-outlined text-lg">delete</span> Esborrar Carta</button>)}
+                        {editingMenuId.startsWith('extra_') && (<button onClick={() => onDeleteCard()} className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"><span className="material-symbols-outlined text-lg">delete</span> Esborrar Carta</button>)}
                     </div>
                     <div className="bg-gray-50/50 p-1 rounded-lg">
                         {/* EDITOR SELECTION LOGIC */}

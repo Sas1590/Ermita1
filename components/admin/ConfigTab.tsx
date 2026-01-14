@@ -166,7 +166,8 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-olive"></div>
                 <h3 className="font-serif text-xl font-bold text-olive mb-6 flex items-center gap-2">
                     <div className="w-8 h-8 rounded bg-lime-200 flex items-center justify-center text-olive">
-                        <span className="material-symbols-outlined">format_quote</span>
+                        {/* CHANGED FROM format_quote (WHICH LOOKS LIKE 99) TO description */}
+                        <span className="material-symbols-outlined">description</span>
                     </div>
                     Intro (Frase Inicial)
                 </h3>

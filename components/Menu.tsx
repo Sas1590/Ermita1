@@ -6,14 +6,68 @@ interface MenuProps {
   onToggleTab: (tab: string | null) => void;
 }
 
+// --- SHARED INFO BLOCK COMPONENT (PRICE & INFO BOX) ---
+const MenuInfoBlock: React.FC<{ menuData: any }> = ({ menuData }) => {
+    const [showInfoBox, setShowInfoBox] = useState(true);
+    
+    // Fallback logic: 
+    // If showInfo is explicitly false, hide everything.
+    // If undefined (legacy Food/Wine), default to false UNLESS fields are present (unlikely for old data).
+    // For Group menus, usually showInfo is true or undefined (treated as true in legacy).
+    
+    // Simplification: Check the flag.
+    const isVisible = menuData.showInfo !== false; 
+
+    if (!isVisible) return null;
+
+    // Check if there is actual content to show
+    const hasPrice = !!menuData.price;
+    const hasInfo = !!menuData.infoIntro || !!menuData.infoAllergy;
+
+    if (!hasPrice && !hasInfo) return null;
+
+    return (
+        <div className="flex flex-col items-center mt-12 mb-8">
+            {/* PRICE SECTION */}
+            {hasPrice && (
+                <div className="text-center border-t-2 border-b-2 border-[#2c241b] py-6 px-12 inline-block mb-10">
+                    <span className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] tracking-widest block">{menuData.price}</span>
+                    {menuData.vat && <span className="font-sans text-sm font-bold text-[#8b5a2b] uppercase tracking-[0.3em]">{menuData.vat}</span>}
+                </div>
+            )}
+
+            {/* INFO BOX SECTION */}
+            {hasInfo && showInfoBox && (
+                <div className="relative w-full max-w-4xl mx-auto bg-[#F9F7F2] border-l-4 border-[#8b5a2b] shadow-lg p-6 md:p-8 animate-[fadeIn_0.5s_ease-out]">
+                    <button onClick={() => setShowInfoBox(false)} className="absolute top-2 right-2 md:top-4 md:right-4 text-[#8b5a2b]/50 hover:text-[#8b5a2b] transition-colors p-2" title="Tancar avís"><span className="material-symbols-outlined">close</span></button>
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <div className="shrink-0 flex justify-center md:block"><span className="material-symbols-outlined text-5xl text-[#8b5a2b] bg-[#e8e4d9] rounded-full p-3">info</span></div>
+                        <div className="font-sans text-[#2c241b] space-y-4 text-sm md:text-base leading-relaxed w-full">
+                            {menuData.infoIntro && <p className="font-medium text-lg border-b border-gray-200 pb-2">{menuData.infoIntro}</p>}
+                            {menuData.infoAllergy && <p>{menuData.infoAllergy}</p>}
+                            <p className="italic text-gray-500 text-xs pt-2">* Recorda que no s’accepten tiquets restaurant ni descomptes en el menú de grup.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // --- SUB-COMPONENTS FOR CONTENT RENDERING ---
 
-const FoodMenuContent: React.FC<{ menuData: MenuSection[] }> = ({ menuData }) => {
+const FoodMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
     if (!menuData) return null;
+    
+    // Support both Legacy (Array) and New (Object) structure
+    const isLegacy = Array.isArray(menuData);
+    const sections: MenuSection[] = isLegacy ? menuData : (menuData.sections || []);
+    const disclaimer = isLegacy ? null : (menuData.showDisclaimer !== false ? menuData.disclaimer : null);
+
     return (
     <div className="p-8 md:p-16 space-y-16 bg-[#F9F7F2] relative">
         <div className="absolute inset-4 md:inset-6 border-4 border-double border-[#d0bb95] pointer-events-none opacity-50"></div>
-        {(menuData || []).map((section, idx) => (
+        {sections.map((section, idx) => (
             <div key={idx} className="relative z-10">
                 <div className="text-center mb-10">
                     <div className="flex items-center justify-center gap-4 mb-3">
@@ -50,15 +104,31 @@ const FoodMenuContent: React.FC<{ menuData: MenuSection[] }> = ({ menuData }) =>
                 )}
             </div>
         ))}
+        
+        {/* NEW: MENU INFO BLOCK (Optional Price/Info) */}
+        {!isLegacy && <MenuInfoBlock menuData={menuData} />}
+
+        {/* GLOBAL DISCLAIMER (Optional) */}
+        {disclaimer && (
+            <div className="mt-12 text-center text-red-600 font-hand text-lg font-bold border-t-2 border-red-100 pt-6 relative z-10 max-w-2xl mx-auto">
+                {disclaimer}
+            </div>
+        )}
     </div>
     );
 };
 
-const WineMenuContent: React.FC<{ menuData: WineCategory[] }> = ({ menuData }) => {
+const WineMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
     if (!menuData) return null;
+
+    // Support both Legacy (Array) and New (Object) structure
+    const isLegacy = Array.isArray(menuData);
+    const categories: WineCategory[] = isLegacy ? menuData : (menuData.categories || menuData || []);
+    const disclaimer = isLegacy ? null : (menuData.showDisclaimer !== false ? menuData.disclaimer : null);
+
     return (
     <div className="p-8 md:p-16 space-y-16">
-        {(menuData || []).map((section, idx) => (
+        {categories.map((section, idx) => (
             <div key={idx}>
                 <div className="flex items-center justify-center mb-10">
                     <div className="h-px bg-[#8b5a2b] w-12 opacity-50"></div>
@@ -91,13 +161,24 @@ const WineMenuContent: React.FC<{ menuData: WineCategory[] }> = ({ menuData }) =
                 </div>
             </div>
         ))}
+        
+        {/* NEW: MENU INFO BLOCK (Optional Price/Info) */}
+        {!isLegacy && <MenuInfoBlock menuData={menuData} />}
+
+        {/* GLOBAL DISCLAIMER (Optional) */}
+        {disclaimer && (
+            <div className="mt-12 text-center text-red-600 font-hand text-lg font-bold border-t-2 border-red-100 pt-6 max-w-2xl mx-auto">
+                {disclaimer}
+            </div>
+        )}
     </div>
     );
 };
 
 const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
-    const [showGroupInfo, setShowGroupInfo] = useState(true);
     if (!menuData) return null;
+
+    const showDisclaimer = menuData.showDisclaimer !== false; // Default true
 
     return (
         <div className="p-8 md:p-16 flex flex-col items-center bg-[#F9F7F2]">
@@ -105,6 +186,7 @@ const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                 <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] uppercase tracking-widest mb-2">{menuData.title}</h2>
                 <div className="w-24 h-1 bg-[#8b5a2b] mx-auto rounded-full"></div>
             </div>
+            
             <div className="space-y-12 w-full max-w-3xl">
                 {(menuData.sections || []).map((section: GroupMenuSection, idx: number) => (
                     <div key={idx} className="text-center relative">
@@ -130,23 +212,13 @@ const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                     <p key={idx}>{drink}</p>
                 ))}
             </div>
-            <div className="mt-6 text-red-600 font-hand text-lg font-bold">{menuData.disclaimer}</div>
-            <div className="mt-12 text-center border-t-2 border-b-2 border-[#2c241b] py-6 px-12 inline-block">
-                <span className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] tracking-widest block">{menuData.price}</span>
-                <span className="font-sans text-sm font-bold text-[#8b5a2b] uppercase tracking-[0.3em]">{menuData.vat}</span>
-            </div>
-            {showGroupInfo && (
-                <div className="relative w-full max-w-4xl mx-auto mt-16 bg-[#F9F7F2] border-l-4 border-[#8b5a2b] shadow-lg p-6 md:p-8 animate-[fadeIn_0.5s_ease-out]">
-                    <button onClick={() => setShowGroupInfo(false)} className="absolute top-2 right-2 md:top-4 md:right-4 text-[#8b5a2b]/50 hover:text-[#8b5a2b] transition-colors p-2" title="Tancar avís"><span className="material-symbols-outlined">close</span></button>
-                    <div className="flex flex-col md:flex-row gap-6">
-                        <div className="shrink-0 flex justify-center md:block"><span className="material-symbols-outlined text-5xl text-[#8b5a2b] bg-[#e8e4d9] rounded-full p-3">info</span></div>
-                        <div className="font-sans text-[#2c241b] space-y-4 text-sm md:text-base leading-relaxed">
-                            <p className="font-medium text-lg">{menuData.infoIntro}</p>
-                            <p>{menuData.infoAllergy}</p>
-                            <p className="italic text-gray-500 text-xs border-t border-gray-200 pt-2">* Recorda que no s’accepten tiquets restaurant ni descomptes en el menú de grup.</p>
-                        </div>
-                    </div>
-                </div>
+            
+            {/* NEW: MENU INFO BLOCK (Replaces old price & info box logic) */}
+            <MenuInfoBlock menuData={menuData} />
+
+            {/* DISCLAIMER NOW RESPECTS VISIBILITY */}
+            {showDisclaimer && menuData.disclaimer && (
+                <div className="mt-6 text-red-600 font-hand text-lg font-bold">{menuData.disclaimer}</div>
             )}
         </div>
     );

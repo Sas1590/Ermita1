@@ -147,15 +147,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
       }
   };
 
-  const handleMenuDelete = () => {
-      if (!editingMenuId?.startsWith('extra_')) return;
-      if (window.confirm("Segur que vols esborrar aquesta carta?")) {
-          const index = parseInt(editingMenuId.replace('extra_', ''));
-          setLocalConfig((prev:any) => {
-              const newExtras = [...(prev.extraMenus || [])];
-              newExtras.splice(index, 1);
-              return { ...prev, extraMenus: newExtras };
-          });
+  const handleMenuDelete = (targetId?: string) => {
+      // Determine which ID to delete: the one passed directly (dashboard) or the one being edited
+      const idToDelete = targetId || editingMenuId;
+      
+      if (!idToDelete?.startsWith('extra_')) return;
+      
+      // Removed window.confirm - Deletion is immediate in local state
+      const index = parseInt(idToDelete.replace('extra_', ''));
+      setLocalConfig((prev:any) => {
+          const newExtras = [...(prev.extraMenus || [])];
+          newExtras.splice(index, 1);
+          return { ...prev, extraMenus: newExtras };
+      });
+      
+      // Only reset view state if we were inside the editor
+      if (menuViewState === 'editor') {
           setMenuViewState('dashboard');
           setEditingMenuId(null);
       }
