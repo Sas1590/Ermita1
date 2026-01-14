@@ -138,20 +138,29 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-10 text-xs font-bold tracking-[0.2em] uppercase">
           
-          {/* Dropdown for LA CARTA */}
+          {/* Dropdown for MENÚS (formerly La Carta) */}
           <div className="relative group">
             <button className="hover:text-primary transition-colors flex items-center gap-1 py-4">
-              La Carta
+              Menús
               <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover:rotate-180">expand_more</span>
             </button>
             {/* Added pt-4 to create a safe hover bridge so dropdown doesn't close easily */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top flex flex-col z-50">
                <div className="bg-black/95 text-white shadow-xl border border-white/10">
+                 {/* MENÚ DIARI (New First Option) */}
+                 <button 
+                   onClick={() => onOpenMenu('daily')} 
+                   className="w-full px-6 py-4 text-left bg-white/5 hover:bg-primary hover:text-black transition-colors flex items-center justify-between group/item border-b border-white/10"
+                 >
+                   Menú Diari
+                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">lunch_dining</span>
+                 </button>
+
                  <button 
                    onClick={() => onOpenMenu('food')} 
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
-                   Menjar
+                   Carta de Menjar
                    {/* CHANGED ICON HERE FROM ARROW_FORWARD TO RESTAURANT_MENU */}
                    <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">restaurant_menu</span>
                  </button>
@@ -159,7 +168,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    onClick={() => onOpenMenu('wine')} 
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
-                   Vins
+                   Carta de Vins
                    <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">wine_bar</span>
                  </button>
                  <button 
@@ -274,7 +283,8 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           )}
 
           <div className="flex flex-col items-center gap-4 w-full">
-            <span className="text-white/50 text-xs tracking-widest uppercase">La Carta</span>
+            <span className="text-white/50 text-xs tracking-widest uppercase">Menús</span>
+            <button onClick={() => { onOpenMenu('daily'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm text-primary font-bold hover:text-white">Menú Diari</button>
             <button onClick={() => { onOpenMenu('food'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Menjar</button>
             <button onClick={() => { onOpenMenu('wine'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Vins</button>
             <button onClick={() => { onOpenMenu('group'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Menú de Grup</button>

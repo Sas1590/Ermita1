@@ -162,6 +162,7 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
   const GroupMenuData = config.groupMenu;
   const WineMenuData = config.wineMenu || [];
   const ExtraMenus = config.extraMenus || [];
+  const DailyMenuData = config.dailyMenu; // New Daily Menu Data
 
   const toggleTab = (tab: string) => {
     if (activeTab === tab) {
@@ -196,6 +197,27 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
         <div className="space-y-8">
           
+          {/* 0. NEW: DAILY MENU (First Item) */}
+          <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border-2 border-primary/30 scroll-mt-32 relative">
+            <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-3 py-1 uppercase tracking-widest z-10">Recomanat</div>
+            <button onClick={() => toggleTab('daily')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'daily' ? 'bg-[#1a1816] text-primary' : 'bg-white hover:bg-[#f0ece6] text-[#2c241b]'}`}>
+              <div className="flex items-center gap-4">
+                 <span className={`material-symbols-outlined text-4xl ${activeTab === 'daily' ? 'text-primary' : 'text-[#8b5a2b]'}`}>lunch_dining</span>
+                 <div className="flex flex-col">
+                    <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{DailyMenuData?.title || 'Menú Diari'}</h3>
+                    <span className="text-xs font-sans text-gray-500 uppercase tracking-wider hidden md:block">De Dimarts a Divendres</span>
+                 </div>
+              </div>
+              <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'daily' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
+            </button>
+            <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === 'daily' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <div className="overflow-hidden min-h-0">
+                  {DailyMenuData && <GroupMenuContent menuData={DailyMenuData} />}
+                  <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">{DailyMenuData?.footerText || "Cuina de mercat"}</div>
+              </div>
+            </div>
+          </div>
+
           {/* 1. FOOD MENU */}
           <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
             <button onClick={() => toggleTab('food')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'food' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>

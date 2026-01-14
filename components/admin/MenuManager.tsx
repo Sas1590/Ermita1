@@ -309,6 +309,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
     const getCurrentMenuData = () => {
         if (!editingMenuId) return null;
+        if (editingMenuId === 'main_daily') return localConfig.dailyMenu; // NEW HANDLER
         if (editingMenuId === 'main_food') return localConfig.foodMenu;
         if (editingMenuId === 'main_wine') return localConfig.wineMenu;
         if (editingMenuId === 'main_group') return localConfig.groupMenu;
@@ -322,7 +323,9 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
     const updateCurrentMenuData = (newData: any) => {
         if (!editingMenuId) return;
-        if (editingMenuId === 'main_food') {
+        if (editingMenuId === 'main_daily') {
+            setLocalConfig((prev:any) => ({ ...prev, dailyMenu: newData })); // NEW HANDLER
+        } else if (editingMenuId === 'main_food') {
             setLocalConfig((prev:any) => ({ ...prev, foodMenu: newData }));
         } else if (editingMenuId === 'main_wine') {
             setLocalConfig((prev:any) => ({ ...prev, wineMenu: newData }));
@@ -364,9 +367,126 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
     return (
         <div className="animate-[fadeIn_0.3s_ease-out]">
-            {menuViewState === 'dashboard' && (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative"><div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden"><span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span><span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span></div><div className="p-6"><p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p><button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"><span className="material-symbols-outlined text-sm">edit</span> Editar</button></div></div><div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative"><div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden"><span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span><span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span></div><div className="p-6"><p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p><button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"><span className="material-symbols-outlined text-sm">edit</span> Editar</button></div></div><div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative"><div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden"><span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span><span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span></div><div className="p-6"><p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p><button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"><span className="material-symbols-outlined text-sm">edit</span> Editar</button></div></div>{(localConfig.extraMenus || []).map((menu:any, idx:number) => { let headerColor = "bg-gray-700"; let icon = "restaurant"; if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } return (<div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative"><div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}><span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span><div className="text-center px-2"><span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span><span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span></div></div><div className="p-6"><button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors"><span className="material-symbols-outlined text-sm">edit</span> Editar</button></div></div>); })}<button onClick={() => setMenuViewState('type_selection')} className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all group min-h-[200px]"><div className="w-16 h-16 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm"><span className="material-symbols-outlined text-3xl">add</span></div><span className="font-bold uppercase text-xs tracking-widest">Crear Nova Carta</span></button></div>)}
+            {menuViewState === 'dashboard' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* NEW DAILY MENU CARD */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative border-l-4 border-l-primary">
+                        <div className="h-24 bg-primary flex items-center justify-center relative overflow-hidden">
+                            <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">lunch_dining</span>
+                            <span className="text-black font-serif font-bold text-xl relative z-10">Menú Diari</span>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
+                            <button onClick={() => { setEditingMenuId('main_daily'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                <span className="material-symbols-outlined text-sm">edit</span> Editar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                        <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
+                            <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span>
+                            <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
+                            <button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                <span className="material-symbols-outlined text-sm">edit</span> Editar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                        <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
+                            <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span>
+                            <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
+                            <button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                <span className="material-symbols-outlined text-sm">edit</span> Editar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                        <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
+                            <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span>
+                            <span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
+                            <button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                <span className="material-symbols-outlined text-sm">edit</span> Editar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {(localConfig.extraMenus || []).map((menu:any, idx:number) => { 
+                        let headerColor = "bg-gray-700"; 
+                        let icon = "restaurant"; 
+                        if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
+                        if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                        return (
+                            <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                                <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
+                                    <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span>
+                                    <div className="text-center px-2">
+                                        <span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span>
+                                        <span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        ); 
+                    })}
+                    
+                    <button onClick={() => setMenuViewState('type_selection')} className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-gray-400 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all group min-h-[200px]">
+                        <div className="w-16 h-16 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm">
+                            <span className="material-symbols-outlined text-3xl">add</span>
+                        </div>
+                        <span className="font-bold uppercase text-xs tracking-widest">Crear Nova Carta</span>
+                    </button>
+                </div>
+            )}
+            
             {menuViewState === 'type_selection' && (<div className="max-w-2xl mx-auto py-10"><div className="flex items-center gap-2 mb-8"><button onClick={() => setMenuViewState('dashboard')} className="text-gray-400 hover:text-gray-600"><span className="material-symbols-outlined">arrow_back</span></button><h3 className="text-2xl font-serif font-bold text-gray-800">Quina mena de carta vols crear?</h3></div><div className="grid grid-cols-1 md:grid-cols-3 gap-6"><button onClick={() => handleCreateNewCard('food')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-primary hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4"><span className="material-symbols-outlined text-5xl text-[#2c241b]">restaurant_menu</span><span className="font-bold text-gray-800">Carta de Menjar</span><span className="text-xs text-gray-500">Per a entrants, plats principals, tapes o postres.</span></button><button onClick={() => handleCreateNewCard('wine')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-[#8b5a2b] hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4"><span className="material-symbols-outlined text-5xl text-[#8b5a2b]">wine_bar</span><span className="font-bold text-gray-800">Carta de Vins</span><span className="text-xs text-gray-500">Per a referències de vins, caves i licors.</span></button><button onClick={() => handleCreateNewCard('group')} className="bg-white p-8 rounded-xl shadow-lg border border-transparent hover:border-olive hover:-translate-y-2 transition-all flex flex-col items-center text-center gap-4"><span className="material-symbols-outlined text-5xl text-olive">diversity_3</span><span className="font-bold text-gray-800">Menú de Grup</span><span className="text-xs text-gray-500">Menú tancat amb preu fix i seccions.</span></button></div></div>)}
-            {menuViewState === 'editor' && editingMenuId && (<div className="space-y-6"><div className="flex items-center justify-between border-b border-gray-200 pb-4"><div className="flex items-center gap-3"><button onClick={() => { setMenuViewState('dashboard'); setEditingMenuId(null); }} className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><span className="material-symbols-outlined">arrow_back</span></button><div><h3 className="font-serif text-2xl font-bold text-gray-800">{editingMenuId.startsWith('extra_') ? (localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || 'Editant Carta') : (editingMenuId === 'main_food' ? 'Carta Principal' : editingMenuId === 'main_wine' ? 'Carta Vins' : 'Menú Grup')}</h3>{editingMenuId.startsWith('extra_') && (<input type="text" className="mt-1 border-b border-gray-300 focus:border-primary outline-none text-sm text-gray-500 w-64 bg-transparent" value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || ''} onChange={(e) => { const idx = parseInt(editingMenuId.replace('extra_','')); const newExtras = [...localConfig.extraMenus]; newExtras[idx].title = e.target.value; setLocalConfig((prev:any) => ({ ...prev, extraMenus: newExtras })); }} placeholder="Nom de la carta (Ex: Menú Calçotada)" />)}</div></div>{editingMenuId.startsWith('extra_') && (<button onClick={onDeleteCard} className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"><span className="material-symbols-outlined text-lg">delete</span> Esborrar Carta</button>)}</div><div className="bg-gray-50/50 p-1 rounded-lg">{(editingMenuId === 'main_food' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'food')) && (<FoodEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />)}{(editingMenuId === 'main_wine' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'wine')) && (<WineEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />)}{(editingMenuId === 'main_group' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'group')) && (<GroupEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />)}</div></div>)}
+            
+            {menuViewState === 'editor' && editingMenuId && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => { setMenuViewState('dashboard'); setEditingMenuId(null); }} className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><span className="material-symbols-outlined">arrow_back</span></button>
+                            <div>
+                                <h3 className="font-serif text-2xl font-bold text-gray-800">
+                                    {editingMenuId.startsWith('extra_') 
+                                        ? (localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || 'Editant Carta') 
+                                        : (editingMenuId === 'main_daily' ? 'Menú Diari' : editingMenuId === 'main_food' ? 'Carta Principal' : editingMenuId === 'main_wine' ? 'Carta Vins' : 'Menú Grup')}
+                                </h3>
+                                {editingMenuId.startsWith('extra_') && (<input type="text" className="mt-1 border-b border-gray-300 focus:border-primary outline-none text-sm text-gray-500 w-64 bg-transparent" value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || ''} onChange={(e) => { const idx = parseInt(editingMenuId.replace('extra_','')); const newExtras = [...localConfig.extraMenus]; newExtras[idx].title = e.target.value; setLocalConfig((prev:any) => ({ ...prev, extraMenus: newExtras })); }} placeholder="Nom de la carta (Ex: Menú Calçotada)" />)}
+                            </div>
+                        </div>
+                        {editingMenuId.startsWith('extra_') && (<button onClick={onDeleteCard} className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"><span className="material-symbols-outlined text-lg">delete</span> Esborrar Carta</button>)}
+                    </div>
+                    <div className="bg-gray-50/50 p-1 rounded-lg">
+                        {/* EDITOR SELECTION LOGIC */}
+                        {(editingMenuId === 'main_food' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'food')) && (
+                            <FoodEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                        )}
+                        {(editingMenuId === 'main_wine' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'wine')) && (
+                            <WineEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                        )}
+                        {/* Use GroupEditor for Main Group AND Daily Menu AND Extra Groups */}
+                        {(editingMenuId === 'main_group' || editingMenuId === 'main_daily' || (editingMenuId.startsWith('extra_') && localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.type === 'group')) && (
+                            <GroupEditor data={getCurrentMenuData()} onChange={updateCurrentMenuData} />
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

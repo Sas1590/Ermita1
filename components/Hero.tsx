@@ -681,14 +681,14 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
                         <div className="border-t border-dashed border-gray-400 my-4"></div>
 
-                        <div className="flex justify-between items-end mb-4">
-                        <div className="text-sm font-sans text-gray-500">{config.hero.formCallUsLabel}</div>
-                        <a 
-                            href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
-                            className="font-bold font-hand text-xl hover:text-accent transition-colors"
-                        >
-                            {config.hero.reservationPhoneNumber}
-                        </a>
+                        <div className="flex flex-col items-center justify-center mb-6">
+                            <span className="text-sm font-sans text-gray-500 mb-1">{config.hero.formCallUsLabel}</span>
+                            <a 
+                                href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
+                                className="font-bold font-hand text-4xl text-secondary hover:text-accent transition-colors leading-none"
+                            >
+                                {config.hero.reservationPhoneNumber}
+                            </a>
                         </div>
 
                         <button 

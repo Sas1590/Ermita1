@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Intro from './components/Intro';
 import Philosophy from './components/Philosophy';
+import Gastronomy from './components/Gastronomy';
 import Menu from './components/Menu';
 import Specialties from './components/Specialties';
 import Contact from './components/Contact';
@@ -122,19 +123,25 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
       
+      {/* 1. Hero (Portada + Reserva) */}
       <Hero onRedirectToMenu={handleOpenMenu} />
       
-      {/* Conditionally Render Intro */}
+      {/* 2. Intro (Filosofia menjar típic...) */}
       {config.intro?.visible !== false && <Intro />}
+
+      {/* 3. Gastronomy (La nostra proposta) - MOVED HERE */}
+      {config.gastronomy?.visible !== false && <Gastronomy onRedirectToMenu={handleOpenMenu} />}
       
+      {/* 4. Menu (La Carta) */}
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
-      
-      {/* Conditionally Render Specialties */}
+
+      {/* 5. Specialties (Les nostres especialitats) - MOVED HERE */}
       {config.specialties?.visible !== false && <Specialties />}
       
-      {/* Conditionally Render Philosophy (History) */}
+      {/* 6. Philosophy (Filosofia i Entorn / Història) - MOVED HERE */}
       {config.philosophy?.visible !== false && <Philosophy />}
       
+      {/* 7. Contact (Formulari) */}
       <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
       
       <Footer 

@@ -64,7 +64,7 @@ export interface AppConfig {
     customDisplayName: string;
   };
   hero: {
-    reservationVisible?: boolean; // NEW: Toggle Reservation Form
+    reservationVisible?: boolean;
     reservationFormTitle: string;
     reservationFormSubtitle: string;
     reservationPhoneNumber: string;
@@ -75,7 +75,6 @@ export interface AppConfig {
     reservationTimeEnd: string;
     reservationTimeInterval: number;
     reservationErrorMessage: string;
-    // New Form Labels
     formNameLabel: string;
     formPhoneLabel: string;
     formDateLabel: string;
@@ -85,13 +84,13 @@ export interface AppConfig {
     formCallUsLabel: string;
   };
   intro: {
-    visible?: boolean; // NEW: Toggle Intro Section
+    visible?: boolean;
     smallTitle: string;
     mainTitle: string;
     description: string;
   };
   specialties: {
-    visible?: boolean; // NEW: Toggle Whole Section
+    visible?: boolean;
     sectionTitle: string;
     mainTitle: string;
     description: string;
@@ -105,7 +104,7 @@ export interface AppConfig {
     }>;
   };
   philosophy: {
-    visible?: boolean; // NEW: Toggle Philosophy Section
+    visible?: boolean;
     sectionTitle: string;
     titleLine1: string;
     titleLine2: string;
@@ -119,7 +118,45 @@ export interface AppConfig {
     historicLinkUrl: string;
     historicImages: string[];
   };
+  // NEW GASTRONOMY SECTION
+  gastronomy: {
+    visible?: boolean;
+    topTitle: string;
+    mainTitle: string;
+    description: string;
+    card1: {
+      title: string;
+      subtitle: string;
+      footerText: string;
+      price: string;
+      image: string;
+      buttonText: string;
+      targetTab: string; // which menu tab to open (e.g., 'extra_0', 'food')
+    };
+    card2: {
+      title: string;
+      subtitle: string;
+      description: string;
+      image: string;
+      buttonText: string;
+      targetTab: string;
+    };
+    footerTitle: string;
+    footerLinks: Array<{ label: string; icon: string; targetTab: string }>;
+  };
   
+  dailyMenu: { // NEW DEDICATED DAILY MENU SECTION
+    title: string;
+    price: string;
+    vat: string;
+    disclaimer: string;
+    sections: GroupMenuSection[];
+    drinks: string[];
+    infoIntro: string;
+    infoAllergy: string;
+    footerText?: string;
+  };
+
   foodMenu: MenuSection[]; 
   wineMenu: WineCategory[]; 
   
@@ -138,7 +175,6 @@ export interface AppConfig {
   extraMenus: ExtraMenu[];
 
   contact: {
-    // Visibility Flags
     importantNoteVisible?: boolean;
     infoVisible?: boolean;
     socialVisible?: boolean;
@@ -172,7 +208,7 @@ export interface AppConfig {
   };
 }
 
-// 2. Define default values for the configuration (Fallback)
+// 2. Define default values
 export const defaultAppConfig: AppConfig = {
   brand: {
     logoUrl: "", 
@@ -184,7 +220,7 @@ export const defaultAppConfig: AppConfig = {
     reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
     reservationFormSubtitle: "omple'l o truca'ns!",
-    reservationPhoneNumber: "+34 654 321 987",
+    reservationPhoneNumber: "+34 977 84 08 70",
     reservationButtonText: "Reservar Ara!",
     stickyNoteText: "Obert tot l'any!",
     backgroundImages: [
@@ -261,6 +297,72 @@ export const defaultAppConfig: AppConfig = {
       "https://images.unsplash.com/photo-1582298539230-22c6081d5821?q=80&w=2574&auto=format&fit=crop",
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_2.png"
     ]
+  },
+  gastronomy: {
+    visible: true,
+    topTitle: "LA NOSTRA PROPOSTA",
+    mainTitle: "Gastronomia Local",
+    description: "Productes de quilòmetre zero, receptes de tota la vida i el sabor autèntic de la brasa.",
+    card1: {
+      title: "Menú Diari",
+      subtitle: "DE DIMARTS A DIVENDRES",
+      footerText: "Cuina de mercat segons temporada",
+      price: "18€",
+      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2080&auto=format&fit=crop",
+      buttonText: "VEURE MENÚ",
+      targetTab: "daily" // UPDATED TO POINT TO DAILY MENU
+    },
+    card2: {
+      title: "Carta Completa",
+      subtitle: "CAPS DE SETMANA I FESTIUS",
+      description: "Especialitats a la brasa, carns madurades i els clàssics de la cuina catalana.",
+      image: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=2069&auto=format&fit=crop",
+      buttonText: "DESCOBRIR CARTA",
+      targetTab: "food"
+    },
+    footerTitle: "TAMBÉ DISPONIBLE",
+    footerLinks: [
+      { label: "Menú Calçotada", icon: "restaurant", targetTab: "extra_1" },
+      { label: "Menú Infantil", icon: "child_care", targetTab: "food" },
+      { label: "Carta de Vins", icon: "wine_bar", targetTab: "wine" }
+    ]
+  },
+  // --- NEW DAILY MENU DEFAULT DATA ---
+  dailyMenu: {
+    title: "Menú Diari",
+    price: "18€",
+    vat: "IVA inclòs",
+    disclaimer: "Vàlid de dimarts a divendres (no festius)",
+    sections: [
+        {
+            title: "PRIMERS PLATS",
+            items: [
+                { nameCa: "Amanida de formatge de cabra amb fruits secs", nameEs: "Ensalada de queso de cabra" },
+                { nameCa: "Canelons casolans de l'àvia", nameEs: "Canelones caseros de la abuela" },
+                { nameCa: "Escudella barrejada", nameEs: "Escudella catalana" }
+            ]
+        },
+        {
+            title: "SEGONS PLATS",
+            items: [
+                { nameCa: "Botifarra a la brasa amb mongetes", nameEs: "Butifarra a la brasa con judías" },
+                { nameCa: "Peix fresc de la llotja", nameEs: "Pescado fresco del día" },
+                { nameCa: "Pollastre de pagès rostit", nameEs: "Pollo de payés asado" }
+            ]
+        },
+        {
+            title: "POSTRES",
+            items: [
+                { nameCa: "Crema Catalana", nameEs: "Crema Catalana" },
+                { nameCa: "Flam d'ou casolà", nameEs: "Flan de huevo casero" },
+                { nameCa: "Fruita del temps", nameEs: "Fruta del tiempo" }
+            ]
+        }
+    ],
+    drinks: ["Aigua", "Vi de la casa", "Gasosa"],
+    infoIntro: "El menú inclou primer plat, segon plat, postres, pa, aigua i vi.",
+    infoAllergy: "Si tens alguna al·lèrgia, informa el nostre personal.",
+    footerText: "Cuina de mercat"
   },
   foodMenu: [],
   wineMenu: [],
@@ -347,6 +449,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            intro: { ...prev.intro, ...data.intro },
            specialties: { ...prev.specialties, ...data.specialties },
            philosophy: { ...prev.philosophy, ...data.philosophy },
+           gastronomy: { ...prev.gastronomy, ...data.gastronomy }, // Merge new section
+           dailyMenu: data.dailyMenu ? { ...prev.dailyMenu, ...data.dailyMenu } : prev.dailyMenu, // Merge daily menu
            contact: { ...prev.contact, ...data.contact },
            navbar: { ...prev.navbar, ...data.navbar },
            // Arrays need fallback if empty in DB
