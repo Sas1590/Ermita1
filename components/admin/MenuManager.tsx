@@ -3,41 +3,29 @@ import { IconPicker } from './AdminShared';
 
 // --- SHARED COMPONENTS ---
 
-// 0. GENERAL INFO BLOCK (Title, Subtitle, Icon & Recommended & Visible) - UPDATED
+// 0. GENERAL INFO BLOCK (Title, Subtitle, Icon & Recommended) - UPDATED (Removed Visibility)
 const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data: any, onChange: (d: any) => void, defaultTitle: string, defaultIcon: string }) => {
     // Determine current values or defaults
     const currentTitle = data.title !== undefined ? data.title : defaultTitle;
     const currentSubtitle = data.subtitle !== undefined ? data.subtitle : "";
     const currentIcon = data.icon !== undefined ? data.icon : defaultIcon;
     const isRecommended = data.recommended === true;
-    const isVisible = data.visible !== false; // Default true if undefined
+    
+    // NOTE: Visibility is now handled in the Dashboard, not here.
 
     const updateField = (field: string, val: any) => {
         onChange({ ...data, [field]: val });
     };
 
     return (
-        <div className={`p-6 rounded shadow-sm border mb-6 transition-colors ${!isVisible ? 'bg-gray-100 border-gray-200' : isRecommended ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}>
+        <div className={`p-6 rounded shadow-sm border mb-6 transition-colors ${isRecommended ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}>
             <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-                <h4 className={`font-bold flex items-center gap-2 text-sm uppercase ${!isVisible ? 'text-gray-500' : isRecommended ? 'text-amber-800' : 'text-gray-700'}`}>
+                <h4 className={`font-bold flex items-center gap-2 text-sm uppercase ${isRecommended ? 'text-amber-800' : 'text-gray-700'}`}>
                     <span className="material-symbols-outlined text-primary">article</span> Info General
                 </h4>
                 
                 <div className="flex gap-2">
-                    {/* VISIBILITY TOGGLE */}
-                    <button 
-                        onClick={() => updateField('visible', !isVisible)}
-                        className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border transition-all flex items-center gap-1
-                            ${isVisible 
-                                ? 'bg-green-600 text-white border-green-700 shadow-sm' 
-                                : 'bg-gray-300 text-gray-500 border-gray-400'
-                            }`}
-                    >
-                        <span className="material-symbols-outlined text-sm">{isVisible ? 'visibility' : 'visibility_off'}</span>
-                        {isVisible ? 'Visible' : 'Ocult'}
-                    </button>
-
-                    {/* RECOMMENDED TOGGLE */}
+                    {/* RECOMMENDED TOGGLE ONLY */}
                     <button 
                         onClick={() => updateField('recommended', !isRecommended)}
                         className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border transition-all flex items-center gap-1
@@ -170,12 +158,12 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const icon = isLegacy ? "restaurant_menu" : (data?.icon || "restaurant_menu");
     const subtitle = isLegacy ? "" : (data?.subtitle || "");
     const recommended = isLegacy ? false : (data?.recommended || false);
-    const visible = isLegacy ? true : (data?.visible !== false);
+    // const visible = isLegacy ? true : (data?.visible !== false); // Managed outside
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
     // Merge existing data with structure
-    const currentData = isLegacy ? { title, subtitle, icon, recommended, visible, sections, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, subtitle, icon, recommended, sections, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
@@ -222,7 +210,7 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended, Visible) */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={currentData} 
                 onChange={updateData} 
@@ -315,11 +303,11 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const icon = isLegacy ? "wine_bar" : (data?.icon || "wine_bar");
     const subtitle = isLegacy ? "" : (data?.subtitle || "");
     const recommended = isLegacy ? false : (data?.recommended || false);
-    const visible = isLegacy ? true : (data?.visible !== false);
+    // const visible = isLegacy ? true : (data?.visible !== false);
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
-    const currentData = isLegacy ? { title, subtitle, icon, recommended, visible, categories, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, subtitle, icon, recommended, categories, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
@@ -337,7 +325,7 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended, Visible) */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={currentData} 
                 onChange={updateData} 
@@ -491,7 +479,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended, Visible) */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={data} 
                 onChange={(newData) => onChange({...data, ...newData})} 
@@ -718,6 +706,45 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
         }
     };
 
+    // --- TOGGLE VISIBILITY HANDLER (DASHBOARD) ---
+    const handleToggleVisibility = (menuId: string, currentStatus: boolean) => {
+        const newStatus = !currentStatus;
+
+        if (menuId === 'main_daily') {
+            setLocalConfig((prev:any) => ({ ...prev, dailyMenu: { ...prev.dailyMenu, visible: newStatus } }));
+        } else if (menuId === 'main_food') {
+            // Check if legacy array or object
+            setLocalConfig((prev:any) => {
+                const updated = Array.isArray(prev.foodMenu) 
+                    ? { sections: prev.foodMenu, visible: newStatus, title: "Carta de Menjar", icon: "restaurant_menu" } 
+                    : { ...prev.foodMenu, visible: newStatus };
+                return { ...prev, foodMenu: updated };
+            });
+        } else if (menuId === 'main_wine') {
+            setLocalConfig((prev:any) => {
+                const updated = Array.isArray(prev.wineMenu) 
+                    ? { categories: prev.wineMenu, visible: newStatus, title: "Carta de Vins", icon: "wine_bar" } 
+                    : { ...prev.wineMenu, visible: newStatus };
+                return { ...prev, wineMenu: updated };
+            });
+        } else if (menuId === 'main_group') {
+            setLocalConfig((prev:any) => ({ ...prev, groupMenu: { ...prev.groupMenu, visible: newStatus } }));
+        } else if (menuId.startsWith('extra_')) {
+            const idx = parseInt(menuId.replace('extra_', ''));
+            setLocalConfig((prev:any) => {
+                const newExtras = [...(prev.extraMenus || [])];
+                if(newExtras[idx]) {
+                    newExtras[idx] = { ...newExtras[idx], visible: newStatus };
+                    // Also sync data inside
+                    if(newExtras[idx].data) {
+                        newExtras[idx].data = { ...newExtras[idx].data, visible: newStatus };
+                    }
+                }
+                return { ...prev, extraMenus: newExtras };
+            });
+        }
+    };
+
     const handleCreateNewCard = (type: 'food' | 'wine' | 'group') => {
         let newData;
         let title;
@@ -757,6 +784,21 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
     // Helper for visibility class in dashboard
     const getVisibilityClass = (isVisible: boolean) => isVisible ? '' : 'opacity-60 grayscale';
 
+    // Helper for rendering toggle button on card
+    const renderCardToggle = (menuId: string, isVisible: boolean) => (
+        <button 
+            onClick={(e) => { e.stopPropagation(); handleToggleVisibility(menuId, isVisible); }}
+            className={`w-full py-1 rounded font-bold uppercase text-[10px] flex items-center justify-center gap-1 transition-colors border
+                ${isVisible 
+                    ? 'border-green-200 text-green-600 hover:bg-green-50' 
+                    : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+                }`}
+        >
+            <span className="material-symbols-outlined text-sm">{isVisible ? 'visibility' : 'visibility_off'}</span>
+            {isVisible ? 'Visible' : 'Ocult'}
+        </button>
+    );
+
     return (
         <div className="animate-[fadeIn_0.3s_ease-out]">
             {menuViewState === 'dashboard' && (
@@ -786,13 +828,17 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">{localConfig.dailyMenu?.icon || 'lunch_dining'}</span>
                                 <span className={`text-black font-serif font-bold text-xl relative z-10 ${localConfig.dailyMenu?.recommended ? 'text-amber-800' : ''}`}>{localConfig.dailyMenu?.title || 'Menú Diari'}</span>
                                 {localConfig.dailyMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
-                                {localConfig.dailyMenu?.visible === false && <div className="absolute top-0 left-0 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br">OCULT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
-                                <button onClick={() => { setEditingMenuId('main_daily'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingMenuId('main_daily'); setMenuViewState('editor'); }} className="flex-1 py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                    </button>
+                                    <div className="w-24">
+                                        {renderCardToggle('main_daily', localConfig.dailyMenu?.visible !== false)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -802,13 +848,17 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">{localConfig.foodMenu?.icon || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.icon) ? (localConfig.foodMenu?.icon || 'restaurant_menu') : 'restaurant_menu'}</span>
                                 <span className={`${localConfig.foodMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.foodMenu?.title || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.title) ? (localConfig.foodMenu?.title || 'Carta de Menjar') : 'Carta de Menjar'}</span>
                                 {localConfig.foodMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
-                                {localConfig.foodMenu?.visible === false && <div className="absolute top-0 left-0 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br">OCULT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
-                                <button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingMenuId('main_food'); setMenuViewState('editor'); }} className="flex-1 py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                    </button>
+                                    <div className="w-24">
+                                        {renderCardToggle('main_food', localConfig.foodMenu?.visible !== false)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -818,13 +868,17 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.wineMenu?.icon || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.icon) ? (localConfig.wineMenu?.icon || 'wine_bar') : 'wine_bar'}</span>
                                 <span className={`${localConfig.wineMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.wineMenu?.title || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.title) ? (localConfig.wineMenu?.title || 'Carta de Vins') : 'Carta de Vins'}</span>
                                 {localConfig.wineMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
-                                {localConfig.wineMenu?.visible === false && <div className="absolute top-0 left-0 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br">OCULT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
-                                <button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingMenuId('main_wine'); setMenuViewState('editor'); }} className="flex-1 py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                    </button>
+                                    <div className="w-24">
+                                        {renderCardToggle('main_wine', localConfig.wineMenu?.visible !== false)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -834,13 +888,17 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.groupMenu?.icon || 'diversity_3'}</span>
                                 <span className={`${localConfig.groupMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.groupMenu?.title || 'Menú de Grup'}</span>
                                 {localConfig.groupMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
-                                {localConfig.groupMenu?.visible === false && <div className="absolute top-0 left-0 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br">OCULT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
-                                <button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingMenuId('main_group'); setMenuViewState('editor'); }} className="flex-1 py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                    </button>
+                                    <div className="w-24">
+                                        {renderCardToggle('main_group', localConfig.groupMenu?.visible !== false)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -874,12 +932,16 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                             <span className={`${menu.recommended ? 'text-amber-800/60' : 'text-white/60'} text-[10px] uppercase font-bold tracking-widest relative z-10 block`}>{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
                                         </div>
                                         {menu.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
-                                        {!isVisible && <div className="absolute top-0 left-0 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-br">OCULT</div>}
                                     </div>
                                     <div className="p-6 space-y-3">
-                                        <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
-                                            <span className="material-symbols-outlined text-sm">edit</span> Editar
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="flex-1 py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
+                                                <span className="material-symbols-outlined text-sm">edit</span> Editar
+                                            </button>
+                                            <div className="w-24">
+                                                {renderCardToggle(`extra_${idx}`, isVisible)}
+                                            </div>
+                                        </div>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); onDeleteCard(`extra_${idx}`); }} 
                                             className="w-full py-1 text-red-300 hover:text-red-500 rounded font-bold uppercase text-[10px] flex items-center justify-center gap-1 transition-colors"

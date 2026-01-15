@@ -10,29 +10,28 @@ interface MenuProps {
 const MenuInfoBlock: React.FC<{ menuData: any }> = ({ menuData }) => {
     const [showInfoBox, setShowInfoBox] = useState(true);
     
-    // Simplification: Check the flag.
-    const isVisible = menuData.showInfo !== false; 
+    // LOGIC CORRECTION: Treat Price and Info visibility separately
+    // 1. Check if Price should be shown (Config flag is not false AND price text exists)
+    const shouldShowPrice = (menuData.showPrice !== false) && !!menuData.price;
 
-    if (!isVisible) return null;
+    // 2. Check if Info Box should be shown (Config flag is not false AND info text exists)
+    const shouldShowInfo = (menuData.showInfo !== false) && (!!menuData.infoIntro || !!menuData.infoAllergy);
 
-    // Check if there is actual content to show
-    const hasPrice = !!menuData.price;
-    const hasInfo = !!menuData.infoIntro || !!menuData.infoAllergy;
-
-    if (!hasPrice && !hasInfo) return null;
+    // If neither should be shown, render nothing
+    if (!shouldShowPrice && !shouldShowInfo) return null;
 
     return (
         <div className="flex flex-col items-center mt-12 mb-8">
-            {/* PRICE SECTION */}
-            {hasPrice && (
+            {/* PRICE SECTION - Controlled strictly by showPrice */}
+            {shouldShowPrice && (
                 <div className="text-center border-t-2 border-b-2 border-[#2c241b] py-6 px-12 inline-block mb-10">
                     <span className="font-serif text-4xl md:text-5xl font-bold text-[#2c241b] tracking-widest block">{menuData.price}</span>
                     {menuData.vat && <span className="font-sans text-sm font-bold text-[#8b5a2b] uppercase tracking-[0.3em]">{menuData.vat}</span>}
                 </div>
             )}
 
-            {/* INFO BOX SECTION */}
-            {hasInfo && showInfoBox && (
+            {/* INFO BOX SECTION - Controlled strictly by showInfo */}
+            {shouldShowInfo && showInfoBox && (
                 <div className="relative w-full max-w-4xl mx-auto bg-[#F9F7F2] border-l-4 border-[#8b5a2b] shadow-lg p-6 md:p-8 animate-[fadeIn_0.5s_ease-out]">
                     <button onClick={() => setShowInfoBox(false)} className="absolute top-2 right-2 md:top-4 md:right-4 text-[#8b5a2b]/50 hover:text-[#8b5a2b] transition-colors p-2" title="Tancar avís"><span className="material-symbols-outlined">close</span></button>
                     <div className="flex flex-col md:flex-row gap-6">

@@ -339,6 +339,15 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     const [showFactoryResetConfirm, setShowFactoryResetConfirm] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
+    // --- NEW: GENERIC CONFIRMATION MODAL STATE ---
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'danger' | 'warning' | 'info';
+        onConfirm: () => void;
+    }>({ isOpen: false, title: '', message: '', type: 'info', onConfirm: () => {} });
+
     // --- FETCH DATA LOGIC ---
     useEffect(() => {
         if (activeTab === 'reservations') {
@@ -382,18 +391,37 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     const handleUpdateReservationStatus = async (resId: string, newStatus: 'confirmed' | 'cancelled' | 'pending') => {
         try { await update(ref(db, `reservations/${resId}`), { status: newStatus }); } catch (e) { console.error(e); }
     };
-    const handleDeleteReservation = async (resId: string) => {
-        if(window.confirm("Segur que vols eliminar aquesta reserva?")) {
-            try { await remove(ref(db, `reservations/${resId}`)); } catch (e) { console.error(e); }
-        }
+
+    // UPDATED: Modal instead of window.confirm
+    const handleDeleteReservation = (resId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Eliminar Reserva",
+            message: "Segur que vols eliminar aquesta reserva? Aquesta acció no es pot desfer.",
+            type: 'danger',
+            onConfirm: async () => {
+                try { await remove(ref(db, `reservations/${resId}`)); } catch (e) { console.error(e); }
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
+
     const handleMarkAsRead = async (messageId: string) => {
         try { await update(ref(db, `contactMessages/${messageId}`), { read: true }); } catch (e) { console.error(e); }
     };
-    const handleDeleteMessage = async (messageId: string) => {
-        if(window.confirm("Estàs segur que vols esborrar aquest missatge?")) {
-            try { await remove(ref(db, `contactMessages/${messageId}`)); } catch (e) { console.error(e); }
-        }
+
+    // UPDATED: Modal instead of window.confirm
+    const handleDeleteMessage = (messageId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Eliminar Missatge",
+            message: "Estàs segur que vols esborrar aquest missatge de la bústia?",
+            type: 'danger',
+            onConfirm: async () => {
+                try { await remove(ref(db, `contactMessages/${messageId}`)); } catch (e) { console.error(e); }
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
     
     // --- CUSTOM NAMED BACKUP ---
@@ -416,17 +444,39 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         } catch (e) { showFeedback('error', "Error creant la còpia."); }
     };
 
-    const handleRestoreBackup = async (backup: BackupItem) => {
+    // UPDATED: Modal instead of window.confirm
+    const handleRestoreBackup = (backup: BackupItem) => {
         if (!updateConfig || !setLocalConfig) return;
-        if(window.confirm(`Estàs segur de restaurar la còpia: ${backup.name}?`)) {
-            try { await updateConfig(backup.data); setLocalConfig(backup.data); showFeedback('success', "Restauració completada."); } catch(e) { showFeedback('error', "Error restaurant."); }
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: "Restaurar Còpia",
+            message: `Estàs segur de restaurar la còpia "${backup.name}"? Això sobreescriurà la configuració actual.`,
+            type: 'warning',
+            onConfirm: async () => {
+                try { 
+                    await updateConfig(backup.data); 
+                    setLocalConfig(backup.data); 
+                    showFeedback('success', "Restauració completada."); 
+                } catch(e) { 
+                    showFeedback('error', "Error restaurant."); 
+                }
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
     
-    const handleDeleteBackup = async (backupId: string) => {
-        if(window.confirm("Esborrar aquesta còpia de seguretat?")) {
-            try { await remove(ref(db, `backups/${backupId}`)); } catch(e) { console.error(e); }
-        }
+    // UPDATED: Modal instead of window.confirm
+    const handleDeleteBackup = (backupId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Eliminar Còpia",
+            message: "Esborrar aquesta còpia de seguretat permanentment?",
+            type: 'danger',
+            onConfirm: async () => {
+                try { await remove(ref(db, `backups/${backupId}`)); } catch(e) { console.error(e); }
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     const performFactoryReset = async () => {
@@ -486,9 +536,39 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         }
     };
 
+    // HELPER: Modal Render (since we use it in multiple return blocks)
+    const renderConfirmModal = () => (
+        confirmModal.isOpen && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                <div className={`bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 text-center ${confirmModal.type === 'danger' ? 'border-red-600' : 'border-yellow-500'}`}>
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                        <span className="material-symbols-outlined text-3xl">warning</span>
+                    </div>
+                    <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">{confirmModal.title}</h3>
+                    <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                        {confirmModal.message}
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))}
+                            className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel·lar
+                        </button>
+                        <button 
+                            onClick={confirmModal.onConfirm}
+                            className={`flex-1 py-3 text-white rounded font-bold uppercase text-xs shadow-md transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                        >
+                            Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    );
+
     // --- RENDER ---
     if (activeTab === 'reservations') {
-        // ... (existing reservation code unchanged) ...
         const filtered = reservations.filter(r => r.status === reservationFilter);
         const counts = {
             pending: reservations.filter(r => r.status === 'pending').length,
@@ -539,6 +619,8 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                                                 {res.status === 'pending' && (<><button onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')} className="bg-green-500 hover:bg-green-600 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">check</span></button><button onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')} className="bg-red-400 hover:bg-red-500 text-white p-2 rounded shadow-sm transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">close</span></button></>)}
                                                 {res.status === 'confirmed' && (<button onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')} className="border border-red-300 text-red-400 hover:bg-red-50 p-2 rounded transition-colors flex items-center gap-1"><span className="material-symbols-outlined text-sm">block</span></button>)}
                                                 {res.status === 'cancelled' && (<button onClick={() => handleUpdateReservationStatus(res.id, 'pending')} title="Tornar a Pendent" className="border border-yellow-300 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 p-2 rounded transition-colors"><span className="material-symbols-outlined text-sm">restore</span></button>)}
+                                                {/* DELETE BUTTON - NOW USES MODAL */}
+                                                <button onClick={() => handleDeleteReservation(res.id)} className="text-gray-400 hover:text-red-500 p-2 rounded hover:bg-red-50 transition-colors" title="Esborrar definitivament"><span className="material-symbols-outlined text-sm">delete</span></button>
                                             </div></td>
                                         </tr>
                                     ))}
@@ -547,16 +629,17 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                         </div>
                     </div>
                 )}
+                {renderConfirmModal()}
             </div>
         );
     }
 
     if (activeTab === 'inbox') {
-        // ... (existing inbox code unchanged) ...
         return (
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out] max-w-4xl mx-auto">
                 <div className="flex justify-between items-center"><h3 className="font-serif text-2xl font-bold text-gray-800 flex items-center gap-2"><span className="material-symbols-outlined text-blue-600">mail</span> Bústia de Missatges</h3><div className="text-xs font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full border border-blue-100 shadow-sm">Total: {messages.length}</div></div>
                 {messages.length === 0 ? (<div className="text-center py-24 bg-white rounded-xl border border-blue-100 border-dashed shadow-sm"><div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"><span className="material-symbols-outlined text-4xl text-blue-300">inbox</span></div><p className="text-lg text-gray-400 font-medium">La bústia està buida.</p></div>) : (<div className="space-y-4">{messages.map((msg) => (<div key={msg.id} className={`rounded-xl border transition-all duration-300 group ${!msg.read ? 'bg-white border-blue-300 shadow-md border-l-[6px] border-l-blue-600' : 'bg-white/80 border-gray-200 shadow-sm hover:shadow-md'}`}><div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-50 bg-gray-50/30 rounded-t-xl gap-2"><div className="flex items-center gap-3">{!msg.read && <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>}<h4 className={`text-lg ${!msg.read ? 'font-bold text-gray-900' : 'font-medium text-gray-600'}`}>{msg.subject || '(Sense assumpte)'}</h4></div><div className="flex items-center gap-2 text-xs text-gray-400 font-mono"><span className="material-symbols-outlined text-sm">schedule</span>{new Date(msg.timestamp).toLocaleString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div><div className="p-6"><div className="flex flex-wrap gap-2 mb-4"><span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100"><span className="material-symbols-outlined text-sm">person</span> {msg.name}</span><a href={`mailto:${msg.email}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-xs font-medium border border-gray-200"><span className="material-symbols-outlined text-sm">alternate_email</span> {msg.email}</a>{msg.phone && (<a href={`tel:${msg.phone}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors text-xs font-medium border border-gray-200"><span className="material-symbols-outlined text-sm">call</span> {msg.phone}</a>)}</div><div className="bg-gray-50 rounded-lg p-4 border border-gray-100"><p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">{msg.message}</p></div></div><div className="px-6 py-3 bg-gray-50 rounded-b-xl flex justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">{!msg.read && (<button onClick={(e) => { e.stopPropagation(); handleMarkAsRead(msg.id); }} className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-100 transition-colors"><span className="material-symbols-outlined text-sm">mark_email_read</span> Marcar llegit</button>)}<button onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }} className="text-gray-400 hover:text-red-500 text-xs font-bold uppercase flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"><span className="material-symbols-outlined text-sm">delete</span> Esborrar</button></div></div>))}</div>)}
+                {renderConfirmModal()}
             </div>
         );
     }
@@ -666,7 +749,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                         </div>
                     </div>
                 )}
-
+                {renderConfirmModal()}
             </div>
         );
     }
