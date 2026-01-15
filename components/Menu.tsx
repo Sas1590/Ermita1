@@ -298,7 +298,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
     }
   };
 
-  // --- BUILD MENU LIST DYNAMICALLY TO UNIFY RENDERING ---
+  // --- BUILD MENU LIST DYNAMICALLY ---
+  // FILTER HIDDEN MENUS HERE (Both core and extras)
   const allMenus = [
       { id: 'daily', type: 'group', data: config.dailyMenu, fallbackTitle: 'Menú Diari', fallbackIcon: 'lunch_dining', fallbackSubtitle: 'De Dimarts a Divendres' },
       { id: 'food', type: 'food', data: config.foodMenu, fallbackTitle: 'Carta de Menjar', fallbackIcon: 'restaurant_menu', fallbackSubtitle: '' },
@@ -308,15 +309,22 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           id: `extra_${idx}`,
           type: extra.type,
           data: extra.data,
-          // Extra menus wrap the data, but properties might be on the wrapper OR the inner data.
-          // We prioritize the wrapper's title/icon if set, otherwise fallback to defaults.
-          // IMPORTANT: `extra` object in config.extraMenus ALREADY has title/icon synced by MenuManager
           fallbackTitle: extra.title,
           fallbackIcon: extra.icon || 'restaurant',
           fallbackSubtitle: extra.subtitle || '',
-          isExtra: true
+          isExtra: true,
+          visible: extra.visible // Store visibility on wrapper
       }))
-  ];
+  ].filter(item => {
+      // Check visibility
+      if (item.isExtra) {
+          return item.visible !== false;
+      }
+      // Core menus: check data.visible property (handle legacy array vs object)
+      const data: any = item.data;
+      if (Array.isArray(data)) return true; // Legacy arrays are visible by default
+      return data?.visible !== false;
+  });
 
   return (
     <section id="carta" className="relative py-24 min-h-screen flex items-center bg-[#1d1a15] bg-dark-texture">
@@ -337,13 +345,9 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           {allMenus.map((menuItem) => {
               // Extract Data safely
               const data = menuItem.data;
-              if (!data && !menuItem.isExtra) return null; // Skip empty standard menus if data missing (unlikely)
+              if (!data && !menuItem.isExtra) return null; // Skip empty standard menus if data missing
 
-              // Determine properties (Prefer Data object, fallback to Defaults/Wrapper)
-              // NOTE: For standard menus, 'data' IS the object. For extras, 'data' is inside.
-              // Logic: The unified 'GeneralInfoEditor' writes to title, subtitle, icon, recommended on the DATA object directly.
-              
-              // Handle Legacy Arrays (Old Food/Wine structure) vs New Objects
+              // Determine properties
               const isLegacyArray = Array.isArray(data);
               
               const title = !isLegacyArray && data?.title ? data.title : menuItem.fallbackTitle;

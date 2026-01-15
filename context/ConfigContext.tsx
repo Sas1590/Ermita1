@@ -24,6 +24,7 @@ export interface FoodMenuConfig {
   title?: string;
   subtitle?: string; // NEW: Subtitle (e.g. "De dimarts a divendres")
   icon?: string;
+  visible?: boolean; // NEW: Visibility Flag
   recommended?: boolean; // NEW: Recommended flag
   price?: string;
   vat?: string;
@@ -71,6 +72,7 @@ export interface WineMenuConfig {
   title?: string;
   subtitle?: string; // NEW
   icon?: string;
+  visible?: boolean; // NEW: Visibility Flag
   recommended?: boolean; // NEW
   price?: string;
   vat?: string;
@@ -90,6 +92,7 @@ export interface ExtraMenu {
   title: string;
   subtitle?: string; // NEW
   icon?: string; 
+  visible?: boolean; // NEW: Visibility Flag
   recommended?: boolean; // NEW
   data: FoodMenuConfig | WineMenuConfig | any; 
 }
@@ -152,7 +155,7 @@ export interface AppConfig {
     cardTag: string;
     productTitle: string;
     productDescription: string;
-    productButtonText: string; // NEW FIELD
+    productButtonText: string;
     productImages: string[];
     historicTitle: string;
     historicDescription: string;
@@ -192,6 +195,7 @@ export interface AppConfig {
     title: string;
     subtitle?: string; // NEW
     icon?: string;
+    visible?: boolean; // NEW
     recommended?: boolean; // NEW
     price: string;
     vat: string;
@@ -210,6 +214,7 @@ export interface AppConfig {
     title: string;
     subtitle?: string; // NEW
     icon?: string;
+    visible?: boolean; // NEW
     recommended?: boolean; // NEW
     price: string;
     vat: string;
@@ -336,7 +341,7 @@ export const defaultAppConfig: AppConfig = {
     cardTag: "\"L'aroma dels nostres camps a la taula\"",
     productTitle: "Producte de Proximitat",
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
-    productButtonText: "VEURE LA NOSTRA CARTA", // DEFAULT VALUE
+    productButtonText: "VEURE LA NOSTRA CARTA", 
     productImages: [
       "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?q=80&w=2070&auto=format&fit=crop"
@@ -384,9 +389,10 @@ export const defaultAppConfig: AppConfig = {
   
   dailyMenu: {
     title: "Menú Diari",
-    subtitle: "DE DIMARTS A DIVENDRES", // Default value
+    subtitle: "DE DIMARTS A DIVENDRES", 
     icon: "lunch_dining",
-    recommended: true, // Default Recommended
+    visible: true, // Default Visible
+    recommended: true, 
     price: "18€",
     vat: "IVA inclòs",
     disclaimer: "Vàlid de dimarts a divendres (no festius)",
@@ -409,6 +415,7 @@ export const defaultAppConfig: AppConfig = {
   foodMenu: {
     title: "Carta de Menjar",
     icon: "restaurant_menu",
+    visible: true, // Default Visible
     recommended: false,
     sections: [
       {
@@ -425,6 +432,7 @@ export const defaultAppConfig: AppConfig = {
   wineMenu: {
     title: "Carta de Vins",
     icon: "wine_bar",
+    visible: true, // Default Visible
     recommended: false,
     categories: [
       {
@@ -445,6 +453,7 @@ export const defaultAppConfig: AppConfig = {
     title: "Menú de Grup",
     subtitle: "MÍNIM 10 PERSONES",
     icon: "diversity_3",
+    visible: true, // Default Visible
     recommended: false,
     price: "Consultar",
     vat: "IVA inclòs",
@@ -534,7 +543,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
                productButtonText: data.philosophy?.productButtonText || prev.philosophy.productButtonText || "VEURE LA NOSTRA CARTA"
            },
            gastronomy: { ...prev.gastronomy, ...data.gastronomy }, 
-           dailyMenu: data.dailyMenu ? { ...prev.dailyMenu, ...data.dailyMenu } : prev.dailyMenu,
+           // MERGE VISIBILITY PROPS SAFELY
+           dailyMenu: data.dailyMenu ? { ...prev.dailyMenu, ...data.dailyMenu, visible: data.dailyMenu.visible !== undefined ? data.dailyMenu.visible : prev.dailyMenu.visible } : prev.dailyMenu,
            contact: { ...prev.contact, ...data.contact },
            navbar: { ...prev.navbar, ...data.navbar },
            // Arrays need fallback if empty in DB
@@ -545,7 +555,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            groupMenu: data.groupMenu ? {
                 ...prev.groupMenu,
                 ...data.groupMenu,
-                sections: data.groupMenu.sections || prev.groupMenu.sections
+                sections: data.groupMenu.sections || prev.groupMenu.sections,
+                visible: data.groupMenu.visible !== undefined ? data.groupMenu.visible : prev.groupMenu.visible
            } : prev.groupMenu
         }));
       } else {
