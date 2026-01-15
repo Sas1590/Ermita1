@@ -152,6 +152,7 @@ export interface AppConfig {
     cardTag: string;
     productTitle: string;
     productDescription: string;
+    productButtonText: string; // NEW FIELD
     productImages: string[];
     historicTitle: string;
     historicDescription: string;
@@ -335,6 +336,7 @@ export const defaultAppConfig: AppConfig = {
     cardTag: "\"L'aroma dels nostres camps a la taula\"",
     productTitle: "Producte de Proximitat",
     productDescription: "Cuinem amb productes del \"troç\". Les nostres hortalisses venen directament dels horts veïns i treballem amb ramaders locals per oferir la millor qualitat, respectant el cicle de cada estació.",
+    productButtonText: "VEURE LA NOSTRA CARTA", // DEFAULT VALUE
     productImages: [
       "https://images.unsplash.com/photo-1541457523724-95f54f7740cc?q=80&w=2070&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?q=80&w=2070&auto=format&fit=crop"
@@ -525,7 +527,12 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            hero: { ...prev.hero, ...data.hero },
            intro: { ...prev.intro, ...data.intro },
            specialties: { ...prev.specialties, ...data.specialties },
-           philosophy: { ...prev.philosophy, ...data.philosophy },
+           // Ensure philosophy and productButtonText exist
+           philosophy: { 
+               ...prev.philosophy, 
+               ...data.philosophy,
+               productButtonText: data.philosophy?.productButtonText || prev.philosophy.productButtonText || "VEURE LA NOSTRA CARTA"
+           },
            gastronomy: { ...prev.gastronomy, ...data.gastronomy }, 
            dailyMenu: data.dailyMenu ? { ...prev.dailyMenu, ...data.dailyMenu } : prev.dailyMenu,
            contact: { ...prev.contact, ...data.contact },

@@ -110,8 +110,9 @@ const Philosophy: React.FC = () => {
               <p className="font-sans text-gray-400 leading-relaxed mb-4">
                 {config.philosophy.productDescription}
               </p>
+              {/* UPDATED: Dynamic Link Text */}
               <a href="#carta" className="inline-flex items-center gap-2 font-bold text-primary uppercase tracking-widest text-xs hover:text-white transition-colors decoration-2 underline-offset-4">
-                Veure la nostra carta
+                {config.philosophy.productButtonText || "VEURE LA NOSTRA CARTA"}
                 <span className="material-symbols-outlined text-sm">arrow_outward</span>
               </a>
             </div>

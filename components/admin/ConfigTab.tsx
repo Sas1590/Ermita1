@@ -390,6 +390,11 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label>
                             <textarea value={localConfig.philosophy.productDescription} onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
                         </div>
+                        {/* NEW BUTTON TEXT EDITOR */}
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Producte</label>
+                            <input type="text" value={localConfig.philosophy.productButtonText || ''} onChange={(e) => handleChange('philosophy', 'productButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" placeholder="VEURE LA NOSTRA CARTA" />
+                        </div>
                         <div>
                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatges Producte (Slides)</label>
                             <ImageArrayEditor 
