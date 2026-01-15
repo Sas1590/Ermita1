@@ -89,13 +89,15 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
                                 {gastronomy.card2.footerText && (
                                     <p className="font-sans text-xs tracking-widest text-gray-400 uppercase mb-6">{gastronomy.card2.footerText}</p>
                                 )}
-                                <button className="bg-white text-black hover:bg-primary px-8 py-3 text-xs tracking-widest uppercase transition-colors duration-300 font-bold">
+                                {/* BUTTON UPDATED TO MATCH CARD 1 STYLE */}
+                                <button className="border border-white/30 hover:bg-primary hover:border-primary hover:text-black text-white px-8 py-3 text-xs tracking-widest uppercase transition-colors duration-300">
                                     {gastronomy.card2.buttonText}
                                 </button>
                             </div>
 
                             {gastronomy.card2.price && (
-                                <span className="absolute bottom-10 right-10 font-serif italic text-6xl text-white font-bold">
+                                /* PRICE COLOR UPDATED TO MATCH CARD 1 (text-primary) */
+                                <span className="absolute bottom-10 right-10 font-serif italic text-6xl text-primary font-bold">
                                     {gastronomy.card2.price}
                                 </span>
                             )}

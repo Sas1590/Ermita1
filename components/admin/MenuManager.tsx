@@ -1,11 +1,47 @@
 import React from 'react';
 import { IconPicker } from './AdminShared';
 
-// --- ISOLATED EDITOR COMPONENTS ---
+// --- SHARED COMPONENTS ---
+
+// 0. GENERAL INFO BLOCK (Title & Icon) - NEW
+const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data: any, onChange: (d: any) => void, defaultTitle: string, defaultIcon: string }) => {
+    // Determine current values or defaults
+    const currentTitle = data.title !== undefined ? data.title : defaultTitle;
+    const currentIcon = data.icon !== undefined ? data.icon : defaultIcon;
+
+    const updateField = (field: string, val: any) => {
+        onChange({ ...data, [field]: val });
+    };
+
+    return (
+        <div className="bg-white p-6 rounded shadow-sm border border-gray-200 mb-6">
+            <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2 text-sm uppercase border-b border-gray-100 pb-2">
+                <span className="material-symbols-outlined text-primary">article</span> Info General
+            </h4>
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Menú</label>
+                    <input 
+                        value={currentTitle} 
+                        onChange={(e) => updateField('title', e.target.value)} 
+                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-primary font-bold text-gray-800" 
+                        placeholder="Ex: Carta" 
+                    />
+                </div>
+                <div className="w-full md:w-40">
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
+                    <IconPicker 
+                        value={currentIcon} 
+                        onChange={(val) => updateField('icon', val)}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // 1. PRICE HEADER EDITOR (Preu i IVA)
 const PriceHeaderEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    // Default showPrice to true if price exists, or false if not set
     const showPrice = data.showPrice !== undefined ? data.showPrice : (!!data.price);
 
     const updateField = (field: string, val: any) => {
@@ -80,13 +116,18 @@ const InfoBlockEditor = ({ data, onChange }: { data: any, onChange: (d: any) => 
 
 const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     // Normalizar datos: Si es array (formato antiguo), lo convertimos a objeto con secciones.
+    // If it's an array, we assume it's just sections.
     const isLegacy = Array.isArray(data);
+    
+    // Construct valid object structure
     const sections = isLegacy ? data : (data?.sections || []);
+    const title = isLegacy ? "Carta de Menjar" : (data?.title || "Carta de Menjar");
+    const icon = isLegacy ? "restaurant_menu" : (data?.icon || "restaurant_menu");
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
     // Merge existing data with structure
-    const currentData = isLegacy ? { sections, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, icon, sections, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
@@ -133,6 +174,14 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            {/* GENERAL INFO EDITOR (Title & Icon) */}
+            <GeneralInfoEditor 
+                data={currentData} 
+                onChange={updateData} 
+                defaultTitle="Carta de Menjar" 
+                defaultIcon="restaurant_menu" 
+            />
+
             <div className="flex justify-end mb-4">
                 <button onClick={addSection} className="bg-[#8b5a2b] text-white px-4 py-2 rounded text-xs font-bold uppercase hover:bg-[#6b4521] flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm">add</span> Nova Secció
@@ -154,7 +203,7 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                         <div className="w-full md:w-32">
                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
                             <IconPicker 
-                                value={section.icon || 'restaurant'} 
+                                value={section.icon || ""} 
                                 onChange={(val) => handleSectionChange(sIdx, 'icon', val)}
                             />
                         </div>
@@ -211,21 +260,25 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     // Normalizar datos para vinos
     const isLegacy = Array.isArray(data);
+    
+    // Construct valid object structure
     const categories = isLegacy ? data : (data?.categories || data || []); 
+    const title = isLegacy ? "Carta de Vins" : (data?.title || "Carta de Vins");
+    const icon = isLegacy ? "wine_bar" : (data?.icon || "wine_bar");
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
-    const currentData = isLegacy ? { categories, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, icon, categories, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
     };
 
-    const handleCategoryChange = (idx: number, val: string) => {
-        const newCats = categories.map((cat:any, i:number) => i === idx ? {...cat, category: val} : cat);
+    const handleCategoryChange = (idx: number, field: string, val: string) => {
+        const newCats = categories.map((cat:any, i:number) => i === idx ? {...cat, [field]: val} : cat);
         updateData({ categories: newCats });
     };
-    const addCategory = () => updateData({ categories: [...categories, {category:"NOVA", groups:[]}] });
+    const addCategory = () => updateData({ categories: [...categories, {category:"NOVA", icon: "wine_bar", groups:[]}] });
     const removeCategory = (idx: number) => { 
         const n=[...categories]; n.splice(idx,1); 
         updateData({ categories: n }); 
@@ -233,6 +286,14 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+            {/* GENERAL INFO EDITOR (Title & Icon) */}
+            <GeneralInfoEditor 
+                data={currentData} 
+                onChange={updateData} 
+                defaultTitle="Carta de Vins" 
+                defaultIcon="wine_bar" 
+            />
+
             <div className="flex justify-end"><button onClick={addCategory} className="bg-olive text-white px-3 py-2 rounded text-xs font-bold uppercase">Nova Categoria</button></div>
             
             {/* SEPARATED PRICE & INFO EDITORS */}
@@ -242,8 +303,17 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
             {/* CATEGORIES LOOP */}
             {categories.map((cat: any, cIdx: number) => (
                 <div key={cIdx} className="bg-white border border-gray-200 rounded p-4">
-                    <div className="flex justify-between mb-4 border-b pb-2">
-                        <input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" />
+                    <div className="flex flex-col md:flex-row gap-4 mb-4 border-b pb-4">
+                        <div className="flex-1">
+                            <input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, 'category', e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" />
+                        </div>
+                        {/* ADDED ICON PICKER FOR WINE CATEGORY */}
+                        <div className="w-full md:w-32">
+                            <IconPicker 
+                                value={cat.icon || ""} 
+                                onChange={(val) => handleCategoryChange(cIdx, 'icon', val)}
+                            />
+                        </div>
                         <button onClick={() => removeCategory(cIdx)} className="text-red-400"><span className="material-symbols-outlined">delete</span></button>
                     </div>
                     <div className="pl-4 space-y-4">
@@ -370,13 +440,13 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            <div className="bg-white p-6 rounded shadow border-gray-200">
-                <h4 className="font-bold mb-4 text-[#8b5a2b]">Info General</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Price moved to InfoHeaderEditor */}
-                    <div><label className="block text-xs text-gray-400 font-bold mb-1">Títol Menú</label><input value={data.title || ''} onChange={(e)=>updateField('title', e.target.value)} className="border p-2 rounded w-full" placeholder="Títol" /></div>
-                </div>
-            </div>
+            {/* GENERAL INFO EDITOR (Title & Icon) - REPLACES OLD TITLE INPUT */}
+            <GeneralInfoEditor 
+                data={data} 
+                onChange={(newData) => onChange({...data, ...newData})} 
+                defaultTitle="Menú de Grup" 
+                defaultIcon="diversity_3" 
+            />
             
             {/* SEPARATED PRICE & INFO EDITORS - Handles Price, VAT, Intro, Allergies */}
             <PriceHeaderEditor data={data} onChange={(newData) => onChange({...data, ...newData})} />
@@ -384,11 +454,23 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
             {(data.sections || []).map((sec:any,sIdx:number)=>(
                 <div key={sIdx} className="bg-white p-6 rounded shadow border-gray-200">
-                    <div className="flex justify-between mb-4 border-b pb-2">
-                        <input value={sec.title} onChange={(e)=>{
-                            const newSections = (data.sections || []).map((s:any, si:number) => si === sIdx ? {...s, title: e.target.value} : s);
-                            updateField('sections', newSections);
-                        }} className="font-bold outline-none text-lg text-olive w-full" placeholder="Títol Secció" />
+                    <div className="flex flex-col md:flex-row gap-4 mb-4 border-b pb-4">
+                        <div className="flex-1">
+                            <input value={sec.title} onChange={(e)=>{
+                                const newSections = (data.sections || []).map((s:any, si:number) => si === sIdx ? {...s, title: e.target.value} : s);
+                                updateField('sections', newSections);
+                            }} className="font-bold outline-none text-lg text-olive w-full" placeholder="Títol Secció" />
+                        </div>
+                        {/* ADDED ICON PICKER FOR GROUP/DAILY MENU SECTIONS */}
+                        <div className="w-full md:w-32">
+                            <IconPicker 
+                                value={sec.icon || ""} 
+                                onChange={(val) => {
+                                    const newSections = (data.sections || []).map((s:any, si:number) => si === sIdx ? {...s, icon: val} : s);
+                                    updateField('sections', newSections);
+                                }}
+                            />
+                        </div>
                         <button onClick={()=>{
                             const newSections = [...(data.sections || [])];
                             newSections.splice(sIdx, 1);
@@ -431,7 +513,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                 </div>
             ))}
             <button onClick={()=>{
-                const newSections = [...(data.sections || []), {title:"NOVA SECCIÓ",items:[]}];
+                const newSections = [...(data.sections || []), {title:"NOVA SECCIÓ", icon:"restaurant", items:[]}];
                 updateField('sections', newSections);
             }} className="bg-olive text-white px-4 py-2 rounded text-xs font-bold w-full">NOVA SECCIÓ DE PLATS</button>
 
@@ -467,6 +549,8 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
 // --- DATA TEMPLATES ---
 export const getBlankFoodMenu = () => ({
+    title: "Nova Carta de Menjar",
+    icon: "restaurant",
     sections: [{
       id: `sec_${Date.now()}`,
       category: "NOVA SECCIÓ",
@@ -480,8 +564,11 @@ export const getBlankFoodMenu = () => ({
 });
 
 export const getBlankWineMenu = () => ({
+    title: "Nova Carta de Vins",
+    icon: "wine_bar",
     categories: [{
         category: "NOVA CATEGORIA",
+        icon: "wine_bar",
         groups: [{ sub: "", items: [{ name: "", desc: "", price: "" }] }]
     }],
     disclaimer: "",
@@ -492,12 +579,13 @@ export const getBlankWineMenu = () => ({
 
 export const getBlankGroupMenu = () => ({
     title: "NOU MENÚ DE GRUP",
+    icon: "diversity_3",
     price: "00 EUROS",
     vat: "IVA INCLÒS",
     disclaimer: "",
     showInfo: true, 
     showPrice: true,
-    sections: [{ title: "PRIMERS", items: [{ nameCa: "", nameEs: "" }] }],
+    sections: [{ title: "PRIMERS", icon: "restaurant", items: [{ nameCa: "", nameEs: "" }] }],
     drinks: ["Aigua i Vi"],
     infoIntro: "Informació del menú...",
     infoAllergy: "Informació d'al·lèrgens..."
@@ -534,6 +622,23 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
     const updateCurrentMenuData = (newData: any) => {
         if (!editingMenuId) return;
+        
+        // Handle Sync for Extra Menus: Wrapper Title/Icon should match inner data Title/Icon
+        const syncExtraMenu = (data: any, idx: number) => {
+            setLocalConfig((prev:any) => {
+                const newExtras = [...(prev.extraMenus || [])];
+                if(newExtras[idx]) {
+                    newExtras[idx] = { 
+                        ...newExtras[idx], 
+                        data: data,
+                        title: data.title || newExtras[idx].title, // Sync title
+                        icon: data.icon || newExtras[idx].icon     // Sync icon
+                    };
+                }
+                return { ...prev, extraMenus: newExtras };
+            });
+        };
+
         if (editingMenuId === 'main_daily') {
             setLocalConfig((prev:any) => ({ ...prev, dailyMenu: newData })); 
         } else if (editingMenuId === 'main_food') {
@@ -545,13 +650,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
         } else {
             const extraIndex = parseInt(editingMenuId.replace('extra_', ''));
             if (!isNaN(extraIndex)) {
-                setLocalConfig((prev:any) => {
-                    const newExtras = [...(prev.extraMenus || [])];
-                    if(newExtras[extraIndex]) {
-                        newExtras[extraIndex] = { ...newExtras[extraIndex], data: newData };
-                    }
-                    return { ...prev, extraMenus: newExtras };
-                });
+                syncExtraMenu(newData, extraIndex);
             }
         }
     };
@@ -559,11 +658,27 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
     const handleCreateNewCard = (type: 'food' | 'wine' | 'group') => {
         let newData;
         let title;
-        if (type === 'food') { newData = getBlankFoodMenu(); title = "Nova Carta de Menjar"; } 
-        else if (type === 'wine') { newData = getBlankWineMenu(); title = "Nova Carta de Vins"; } 
-        else { newData = getBlankGroupMenu(); title = "Nou Menú de Grup"; }
+        let defaultIcon;
 
-        const newExtraMenu = { id: `menu_${Date.now()}`, type, title, data: newData };
+        if (type === 'food') { 
+            newData = getBlankFoodMenu(); 
+            title = "Nova Carta de Menjar"; 
+            defaultIcon = "restaurant";
+        } else if (type === 'wine') { 
+            newData = getBlankWineMenu(); 
+            title = "Nova Carta de Vins"; 
+            defaultIcon = "wine_bar";
+        } else { 
+            newData = getBlankGroupMenu(); 
+            title = "Nou Menú de Grup"; 
+            defaultIcon = "diversity_3";
+        }
+
+        // Initialize object data with title and icon as well
+        newData.title = title;
+        newData.icon = defaultIcon;
+
+        const newExtraMenu = { id: `menu_${Date.now()}`, type, title, icon: defaultIcon, data: newData };
 
         setLocalConfig((prev:any) => {
             const updatedExtras = [...(prev.extraMenus || []), newExtraMenu];
@@ -602,8 +717,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         {/* NEW DAILY MENU CARD */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative border-l-4 border-l-primary">
                             <div className="h-24 bg-primary flex items-center justify-center relative overflow-hidden">
-                                <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">lunch_dining</span>
-                                <span className="text-black font-serif font-bold text-xl relative z-10">Menú Diari</span>
+                                <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">{localConfig.dailyMenu?.icon || 'lunch_dining'}</span>
+                                <span className="text-black font-serif font-bold text-xl relative z-10">{localConfig.dailyMenu?.title || 'Menú Diari'}</span>
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
@@ -615,8 +730,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
                             <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
-                                <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">restaurant_menu</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Menjar</span>
+                                <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">{localConfig.foodMenu?.icon || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.icon) ? (localConfig.foodMenu?.icon || 'restaurant_menu') : 'restaurant_menu'}</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.foodMenu?.title || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.title) ? (localConfig.foodMenu?.title || 'Carta de Menjar') : 'Carta de Menjar'}</span>
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
@@ -628,8 +743,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
                             <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
-                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">wine_bar</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">Carta de Vins</span>
+                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.wineMenu?.icon || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.icon) ? (localConfig.wineMenu?.icon || 'wine_bar') : 'wine_bar'}</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.wineMenu?.title || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.title) ? (localConfig.wineMenu?.title || 'Carta de Vins') : 'Carta de Vins'}</span>
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
@@ -641,8 +756,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
                             <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
-                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">diversity_3</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">Menú de Grup</span>
+                                <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.groupMenu?.icon || 'diversity_3'}</span>
+                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.groupMenu?.title || 'Menú de Grup'}</span>
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
@@ -654,9 +769,16 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         
                         {(localConfig.extraMenus || []).map((menu:any, idx:number) => { 
                             let headerColor = "bg-gray-700"; 
-                            let icon = "restaurant"; 
-                            if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
-                            if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                            let icon = menu.icon || "restaurant"; // Use Custom icon OR Default
+                            if(!menu.icon) {
+                                if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
+                                if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                            } else {
+                                // Keep color logic based on type but icon custom
+                                if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; } 
+                                if(menu.type === 'group') { headerColor = "bg-olive"; } 
+                            }
+
                             return (
                                 <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
                                     <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
@@ -695,11 +817,17 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                             <button onClick={() => { setMenuViewState('dashboard'); setEditingMenuId(null); }} className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><span className="material-symbols-outlined">arrow_back</span></button>
                             <div>
                                 <h3 className="font-serif text-2xl font-bold text-gray-800">
+                                    {/* DYNAMIC TITLE IN EDITOR HEADER */}
                                     {editingMenuId.startsWith('extra_') 
                                         ? (localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || 'Editant Carta') 
-                                        : (editingMenuId === 'main_daily' ? 'Menú Diari' : editingMenuId === 'main_food' ? 'Carta Principal' : editingMenuId === 'main_wine' ? 'Carta Vins' : 'Menú Grup')}
+                                        : (
+                                            editingMenuId === 'main_daily' ? (localConfig.dailyMenu?.title || 'Menú Diari') :
+                                            editingMenuId === 'main_food' ? (localConfig.foodMenu?.title || 'Carta Principal') :
+                                            editingMenuId === 'main_wine' ? (localConfig.wineMenu?.title || 'Carta Vins') :
+                                            (localConfig.groupMenu?.title || 'Menú Grup')
+                                        )
+                                    }
                                 </h3>
-                                {editingMenuId.startsWith('extra_') && (<input type="text" className="mt-1 border-b border-gray-300 focus:border-primary outline-none text-sm text-gray-500 w-64 bg-transparent" value={localConfig.extraMenus?.[parseInt(editingMenuId.replace('extra_',''))]?.title || ''} onChange={(e) => { const idx = parseInt(editingMenuId.replace('extra_','')); const newExtras = [...localConfig.extraMenus]; newExtras[idx].title = e.target.value; setLocalConfig((prev:any) => ({ ...prev, extraMenus: newExtras })); }} placeholder="Nom de la carta (Ex: Menú Calçotada)" />)}
                             </div>
                         </div>
                         {editingMenuId.startsWith('extra_') && (<button onClick={() => onDeleteCard()} className="text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded flex items-center gap-2 text-xs font-bold uppercase transition-colors"><span className="material-symbols-outlined text-lg">delete</span> Esborrar Carta</button>)}

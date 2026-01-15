@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // --- CURATED LIST OF ICONS FOR RESTAURANT ---
+// First Item is "mini_rhombus" (Small Separator Rhombus).
+// Second Item is "diamond" (Big Diamond Icon).
 export const AVAILABLE_ICONS = [
+    "mini_rhombus", // Explicit value for the small separator
+    "diamond", // Big Diamond Icon (Icona gran)
     "restaurant", "restaurant_menu", "soup_kitchen", "skillet", "outdoor_grill",
     "tapas", "set_meal", "lunch_dining", "dinner_dining", "breakfast_dining",
-    "brunch_dining", "ramen_dining", "pizza", "bakery_dining", "egg",
+    "brunch_dining", "ramen_dining", "bakery_dining", "egg",
     "rice_bowl", "kebab_dining", "wine_bar", "liquor", "local_bar",
     "local_cafe", "coffee", "icecream", "cake", "cookie",
     "eco", "nutrition", "local_florist", "child_care", "star",
@@ -201,35 +205,49 @@ export const IconPicker = ({ value, onChange }: { value: string, onChange: (val:
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen]);
 
+    // Helper to render the icon
+    // "mini_rhombus" -> Renders the Specific SMALL Separator Rhombus (tiny, rotated)
+    // "diamond" -> Renders the Standard Material Icon Diamond (larger)
+    const renderIconVisual = (iconVal: string, sizeClass: string = "text-xl", colorClass: string = "") => {
+        if (iconVal === "mini_rhombus" || !iconVal) { // Handle explicit mini_rhombus or empty legacy
+            // Case 1: The Small Separator (Previously treated as empty, now strictly the small divider)
+            // WE USE w-2 h-2 to match the website's small size exactly.
+            // Centered explicitly.
+            return (
+                <div className="flex items-center justify-center w-6 h-6">
+                    <div className={`w-2 h-2 rotate-45 bg-[#8b5a2b] ${colorClass.replace('text-', 'bg-').replace('[#8b5a2b]', 'primary')}`}></div>
+                </div>
+            );
+        }
+        // Case 2: Standard Icons (including the big 'diamond')
+        return <span className={`material-symbols-outlined ${sizeClass} ${colorClass}`}>{iconVal}</span>;
+    };
+
     return (
         <div className="relative" ref={wrapperRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 border border-gray-300 rounded px-2 py-1.5 hover:border-[#8b5a2b] transition-colors bg-white w-full text-left"
+                className="flex items-center justify-between gap-2 border border-gray-300 rounded-lg p-2 hover:border-[#8b5a2b] transition-colors bg-white w-full h-10"
                 title="Canviar icona"
             >
-                <div className="w-6 h-6 flex items-center justify-center bg-[#8b5a2b]/10 rounded shrink-0">
-                    <span className="material-symbols-outlined text-[#8b5a2b] text-lg">
-                        {value || 'restaurant'}
-                    </span>
+                <div className="flex items-center justify-center w-full gap-2">
+                     {renderIconVisual(value, "text-xl", "text-[#8b5a2b]")}
                 </div>
-                <span className="text-xs text-gray-500 font-mono flex-1 truncate">
-                    {value || 'Seleccionar'}
-                </span>
-                <span className="material-symbols-outlined text-gray-400 text-sm">arrow_drop_down</span>
+                <span className="material-symbols-outlined text-gray-400 text-lg absolute right-2">arrow_drop_down</span>
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-xl rounded-lg z-50 p-3">
-                    <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        {AVAILABLE_ICONS.map((icon) => (
+                // Centered dropdown
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white border border-gray-200 shadow-xl rounded-lg z-50 p-3">
+                    <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        {AVAILABLE_ICONS.map((icon, idx) => (
                             <button
-                                key={icon}
+                                key={idx}
                                 onClick={() => { onChange(icon); setIsOpen(false); }}
-                                className={`p-2 rounded hover:bg-gray-100 flex items-center justify-center transition-colors aspect-square border ${value === icon ? 'bg-[#8b5a2b]/20 border-[#8b5a2b] text-[#8b5a2b]' : 'border-transparent text-gray-600'}`}
-                                title={icon}
+                                className={`p-2 rounded hover:bg-gray-100 flex items-center justify-center transition-colors aspect-square border ${value === icon ? 'bg-[#8b5a2b]/10 border-[#8b5a2b] text-[#8b5a2b]' : 'border-transparent text-gray-600'}`}
+                                title={icon === "mini_rhombus" ? "Separador Petit (Rombe)" : icon}
                             >
-                                <span className="material-symbols-outlined text-xl">{icon}</span>
+                                {renderIconVisual(icon, "text-xl")}
                             </button>
                         ))}
                     </div>

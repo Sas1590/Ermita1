@@ -10,11 +10,6 @@ interface MenuProps {
 const MenuInfoBlock: React.FC<{ menuData: any }> = ({ menuData }) => {
     const [showInfoBox, setShowInfoBox] = useState(true);
     
-    // Fallback logic: 
-    // If showInfo is explicitly false, hide everything.
-    // If undefined (legacy Food/Wine), default to false UNLESS fields are present (unlikely for old data).
-    // For Group menus, usually showInfo is true or undefined (treated as true in legacy).
-    
     // Simplification: Check the flag.
     const isVisible = menuData.showInfo !== false; 
 
@@ -73,7 +68,11 @@ const FoodMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                     <div className="flex items-center justify-center gap-4 mb-3">
                         <div className="h-px bg-[#8b5a2b] w-12 md:w-24 opacity-30"></div>
                         {section.icon ? (
-                            <span className="material-symbols-outlined text-[#8b5a2b] text-2xl bg-[#F9F7F2] px-2">{section.icon}</span>
+                            section.icon === 'mini_rhombus' ? (
+                                <div className="w-2 h-2 rotate-45 bg-[#8b5a2b]"></div>
+                            ) : (
+                                <span className="material-symbols-outlined text-[#8b5a2b] text-2xl bg-[#F9F7F2] px-2">{section.icon}</span>
+                            )
                         ) : (
                             <div className="w-2 h-2 rotate-45 bg-[#8b5a2b]"></div>
                         )}
@@ -132,7 +131,18 @@ const WineMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
             <div key={idx}>
                 <div className="flex items-center justify-center mb-10">
                     <div className="h-px bg-[#8b5a2b] w-12 opacity-50"></div>
-                    <h4 className="font-serif text-3xl md:text-4xl font-bold text-[#2c241b] uppercase tracking-[0.2em] px-6">{section.category}</h4>
+                    {/* ADDED ICON DISPLAY FOR WINES */}
+                    {section.icon ? (
+                        section.icon === 'mini_rhombus' ? (
+                            <div className="w-4 h-4 rotate-45 bg-[#8b5a2b] mx-4"></div>
+                        ) : (
+                            <span className="material-symbols-outlined text-[#8b5a2b] text-3xl px-4">{section.icon}</span>
+                        )
+                    ) : (
+                        <div className="w-4"></div>
+                    )}
+                    
+                    <h4 className="font-serif text-3xl md:text-4xl font-bold text-[#2c241b] uppercase tracking-[0.2em] px-2">{section.category}</h4>
                     <div className="h-px bg-[#8b5a2b] w-12 opacity-50"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
@@ -192,7 +202,16 @@ const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                     <div key={idx} className="text-center relative">
                         <div className="flex items-center justify-center gap-4 mb-6">
                             <div className="h-px bg-gray-400 w-full opacity-30"></div>
-                            <div className="w-2 h-2 rotate-45 bg-[#8b5a2b]"></div>
+                            {/* ADDED ICON DISPLAY FOR GROUP MENUS */}
+                            {section.icon ? (
+                                section.icon === 'mini_rhombus' ? (
+                                    <div className="w-2 h-2 rotate-45 bg-[#8b5a2b]"></div>
+                                ) : (
+                                    <span className="material-symbols-outlined text-[#8b5a2b] text-2xl">{section.icon}</span>
+                                )
+                            ) : (
+                                <div className="w-2 h-2 rotate-45 bg-[#8b5a2b]"></div>
+                            )}
                             <div className="h-px bg-gray-400 w-full opacity-30"></div>
                         </div>
                         <h4 className="font-serif text-2xl font-bold text-[#556b2f] uppercase tracking-widest mb-6">{section.title}</h4>
@@ -236,6 +255,27 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
   const ExtraMenus = config.extraMenus || [];
   const DailyMenuData = config.dailyMenu; // New Daily Menu Data
 
+  // --- DYNAMIC TITLES & ICONS LOGIC ---
+  // Fallback to defaults if legacy array or missing property
+  const foodTitle = !Array.isArray(FoodMenuData) && FoodMenuData.title ? FoodMenuData.title : 'Carta de Menjar';
+  const foodIcon = !Array.isArray(FoodMenuData) && FoodMenuData.icon ? FoodMenuData.icon : 'restaurant_menu';
+  
+  const wineTitle = !Array.isArray(WineMenuData) && WineMenuData.title ? WineMenuData.title : 'Carta de Vins';
+  const wineIcon = !Array.isArray(WineMenuData) && WineMenuData.icon ? WineMenuData.icon : 'wine_bar';
+
+  const groupTitle = GroupMenuData?.title || 'Menú de Grup';
+  const groupIcon = GroupMenuData?.icon || 'diversity_3';
+
+  const dailyTitle = DailyMenuData?.title || 'Menú Diari';
+  const dailyIcon = DailyMenuData?.icon || 'lunch_dining';
+
+  const renderIcon = (iconName: string, active: boolean) => {
+      if (iconName === 'mini_rhombus') {
+          return <div className={`w-3 h-3 rotate-45 mx-1 ${active ? 'bg-primary' : 'bg-[#8b5a2b]'}`}></div>;
+      }
+      return <span className={`material-symbols-outlined text-4xl ${active ? 'text-primary' : 'text-[#8b5a2b]'}`}>{iconName}</span>;
+  };
+
   const toggleTab = (tab: string) => {
     if (activeTab === tab) {
       onToggleTab(null);
@@ -274,9 +314,9 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
             <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-3 py-1 uppercase tracking-widest z-10">Recomanat</div>
             <button onClick={() => toggleTab('daily')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'daily' ? 'bg-[#1a1816] text-primary' : 'bg-white hover:bg-[#f0ece6] text-[#2c241b]'}`}>
               <div className="flex items-center gap-4">
-                 <span className={`material-symbols-outlined text-4xl ${activeTab === 'daily' ? 'text-primary' : 'text-[#8b5a2b]'}`}>lunch_dining</span>
+                 {renderIcon(dailyIcon, activeTab === 'daily')}
                  <div className="flex flex-col">
-                    <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{DailyMenuData?.title || 'Menú Diari'}</h3>
+                    <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{dailyTitle}</h3>
                     <span className="text-xs font-sans text-gray-500 uppercase tracking-wider hidden md:block">De Dimarts a Divendres</span>
                  </div>
               </div>
@@ -294,8 +334,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
             <button onClick={() => toggleTab('food')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'food' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
               <div className="flex items-center gap-4">
-                 <span className={`material-symbols-outlined text-4xl ${activeTab === 'food' ? 'text-primary' : 'text-[#8b5a2b]'}`}>restaurant_menu</span>
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">Carta</h3>
+                 {renderIcon(foodIcon, activeTab === 'food')}
+                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{foodTitle}</h3>
               </div>
               <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'food' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
             </button>
@@ -311,8 +351,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
             <button onClick={() => toggleTab('group')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'group' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
               <div className="flex items-center gap-4">
-                 <span className={`material-symbols-outlined text-4xl ${activeTab === 'group' ? 'text-primary' : 'text-[#8b5a2b]'}`}>diversity_3</span>
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{GroupMenuData?.title || 'Menú de Grup'}</h3>
+                 {renderIcon(groupIcon, activeTab === 'group')}
+                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{groupTitle}</h3>
               </div>
               <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'group' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
             </button>
@@ -328,8 +368,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
             <button onClick={() => toggleTab('wine')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'wine' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
                <div className="flex items-center gap-4">
-                 <span className={`material-symbols-outlined text-4xl ${activeTab === 'wine' ? 'text-primary' : 'text-[#8b5a2b]'}`}>wine_bar</span>
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">Carta de Vins</h3>
+                 {renderIcon(wineIcon, activeTab === 'wine')}
+                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{wineTitle}</h3>
               </div>
               <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'wine' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
             </button>
@@ -344,15 +384,14 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
           {/* 4. DYNAMIC EXTRA MENUS */}
           {ExtraMenus.map((extraMenu, index) => {
               const tabId = `extra_${index}`;
-              let icon = 'restaurant';
-              if(extraMenu.type === 'wine') icon = 'wine_bar';
-              if(extraMenu.type === 'group') icon = 'diversity_3';
+              // DYNAMIC ICON LOGIC
+              let iconName = extraMenu.icon || (extraMenu.type === 'wine' ? 'wine_bar' : extraMenu.type === 'group' ? 'diversity_3' : 'restaurant');
 
               return (
                 <div key={extraMenu.id || index} className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
                     <button onClick={() => toggleTab(tabId)} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === tabId ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
                     <div className="flex items-center gap-4">
-                        <span className={`material-symbols-outlined text-4xl ${activeTab === tabId ? 'text-primary' : 'text-[#8b5a2b]'}`}>{icon}</span>
+                        {renderIcon(iconName, activeTab === tabId)}
                         <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{extraMenu.title}</h3>
                     </div>
                     <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === tabId ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>

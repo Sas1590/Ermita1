@@ -17,6 +17,20 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
   const { config, isLoading } = useConfig(); 
   const [totalUnread, setTotalUnread] = useState(0);
 
+  // --- DYNAMIC ICONS EXTRACTION ---
+  const dailyIcon = config.dailyMenu?.icon || 'lunch_dining';
+  const foodIcon = (!Array.isArray(config.foodMenu) && config.foodMenu?.icon) ? config.foodMenu.icon : 'restaurant_menu';
+  const wineIcon = (!Array.isArray(config.wineMenu) && config.wineMenu?.icon) ? config.wineMenu.icon : 'wine_bar';
+  const groupIcon = config.groupMenu?.icon || 'diversity_3';
+
+  // Helper to render icon in Navbar (Handling mini_rhombus vs Material Symbol)
+  const renderNavIcon = (iconName: string, extraClasses: string = "") => {
+      if (iconName === 'mini_rhombus') {
+          return <div className={`w-2 h-2 rotate-45 bg-current ${extraClasses}`}></div>;
+      }
+      return <span className={`material-symbols-outlined ${extraClasses}`}>{iconName}</span>;
+  };
+
   // Visibility Flags
   const showHistoryLink = config.philosophy?.visible !== false;
   const showReservationButton = config.hero?.reservationVisible !== false;
@@ -153,7 +167,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    className="w-full px-6 py-4 text-left bg-white/5 hover:bg-primary hover:text-black transition-colors flex items-center justify-between group/item border-b border-white/10"
                  >
                    Menú Diari
-                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">lunch_dining</span>
+                   {renderNavIcon(dailyIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
                  </button>
 
                  <button 
@@ -161,34 +175,37 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
                    Carta de Menjar
-                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">restaurant_menu</span>
+                   {renderNavIcon(foodIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
                  </button>
                  <button 
                    onClick={() => onOpenMenu('wine')} 
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
                  >
                    Carta de Vins
-                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">wine_bar</span>
+                   {renderNavIcon(wineIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
                  </button>
                  <button 
                    onClick={() => onOpenMenu('group')} 
                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary transition-colors flex items-center justify-between group/item"
                  >
                    Menú de Grup
-                   <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">groups</span>
+                   {renderNavIcon(groupIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
                  </button>
                  
                  {/* Dynamic Extra Menus Links in Navbar Dropdown (Optional but nice) */}
-                 {(config.extraMenus || []).map((menu, idx) => (
-                    <button 
-                        key={menu.id}
-                        onClick={() => onOpenMenu(`extra_${idx}`)} 
-                        className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-t border-white/5 transition-colors flex items-center justify-between group/item"
-                    >
-                        {menu.title}
-                        <span className="material-symbols-outlined text-sm opacity-0 group-hover/item:opacity-100 transition-opacity">add</span>
-                    </button>
-                 ))}
+                 {(config.extraMenus || []).map((menu, idx) => {
+                    const icon = menu.icon || (menu.type === 'wine' ? 'wine_bar' : menu.type === 'group' ? 'diversity_3' : 'add');
+                    return (
+                        <button 
+                            key={menu.id}
+                            onClick={() => onOpenMenu(`extra_${idx}`)} 
+                            className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-t border-white/5 transition-colors flex items-center justify-between group/item"
+                        >
+                            {menu.title}
+                            {renderNavIcon(icon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
+                        </button>
+                    );
+                 })}
                </div>
             </div>
           </div>
