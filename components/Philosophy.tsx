@@ -45,7 +45,8 @@ const Philosophy: React.FC = () => {
   const displayProductImages = productImages.length > 0 ? productImages : [fallbackProductImage];
 
   return (
-    <section id="historia" className="bg-[#1d1a15] bg-dark-texture py-24 md:py-32 relative overflow-hidden scroll-mt-24">
+    // UPDATED PADDING: pt-12 (top reduced significantly), pb-24 (bottom remains standard)
+    <section id="historia" className="bg-[#1d1a15] bg-dark-texture pt-12 pb-24 md:pb-32 relative overflow-hidden scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         
         {/* Header Section */}

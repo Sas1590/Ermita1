@@ -68,7 +68,8 @@ const Specialties: React.FC = () => {
   }
 
   return (
-    <section className="bg-[#1d1a15] bg-dark-texture py-24 text-white relative">
+    // UPDATED PADDING: pt-24 (top remains same), pb-12 (bottom reduced)
+    <section className="bg-[#1d1a15] bg-dark-texture pt-24 pb-12 text-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="text-center mb-16">
           <span className="font-hand text-3xl text-primary -rotate-2 inline-block mb-2">{specialties.sectionTitle}</span>

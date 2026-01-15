@@ -221,7 +221,10 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           )}
 
           {showReservationButton && (
-            <button onClick={() => onScrollToSection('reserva')} className="border border-white/30 px-6 py-3 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300">
+            <button 
+                onClick={() => onScrollToSection('reserva')} 
+                className="border-2 border-primary text-primary px-6 py-2 font-bold uppercase tracking-widest text-sm hover:bg-primary hover:text-black transition-all duration-300"
+            >
                 {config.navbar.reserveButtonText}
             </button>
           )}

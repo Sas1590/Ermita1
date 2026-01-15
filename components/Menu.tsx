@@ -248,26 +248,31 @@ const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
 const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
   const { config } = useConfig();
 
-  // Dynamic Menu Data
-  const FoodMenuData = config.foodMenu || [];
-  const GroupMenuData = config.groupMenu;
-  const WineMenuData = config.wineMenu || [];
-  const ExtraMenus = config.extraMenus || [];
-  const DailyMenuData = config.dailyMenu; // New Daily Menu Data
+  // Helper: Get styles based on Recommended Flag
+  const getCardClasses = (isRecommended: boolean, isActive: boolean) => {
+      // BASE STYLE
+      let containerClass = "bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden scroll-mt-32 relative transition-all duration-500 ";
+      
+      // BORDER & HIGHLIGHT LOGIC
+      if (isRecommended) {
+          containerClass += "border-2 border-primary/30 z-10 scale-[1.01] "; // Highlighted border & slight scale
+      } else {
+          containerClass += "border border-white/10 opacity-95 hover:opacity-100 ";
+      }
 
-  // --- DYNAMIC TITLES & ICONS LOGIC ---
-  // Fallback to defaults if legacy array or missing property
-  const foodTitle = !Array.isArray(FoodMenuData) && FoodMenuData.title ? FoodMenuData.title : 'Carta de Menjar';
-  const foodIcon = !Array.isArray(FoodMenuData) && FoodMenuData.icon ? FoodMenuData.icon : 'restaurant_menu';
-  
-  const wineTitle = !Array.isArray(WineMenuData) && WineMenuData.title ? WineMenuData.title : 'Carta de Vins';
-  const wineIcon = !Array.isArray(WineMenuData) && WineMenuData.icon ? WineMenuData.icon : 'wine_bar';
+      // HEADER BUTTON STYLE
+      let headerClass = "w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ";
+      if (isActive) {
+          headerClass += "bg-[#1a1816] text-primary ";
+      } else {
+          // If Recommended but not active -> White BG. If Standard -> Beige BG
+          headerClass += isRecommended 
+              ? "bg-white hover:bg-[#f0ece6] text-[#2c241b] " 
+              : "bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b] ";
+      }
 
-  const groupTitle = GroupMenuData?.title || 'Menú de Grup';
-  const groupIcon = GroupMenuData?.icon || 'diversity_3';
-
-  const dailyTitle = DailyMenuData?.title || 'Menú Diari';
-  const dailyIcon = DailyMenuData?.icon || 'lunch_dining';
+      return { containerClass, headerClass };
+  };
 
   const renderIcon = (iconName: string, active: boolean) => {
       if (iconName === 'mini_rhombus') {
@@ -293,6 +298,26 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
     }
   };
 
+  // --- BUILD MENU LIST DYNAMICALLY TO UNIFY RENDERING ---
+  const allMenus = [
+      { id: 'daily', type: 'group', data: config.dailyMenu, fallbackTitle: 'Menú Diari', fallbackIcon: 'lunch_dining', fallbackSubtitle: 'De Dimarts a Divendres' },
+      { id: 'food', type: 'food', data: config.foodMenu, fallbackTitle: 'Carta de Menjar', fallbackIcon: 'restaurant_menu', fallbackSubtitle: '' },
+      { id: 'group', type: 'group', data: config.groupMenu, fallbackTitle: 'Menú de Grup', fallbackIcon: 'diversity_3', fallbackSubtitle: '' },
+      { id: 'wine', type: 'wine', data: config.wineMenu, fallbackTitle: 'Carta de Vins', fallbackIcon: 'wine_bar', fallbackSubtitle: '' },
+      ...(config.extraMenus || []).map((extra, idx) => ({
+          id: `extra_${idx}`,
+          type: extra.type,
+          data: extra.data,
+          // Extra menus wrap the data, but properties might be on the wrapper OR the inner data.
+          // We prioritize the wrapper's title/icon if set, otherwise fallback to defaults.
+          // IMPORTANT: `extra` object in config.extraMenus ALREADY has title/icon synced by MenuManager
+          fallbackTitle: extra.title,
+          fallbackIcon: extra.icon || 'restaurant',
+          fallbackSubtitle: extra.subtitle || '',
+          isExtra: true
+      }))
+  ];
+
   return (
     <section id="carta" className="relative py-24 min-h-screen flex items-center bg-[#1d1a15] bg-dark-texture">
       <div className="absolute inset-0 z-0">
@@ -309,100 +334,59 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
         <div className="space-y-8">
           
-          {/* 0. NEW: DAILY MENU (First Item) */}
-          <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border-2 border-primary/30 scroll-mt-32 relative">
-            <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-3 py-1 uppercase tracking-widest z-10">Recomanat</div>
-            <button onClick={() => toggleTab('daily')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'daily' ? 'bg-[#1a1816] text-primary' : 'bg-white hover:bg-[#f0ece6] text-[#2c241b]'}`}>
-              <div className="flex items-center gap-4">
-                 {renderIcon(dailyIcon, activeTab === 'daily')}
-                 <div className="flex flex-col">
-                    <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{dailyTitle}</h3>
-                    <span className="text-xs font-sans text-gray-500 uppercase tracking-wider hidden md:block">De Dimarts a Divendres</span>
-                 </div>
-              </div>
-              <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'daily' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
-            </button>
-            <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === 'daily' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-              <div className="overflow-hidden min-h-0">
-                  {DailyMenuData && <GroupMenuContent menuData={DailyMenuData} />}
-                  <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">{DailyMenuData?.footerText || "Cuina de mercat"}</div>
-              </div>
-            </div>
-          </div>
+          {allMenus.map((menuItem) => {
+              // Extract Data safely
+              const data = menuItem.data;
+              if (!data && !menuItem.isExtra) return null; // Skip empty standard menus if data missing (unlikely)
 
-          {/* 1. FOOD MENU */}
-          <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
-            <button onClick={() => toggleTab('food')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'food' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
-              <div className="flex items-center gap-4">
-                 {renderIcon(foodIcon, activeTab === 'food')}
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{foodTitle}</h3>
-              </div>
-              <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'food' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
-            </button>
-            <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === 'food' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-              <div className="overflow-hidden min-h-0">
-                  <FoodMenuContent menuData={FoodMenuData} />
-                  <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">Bon Profit</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. GROUP MENU */}
-          <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
-            <button onClick={() => toggleTab('group')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'group' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
-              <div className="flex items-center gap-4">
-                 {renderIcon(groupIcon, activeTab === 'group')}
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{groupTitle}</h3>
-              </div>
-              <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'group' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
-            </button>
-            <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === 'group' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-              <div className="overflow-hidden min-h-0">
-                  {GroupMenuData && <GroupMenuContent menuData={GroupMenuData} />}
-                  <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">{GroupMenuData?.footerText || "Celebracions amb ànima"}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. WINE MENU */}
-          <div className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
-            <button onClick={() => toggleTab('wine')} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === 'wine' ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
-               <div className="flex items-center gap-4">
-                 {renderIcon(wineIcon, activeTab === 'wine')}
-                 <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{wineTitle}</h3>
-              </div>
-              <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === 'wine' ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
-            </button>
-            <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === 'wine' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-              <div className="overflow-hidden min-h-0">
-                  <WineMenuContent menuData={WineMenuData} />
-                  <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">Salut!</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. DYNAMIC EXTRA MENUS */}
-          {ExtraMenus.map((extraMenu, index) => {
-              const tabId = `extra_${index}`;
-              // DYNAMIC ICON LOGIC
-              let iconName = extraMenu.icon || (extraMenu.type === 'wine' ? 'wine_bar' : extraMenu.type === 'group' ? 'diversity_3' : 'restaurant');
+              // Determine properties (Prefer Data object, fallback to Defaults/Wrapper)
+              // NOTE: For standard menus, 'data' IS the object. For extras, 'data' is inside.
+              // Logic: The unified 'GeneralInfoEditor' writes to title, subtitle, icon, recommended on the DATA object directly.
+              
+              // Handle Legacy Arrays (Old Food/Wine structure) vs New Objects
+              const isLegacyArray = Array.isArray(data);
+              
+              const title = !isLegacyArray && data?.title ? data.title : menuItem.fallbackTitle;
+              const subtitle = !isLegacyArray && data?.subtitle ? data.subtitle : menuItem.fallbackSubtitle;
+              const icon = !isLegacyArray && data?.icon ? data.icon : menuItem.fallbackIcon;
+              const isRecommended = !isLegacyArray && data?.recommended === true;
+              
+              const { containerClass, headerClass } = getCardClasses(isRecommended, activeTab === menuItem.id);
 
               return (
-                <div key={extraMenu.id || index} className="bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm overflow-hidden border border-white/10 scroll-mt-32">
-                    <button onClick={() => toggleTab(tabId)} className={`w-full text-left px-8 py-8 flex justify-between items-center transition-colors duration-300 ${activeTab === tabId ? 'bg-[#1a1816] text-primary' : 'bg-[#e8e4d9] hover:bg-[#dcd6c8] text-[#2c241b]'}`}>
-                    <div className="flex items-center gap-4">
-                        {renderIcon(iconName, activeTab === tabId)}
-                        <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{extraMenu.title}</h3>
-                    </div>
-                    <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === tabId ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
+                <div key={menuItem.id} className={containerClass}>
+                    {/* RECOMMENDED BADGE */}
+                    {isRecommended && (
+                        <div className="absolute top-0 right-0 bg-primary text-black text-xs font-bold px-3 py-1 uppercase tracking-widest z-10 shadow-sm">
+                            Recomanat
+                        </div>
+                    )}
+
+                    <button onClick={() => toggleTab(menuItem.id)} className={headerClass}>
+                        <div className="flex items-center gap-4">
+                            {renderIcon(icon, activeTab === menuItem.id)}
+                            <div className="flex flex-col text-left">
+                                <h3 className="font-serif text-2xl md:text-4xl font-bold tracking-widest uppercase">{title}</h3>
+                                {subtitle && (
+                                    <span className={`text-xs font-sans uppercase tracking-wider hidden md:block ${activeTab === menuItem.id ? 'text-primary/70' : 'text-gray-500'}`}>
+                                        {subtitle}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <span className="material-symbols-outlined text-4xl transition-transform duration-500" style={{ transform: activeTab === menuItem.id ? 'rotate(180deg)' : 'rotate(0deg)' }}>keyboard_arrow_down</span>
                     </button>
-                    <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === tabId ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                    <div className="overflow-hidden min-h-0">
-                        {extraMenu.type === 'food' && <FoodMenuContent menuData={extraMenu.data} />}
-                        {extraMenu.type === 'wine' && <WineMenuContent menuData={extraMenu.data} />}
-                        {extraMenu.type === 'group' && <GroupMenuContent menuData={extraMenu.data} />}
-                        <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">Ermita Paret Delgada</div>
-                    </div>
+
+                    <div className={`grid transition-[grid-template-rows] duration-500 ease-out ${activeTab === menuItem.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                        <div className="overflow-hidden min-h-0">
+                            {menuItem.type === 'food' && <FoodMenuContent menuData={data} />}
+                            {menuItem.type === 'wine' && <WineMenuContent menuData={data} />}
+                            {menuItem.type === 'group' && <GroupMenuContent menuData={data} />}
+                            
+                            <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">
+                                {(!isLegacyArray && data?.footerText) ? data.footerText : "Ermita Paret Delgada"}
+                            </div>
+                        </div>
                     </div>
                 </div>
               );
@@ -410,8 +394,9 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
         </div>
         
+        {/* GLOBAL FOOTER NOTE */}
         <div className="text-center mt-12 text-white/50 text-sm font-sans italic">
-          * Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.
+          {config.menuGlobalFooter}
         </div>
 
       </div>

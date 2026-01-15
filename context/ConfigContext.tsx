@@ -22,7 +22,9 @@ export interface MenuSection {
 // Wrapper for Food Menu (New Structure)
 export interface FoodMenuConfig {
   title?: string;
+  subtitle?: string; // NEW: Subtitle (e.g. "De dimarts a divendres")
   icon?: string;
+  recommended?: boolean; // NEW: Recommended flag
   price?: string;
   vat?: string;
   infoIntro?: string;
@@ -42,7 +44,7 @@ export interface GroupMenuItem {
 
 export interface GroupMenuSection {
   title: string;
-  icon?: string; // Added Icon for Group/Daily Menu Sections
+  icon?: string;
   items: GroupMenuItem[];
 }
 
@@ -54,20 +56,22 @@ export interface WineItem {
 }
 
 export interface WineGroup {
-  sub: string; // Sub-header (e.g., D.O. Terra Alta)
+  sub: string;
   items: WineItem[];
 }
 
 export interface WineCategory {
-  category: string; // Header (e.g., Negres)
-  icon?: string; // Added Icon for Wine Categories
+  category: string;
+  icon?: string;
   groups: WineGroup[];
 }
 
 // Wrapper for Wine Menu (New Structure)
 export interface WineMenuConfig {
   title?: string;
+  subtitle?: string; // NEW
   icon?: string;
+  recommended?: boolean; // NEW
   price?: string;
   vat?: string;
   infoIntro?: string;
@@ -84,7 +88,9 @@ export interface ExtraMenu {
   id: string;
   type: 'food' | 'wine' | 'group';
   title: string;
-  icon?: string; // NEW: Custom icon for the menu tab
+  subtitle?: string; // NEW
+  icon?: string; 
+  recommended?: boolean; // NEW
   data: FoodMenuConfig | WineMenuConfig | any; 
 }
 
@@ -96,6 +102,7 @@ export interface AppConfig {
   adminSettings: {
     customDisplayName: string;
   };
+  menuGlobalFooter: string; // NEW: Global footer text for the Menu page
   hero: {
     reservationVisible?: boolean;
     reservationFormTitle: string;
@@ -151,7 +158,6 @@ export interface AppConfig {
     historicLinkUrl: string;
     historicImages: string[];
   };
-  // NEW GASTRONOMY SECTION
   gastronomy: {
     visible?: boolean;
     topTitle: string;
@@ -160,7 +166,7 @@ export interface AppConfig {
     card1: {
       title: string;
       subtitle: string;
-      description: string; // Added for consistency
+      description: string;
       price: string;
       footerText: string;
       image: string;
@@ -171,8 +177,8 @@ export interface AppConfig {
       title: string;
       subtitle: string;
       description: string;
-      price: string; // Added for consistency
-      footerText: string; // Added for consistency
+      price: string;
+      footerText: string;
       image: string;
       buttonText: string;
       targetTab: string;
@@ -181,9 +187,11 @@ export interface AppConfig {
     footerLinks: Array<{ label: string; icon: string; targetTab: string }>;
   };
   
-  dailyMenu: { // NEW DEDICATED DAILY MENU SECTION
+  dailyMenu: {
     title: string;
+    subtitle?: string; // NEW
     icon?: string;
+    recommended?: boolean; // NEW
     price: string;
     vat: string;
     disclaimer: string;
@@ -194,12 +202,14 @@ export interface AppConfig {
     footerText?: string;
   };
 
-  foodMenu: FoodMenuConfig | MenuSection[]; // Support both Object (new) and Array (legacy)
-  wineMenu: WineMenuConfig | WineCategory[]; // Support both Object (new) and Array (legacy)
+  foodMenu: FoodMenuConfig | MenuSection[];
+  wineMenu: WineMenuConfig | WineCategory[];
   
   groupMenu: {
     title: string;
+    subtitle?: string; // NEW
     icon?: string;
+    recommended?: boolean; // NEW
     price: string;
     vat: string;
     disclaimer: string;
@@ -254,6 +264,7 @@ export const defaultAppConfig: AppConfig = {
   adminSettings: {
     customDisplayName: ""
   },
+  menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.", // Default Value
   hero: {
     reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
@@ -344,7 +355,7 @@ export const defaultAppConfig: AppConfig = {
     card1: {
       title: "Menú Diari",
       subtitle: "DE DIMARTS A DIVENDRES",
-      description: "", // Added default
+      description: "", 
       footerText: "Cuina de mercat segons temporada",
       price: "18€",
       image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2080&auto=format&fit=crop",
@@ -355,8 +366,8 @@ export const defaultAppConfig: AppConfig = {
       title: "Carta Completa",
       subtitle: "CAPS DE SETMANA I FESTIUS",
       description: "Especialitats a la brasa, carns madurades i els clàssics de la cuina catalana.",
-      price: "", // Added default
-      footerText: "", // Added default
+      price: "", 
+      footerText: "", 
       image: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=2069&auto=format&fit=crop",
       buttonText: "DESCOBRIR CARTA",
       targetTab: "food"
@@ -368,10 +379,12 @@ export const defaultAppConfig: AppConfig = {
       { label: "Carta de Vins", icon: "wine_bar", targetTab: "wine" }
     ]
   },
-  // --- NEW DAILY MENU DEFAULT DATA ---
+  
   dailyMenu: {
     title: "Menú Diari",
+    subtitle: "DE DIMARTS A DIVENDRES", // Default value
     icon: "lunch_dining",
+    recommended: true, // Default Recommended
     price: "18€",
     vat: "IVA inclòs",
     disclaimer: "Vàlid de dimarts a divendres (no festius)",
@@ -391,10 +404,10 @@ export const defaultAppConfig: AppConfig = {
     footerText: "Cuina de mercat"
   },
   
-  // --- UPDATED FOOD MENU INTEGRATION ---
   foodMenu: {
     title: "Carta de Menjar",
     icon: "restaurant_menu",
+    recommended: false,
     sections: [
       {
         id: "sec_tapas",
@@ -410,6 +423,7 @@ export const defaultAppConfig: AppConfig = {
   wineMenu: {
     title: "Carta de Vins",
     icon: "wine_bar",
+    recommended: false,
     categories: [
       {
           category: "VINS NEGRES",
@@ -427,7 +441,9 @@ export const defaultAppConfig: AppConfig = {
 
   groupMenu: {
     title: "Menú de Grup",
+    subtitle: "MÍNIM 10 PERSONES",
     icon: "diversity_3",
+    recommended: false,
     price: "Consultar",
     vat: "IVA inclòs",
     disclaimer: "Mínim 10 persones",
@@ -503,6 +519,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
         setConfig(prev => ({
            ...prev,
            ...data,
+           menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, // Ensure this new field is merged
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
            hero: { ...prev.hero, ...data.hero },

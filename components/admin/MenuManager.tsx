@@ -3,22 +3,39 @@ import { IconPicker } from './AdminShared';
 
 // --- SHARED COMPONENTS ---
 
-// 0. GENERAL INFO BLOCK (Title & Icon) - NEW
+// 0. GENERAL INFO BLOCK (Title, Subtitle, Icon & Recommended) - UPDATED
 const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data: any, onChange: (d: any) => void, defaultTitle: string, defaultIcon: string }) => {
     // Determine current values or defaults
     const currentTitle = data.title !== undefined ? data.title : defaultTitle;
+    const currentSubtitle = data.subtitle !== undefined ? data.subtitle : "";
     const currentIcon = data.icon !== undefined ? data.icon : defaultIcon;
+    const isRecommended = data.recommended === true;
 
     const updateField = (field: string, val: any) => {
         onChange({ ...data, [field]: val });
     };
 
     return (
-        <div className="bg-white p-6 rounded shadow-sm border border-gray-200 mb-6">
-            <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2 text-sm uppercase border-b border-gray-100 pb-2">
-                <span className="material-symbols-outlined text-primary">article</span> Info General
-            </h4>
-            <div className="flex flex-col md:flex-row gap-6">
+        <div className={`p-6 rounded shadow-sm border mb-6 transition-colors ${isRecommended ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}>
+            <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                <h4 className={`font-bold flex items-center gap-2 text-sm uppercase ${isRecommended ? 'text-amber-800' : 'text-gray-700'}`}>
+                    <span className="material-symbols-outlined text-primary">article</span> Info General
+                </h4>
+                {/* RECOMMENDED TOGGLE */}
+                <button 
+                    onClick={() => updateField('recommended', !isRecommended)}
+                    className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border transition-all flex items-center gap-1
+                        ${isRecommended 
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-md transform scale-105' 
+                            : 'bg-white text-gray-400 border-gray-300 hover:bg-gray-50'
+                        }`}
+                >
+                    <span className="material-symbols-outlined text-sm">{isRecommended ? 'star' : 'star_outline'}</span>
+                    {isRecommended ? 'Recomanat' : 'Normal'}
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 <div className="flex-1">
                     <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Menú</label>
                     <input 
@@ -28,8 +45,20 @@ const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data
                         placeholder="Ex: Carta" 
                     />
                 </div>
+                <div className="flex-1">
+                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol (Opcional)</label>
+                    <input 
+                        value={currentSubtitle} 
+                        onChange={(e) => updateField('subtitle', e.target.value)} 
+                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-primary text-gray-600" 
+                        placeholder="Ex: De Dimarts a Divendres" 
+                    />
+                </div>
+            </div>
+            
+            <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
                 <div className="w-full md:w-40">
-                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
                     <IconPicker 
                         value={currentIcon} 
                         onChange={(val) => updateField('icon', val)}
@@ -123,11 +152,13 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const sections = isLegacy ? data : (data?.sections || []);
     const title = isLegacy ? "Carta de Menjar" : (data?.title || "Carta de Menjar");
     const icon = isLegacy ? "restaurant_menu" : (data?.icon || "restaurant_menu");
+    const subtitle = isLegacy ? "" : (data?.subtitle || "");
+    const recommended = isLegacy ? false : (data?.recommended || false);
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
     // Merge existing data with structure
-    const currentData = isLegacy ? { title, icon, sections, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, subtitle, icon, recommended, sections, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
@@ -174,7 +205,7 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title & Icon) */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={currentData} 
                 onChange={updateData} 
@@ -265,10 +296,12 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const categories = isLegacy ? data : (data?.categories || data || []); 
     const title = isLegacy ? "Carta de Vins" : (data?.title || "Carta de Vins");
     const icon = isLegacy ? "wine_bar" : (data?.icon || "wine_bar");
+    const subtitle = isLegacy ? "" : (data?.subtitle || "");
+    const recommended = isLegacy ? false : (data?.recommended || false);
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
-    const currentData = isLegacy ? { title, icon, categories, disclaimer, showDisclaimer } : data;
+    const currentData = isLegacy ? { title, subtitle, icon, recommended, categories, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
         onChange({ ...currentData, ...newData });
@@ -286,7 +319,7 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title & Icon) */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={currentData} 
                 onChange={updateData} 
@@ -440,7 +473,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            {/* GENERAL INFO EDITOR (Title & Icon) - REPLACES OLD TITLE INPUT */}
+            {/* GENERAL INFO EDITOR (Title, Subtitle, Icon, Recommended) */}
             <GeneralInfoEditor 
                 data={data} 
                 onChange={(newData) => onChange({...data, ...newData})} 
@@ -550,7 +583,9 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 // --- DATA TEMPLATES ---
 export const getBlankFoodMenu = () => ({
     title: "Nova Carta de Menjar",
+    subtitle: "",
     icon: "restaurant",
+    recommended: false,
     sections: [{
       id: `sec_${Date.now()}`,
       category: "NOVA SECCIÓ",
@@ -565,7 +600,9 @@ export const getBlankFoodMenu = () => ({
 
 export const getBlankWineMenu = () => ({
     title: "Nova Carta de Vins",
+    subtitle: "",
     icon: "wine_bar",
+    recommended: false,
     categories: [{
         category: "NOVA CATEGORIA",
         icon: "wine_bar",
@@ -579,7 +616,9 @@ export const getBlankWineMenu = () => ({
 
 export const getBlankGroupMenu = () => ({
     title: "NOU MENÚ DE GRUP",
+    subtitle: "",
     icon: "diversity_3",
+    recommended: false,
     price: "00 EUROS",
     vat: "IVA INCLÒS",
     disclaimer: "",
@@ -632,7 +671,9 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         ...newExtras[idx], 
                         data: data,
                         title: data.title || newExtras[idx].title, // Sync title
-                        icon: data.icon || newExtras[idx].icon     // Sync icon
+                        subtitle: data.subtitle || newExtras[idx].subtitle,
+                        icon: data.icon || newExtras[idx].icon,     // Sync icon
+                        recommended: data.recommended || false
                     };
                 }
                 return { ...prev, extraMenus: newExtras };
@@ -715,10 +756,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* NEW DAILY MENU CARD */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative border-l-4 border-l-primary">
-                            <div className="h-24 bg-primary flex items-center justify-center relative overflow-hidden">
+                        <div className={`bg-white rounded-lg shadow-sm border overflow-hidden group hover:shadow-lg transition-all relative border-l-4 ${localConfig.dailyMenu?.recommended ? 'border-amber-400 border-l-amber-400' : 'border-gray-200 border-l-primary'}`}>
+                            <div className={`h-24 flex items-center justify-center relative overflow-hidden ${localConfig.dailyMenu?.recommended ? 'bg-amber-100' : 'bg-primary'}`}>
                                 <span className="material-symbols-outlined text-6xl text-black/10 absolute -right-2 -bottom-2">{localConfig.dailyMenu?.icon || 'lunch_dining'}</span>
-                                <span className="text-black font-serif font-bold text-xl relative z-10">{localConfig.dailyMenu?.title || 'Menú Diari'}</span>
+                                <span className={`text-black font-serif font-bold text-xl relative z-10 ${localConfig.dailyMenu?.recommended ? 'text-amber-800' : ''}`}>{localConfig.dailyMenu?.title || 'Menú Diari'}</span>
+                                {localConfig.dailyMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Actualitza els primers, segons i postres del dia.</p>
@@ -728,10 +770,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                            <div className="h-24 bg-[#2c241b] flex items-center justify-center relative overflow-hidden">
+                        <div className={`bg-white rounded-lg shadow-sm border overflow-hidden group hover:shadow-lg transition-all relative border-l-4 ${localConfig.foodMenu?.recommended ? 'border-amber-400 border-l-amber-400' : 'border-gray-200 border-l-transparent'}`}>
+                            <div className={`h-24 flex items-center justify-center relative overflow-hidden ${localConfig.foodMenu?.recommended ? 'bg-amber-100' : 'bg-[#2c241b]'}`}>
                                 <span className="material-symbols-outlined text-6xl text-primary/20 absolute -right-2 -bottom-2">{localConfig.foodMenu?.icon || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.icon) ? (localConfig.foodMenu?.icon || 'restaurant_menu') : 'restaurant_menu'}</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.foodMenu?.title || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.title) ? (localConfig.foodMenu?.title || 'Carta de Menjar') : 'Carta de Menjar'}</span>
+                                <span className={`${localConfig.foodMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.foodMenu?.title || (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.title) ? (localConfig.foodMenu?.title || 'Carta de Menjar') : 'Carta de Menjar'}</span>
+                                {localConfig.foodMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Edita els entrants, carns, peixos i postres principals.</p>
@@ -741,10 +784,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                             </div>
                         </div>
                         
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                            <div className="h-24 bg-[#5d3a1a] flex items-center justify-center relative overflow-hidden">
+                        <div className={`bg-white rounded-lg shadow-sm border overflow-hidden group hover:shadow-lg transition-all relative border-l-4 ${localConfig.wineMenu?.recommended ? 'border-amber-400 border-l-amber-400' : 'border-gray-200 border-l-transparent'}`}>
+                            <div className={`h-24 flex items-center justify-center relative overflow-hidden ${localConfig.wineMenu?.recommended ? 'bg-amber-100' : 'bg-[#5d3a1a]'}`}>
                                 <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.wineMenu?.icon || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.icon) ? (localConfig.wineMenu?.icon || 'wine_bar') : 'wine_bar'}</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.wineMenu?.title || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.title) ? (localConfig.wineMenu?.title || 'Carta de Vins') : 'Carta de Vins'}</span>
+                                <span className={`${localConfig.wineMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.wineMenu?.title || (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.title) ? (localConfig.wineMenu?.title || 'Carta de Vins') : 'Carta de Vins'}</span>
+                                {localConfig.wineMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Gestiona les referències de vins, D.O. i caves.</p>
@@ -754,10 +798,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                             </div>
                         </div>
                         
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
-                            <div className="h-24 bg-[#556b2f] flex items-center justify-center relative overflow-hidden">
+                        <div className={`bg-white rounded-lg shadow-sm border overflow-hidden group hover:shadow-lg transition-all relative border-l-4 ${localConfig.groupMenu?.recommended ? 'border-amber-400 border-l-amber-400' : 'border-gray-200 border-l-transparent'}`}>
+                            <div className={`h-24 flex items-center justify-center relative overflow-hidden ${localConfig.groupMenu?.recommended ? 'bg-amber-100' : 'bg-[#556b2f]'}`}>
                                 <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{localConfig.groupMenu?.icon || 'diversity_3'}</span>
-                                <span className="text-white font-serif font-bold text-xl relative z-10">{localConfig.groupMenu?.title || 'Menú de Grup'}</span>
+                                <span className={`${localConfig.groupMenu?.recommended ? 'text-amber-800' : 'text-white'} font-serif font-bold text-xl relative z-10`}>{localConfig.groupMenu?.title || 'Menú de Grup'}</span>
+                                {localConfig.groupMenu?.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
                             </div>
                             <div className="p-6">
                                 <p className="text-xs text-gray-500 mb-4">Configura els plats, preus i condicions del menú de grup.</p>
@@ -769,31 +814,37 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                         
                         {(localConfig.extraMenus || []).map((menu:any, idx:number) => { 
                             let headerColor = "bg-gray-700"; 
-                            let icon = menu.icon || "restaurant"; // Use Custom icon OR Default
-                            if(!menu.icon) {
-                                if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
-                                if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                            let icon = menu.icon || "restaurant"; 
+                            let textColor = "text-white";
+                            
+                            // IF RECOMMENDED -> OVERRIDE STYLE
+                            if(menu.recommended) {
+                                headerColor = "bg-amber-100";
+                                textColor = "text-amber-800";
                             } else {
-                                // Keep color logic based on type but icon custom
-                                if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; } 
-                                if(menu.type === 'group') { headerColor = "bg-olive"; } 
+                                if(!menu.icon) {
+                                    if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; icon = "wine_bar"; } 
+                                    if(menu.type === 'group') { headerColor = "bg-olive"; icon = "diversity_3"; } 
+                                } else {
+                                    if(menu.type === 'wine') { headerColor = "bg-[#8b5a2b]"; } 
+                                    if(menu.type === 'group') { headerColor = "bg-olive"; } 
+                                }
                             }
 
                             return (
-                                <div key={menu.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden group hover:shadow-lg transition-all relative">
+                                <div key={menu.id} className={`bg-white rounded-lg shadow-sm border overflow-hidden group hover:shadow-lg transition-all relative border-l-4 ${menu.recommended ? 'border-amber-400 border-l-amber-400' : 'border-gray-200 border-l-transparent'}`}>
                                     <div className={`h-24 ${headerColor} flex items-center justify-center relative overflow-hidden`}>
                                         <span className="material-symbols-outlined text-6xl text-white/10 absolute -right-2 -bottom-2">{icon}</span>
-                                        {/* ICON BUTTON REMOVED FROM HEADER */}
                                         <div className="text-center px-2">
-                                            <span className="text-white font-serif font-bold text-lg relative z-10 block line-clamp-1">{menu.title}</span>
-                                            <span className="text-white/60 text-[10px] uppercase font-bold tracking-widest relative z-10 block">{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
+                                            <span className={`${textColor} font-serif font-bold text-lg relative z-10 block line-clamp-1`}>{menu.title}</span>
+                                            <span className={`${menu.recommended ? 'text-amber-800/60' : 'text-white/60'} text-[10px] uppercase font-bold tracking-widest relative z-10 block`}>{menu.type === 'food' ? 'Carta Extra' : menu.type === 'wine' ? 'Vins Extra' : 'Grup Extra'}</span>
                                         </div>
+                                        {menu.recommended && <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl">RECOMANAT</div>}
                                     </div>
                                     <div className="p-6 space-y-3">
                                         <button onClick={() => { setEditingMenuId(`extra_${idx}`); setMenuViewState('editor'); }} className="w-full py-2 bg-[#f5f5f0] text-gray-700 rounded font-bold uppercase text-xs hover:bg-[#e8e4d9] flex items-center justify-center gap-2 transition-colors">
                                             <span className="material-symbols-outlined text-sm">edit</span> Editar
                                         </button>
-                                        {/* NEW FULL WIDTH DELETE BUTTON IN BODY */}
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); onDeleteCard(`extra_${idx}`); }} 
                                             className="w-full py-1 text-red-300 hover:text-red-500 rounded font-bold uppercase text-[10px] flex items-center justify-center gap-1 transition-colors"
@@ -804,6 +855,22 @@ export const MenuManager: React.FC<MenuManagerProps> = ({
                                 </div>
                             ); 
                         })}
+                    </div>
+
+                    {/* GLOBAL MENU FOOTER EDITOR */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-8">
+                        <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2 text-sm uppercase">
+                            <span className="material-symbols-outlined text-gray-500">short_text</span>
+                            Nota al peu global (Totes les cartes)
+                        </h4>
+                        <p className="text-[10px] text-gray-400 mb-2 italic">Aquest text apareix al final de la secció de cartes, sota totes les opcions.</p>
+                        <input
+                            type="text"
+                            value={localConfig.menuGlobalFooter || ""}
+                            onChange={(e) => setLocalConfig({...localConfig, menuGlobalFooter: e.target.value})}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-primary outline-none"
+                            placeholder="Ex: * Preus en euros, impostos inclosos. Consultar al·lèrgens..."
+                        />
                     </div>
                 </div>
             )}
