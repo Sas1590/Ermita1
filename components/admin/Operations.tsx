@@ -491,6 +491,26 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         } catch (e) { console.error(e); showFeedback('error', "Error al restaurar."); }
     };
 
+    const handleUpdateMaxExtraMenus = async (val: string) => {
+        const num = parseInt(val, 10);
+        if (!isNaN(num) && num >= 0) {
+            if (setLocalConfig) {
+                setLocalConfig((prev: any) => ({
+                    ...prev,
+                    adminSettings: { ...prev.adminSettings, maxExtraMenus: num }
+                }));
+            }
+            if (updateConfig) {
+                try {
+                    await updateConfig({ adminSettings: { ...(config?.adminSettings || defaultAppConfig.adminSettings), maxExtraMenus: num } });
+                    showFeedback('success', "Límit actualitzat.");
+                } catch(e) {
+                    showFeedback('error', "Error guardant límit.");
+                }
+            }
+        }
+    };
+
     // --- GRANULAR BETA INJECTION EXECUTION ---
     const performBetaInjection = async () => {
         const type = showInjectConfirm.type;
@@ -686,6 +706,33 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                         <span className="font-bold">{feedback.msg}</span>
                     </div>
                 )}
+
+                {/* --- ADVANCED LIMITS SECTION (NEW) --- */}
+                <div className="bg-white p-6 rounded shadow-sm border border-purple-200">
+                    <div className="flex items-center gap-3 mb-6 border-b border-purple-100 pb-4">
+                        <span className="material-symbols-outlined text-3xl text-purple-600">tune</span>
+                        <div>
+                            <h3 className="font-serif text-xl font-bold text-gray-800">Configuració Avançada (Límits)</h3>
+                            <p className="text-gray-500 text-sm">Controla els límits del sistema per a futures actualitzacions Premium.</p>
+                        </div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded border border-purple-100 flex items-center justify-between">
+                        <div>
+                            <label className="block text-sm font-bold text-purple-900 mb-1">Màxim Menús Addicionals</label>
+                            <p className="text-xs text-purple-700">Defineix quants menús extra es poden crear com a màxim.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="number" 
+                                min="0" 
+                                max="50" 
+                                value={config?.adminSettings?.maxExtraMenus || 10} 
+                                onChange={(e) => handleUpdateMaxExtraMenus(e.target.value)}
+                                className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                </div>
 
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">

@@ -494,7 +494,7 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                         <label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label>
                         <input 
                             type="text" 
-                            value={disclaimer || ''} 
+                            value={disclaimer} 
                             onChange={(e) => updateData({ disclaimer: e.target.value })}
                             className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none"
                             placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."
@@ -520,7 +520,10 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         drinks: data?.drinks || [],
         infoIntro: data?.infoIntro || "",
         infoAllergy: data?.infoAllergy || "",
-        footerText: data?.footerText || ""
+        footerText: data?.footerText || "",
+        // ADDED TO FIX BUG: Preserve visibility flags from data
+        showPrice: data?.showPrice !== undefined ? data.showPrice : (!!data?.price),
+        showInfo: data?.showInfo !== undefined ? data.showInfo : (!!data?.infoIntro || !!data?.infoAllergy)
     };
 
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
@@ -704,7 +707,10 @@ const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         drinks: data?.drinks || [],
         infoIntro: data?.infoIntro || "",
         infoAllergy: data?.infoAllergy || "",
-        footerText: data?.footerText || ""
+        footerText: data?.footerText || "",
+        // ADDED TO FIX BUG: Preserve visibility flags from data
+        showPrice: data?.showPrice !== undefined ? data.showPrice : (!!data?.price),
+        showInfo: data?.showInfo !== undefined ? data.showInfo : (!!data?.infoIntro || !!data?.infoAllergy)
     };
 
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
@@ -969,27 +975,39 @@ export const MenuManager: React.FC<any> = ({
     };
 
     const handleCreateMenu = (requestedType: 'food' | 'wine' | 'group' | 'daily') => {
+        // LIMIT CHECK
+        const maxExtras = localConfig.adminSettings?.maxExtraMenus !== undefined ? localConfig.adminSettings.maxExtraMenus : 10;
+        if ((localConfig.extraMenus || []).length >= maxExtras) {
+            alert(`Has assolit el límit màxim de menús addicionals (${maxExtras}). Contacta amb l'administrador per ampliar-ho.`);
+            return;
+        }
+
         let defaultTitle = "Nou Menú";
         let defaultSubtitle = "";
+        let defaultIcon = "restaurant";
         let actualType: 'food' | 'wine' | 'group' | 'daily' = 'group';
 
         switch (requestedType) {
             case 'daily': 
                 defaultTitle = "Nou Menú Diari"; 
                 defaultSubtitle = "De Dimarts a Divendres"; 
+                defaultIcon = "lunch_dining";
                 actualType = 'daily';
                 break;
             case 'food': 
                 defaultTitle = "Nova Carta de Menjar"; 
+                defaultIcon = "restaurant_menu";
                 actualType = 'food';
                 break;
             case 'wine': 
                 defaultTitle = "Nova Carta de Vins"; 
+                defaultIcon = "wine_bar";
                 actualType = 'wine';
                 break;
             case 'group': 
                 defaultTitle = "Nou Menú de Grup"; 
                 defaultSubtitle = "Mínim 10 persones"; 
+                defaultIcon = "diversity_3";
                 actualType = 'group';
                 break;
         }
@@ -999,9 +1017,11 @@ export const MenuManager: React.FC<any> = ({
             type: actualType,
             title: defaultTitle,
             subtitle: defaultSubtitle,
-            icon: actualType === 'wine' ? 'wine_bar' : actualType === 'group' ? 'diversity_3' : actualType === 'daily' ? 'lunch_dining' : 'restaurant',
+            icon: defaultIcon,
             visible: true,
-            data: actualType === 'wine' ? { categories: [] } : { sections: [] }
+            data: actualType === 'wine' 
+                ? { categories: [], showPrice: true, showInfo: true, showDisclaimer: true } 
+                : { sections: [], showPrice: true, showInfo: true, showDisclaimer: true }
         };
         const newExtras = [...(localConfig.extraMenus || []), newExtra];
         setLocalConfig({...localConfig, extraMenus: newExtras});
@@ -1130,7 +1150,6 @@ export const MenuManager: React.FC<any> = ({
                     <div className="pt-8 border-t border-gray-200">
                         <h3 className="font-serif text-xl font-bold text-gray-700 mb-6 flex items-center gap-2">
                             Menús Addicionals
-                            <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded-full">{localConfig.extraMenus.length}</span>
                         </h3>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -1216,39 +1235,51 @@ export const MenuManager: React.FC<any> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     
                     {/* 1. DAILY MENU */}
-                    <button onClick={() => handleCreateMenu('daily')} className="bg-white p-8 rounded-xl border border-gray-200 hover:border-primary hover:shadow-xl transition-all group text-center flex flex-col items-center h-full">
-                        <div className="w-20 h-20 bg-[#f7f3e8] rounded-full flex items-center justify-center mb-6 group-hover:bg-[#DCCCA3] group-hover:text-white transition-colors text-[#DCCCA3]">
-                            <span className="material-symbols-outlined text-4xl">lunch_dining</span>
+                    <button onClick={() => handleCreateMenu('daily')} className="bg-[#DCCCA3] text-[#5c544d] p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#cbbb98]">
+                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
+                            <span className="material-symbols-outlined text-9xl">lunch_dining</span>
                         </div>
-                        <h4 className="font-bold text-xl text-gray-800 mb-2">Menú Diari</h4>
-                        <p className="text-sm text-gray-500">Ideal per a menús de dia laborable, executius o setmanals.</p>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 block">Menú Diari</span>
+                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Menú Diari</h4>
+                        </div>
+                        <p className="text-xs font-medium opacity-80 relative z-10 max-w-[90%]">Ideal per a menús de dia laborable, executius o setmanals.</p>
                     </button>
 
                     {/* 2. FOOD MENU */}
-                    <button onClick={() => handleCreateMenu('food')} className="bg-white p-8 rounded-xl border border-gray-200 hover:border-primary hover:shadow-xl transition-all group text-center flex flex-col items-center h-full">
-                        <div className="w-20 h-20 bg-[#f2ede9] rounded-full flex items-center justify-center mb-6 group-hover:bg-[#2C241B] group-hover:text-white transition-colors text-[#2C241B]">
-                            <span className="material-symbols-outlined text-4xl">restaurant_menu</span>
+                    <button onClick={() => handleCreateMenu('food')} className="bg-[#2C241B] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#4a3e31]">
+                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
+                            <span className="material-symbols-outlined text-9xl">restaurant_menu</span>
                         </div>
-                        <h4 className="font-bold text-xl text-gray-800 mb-2">Carta de Menjar</h4>
-                        <p className="text-sm text-gray-500">Ideal per a tapes, entrants, plats principals... Estructurat per seccions.</p>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Carta</span>
+                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Carta de Menjar</h4>
+                        </div>
+                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Ideal per a tapes, entrants, plats principals... Estructurat per seccions.</p>
                     </button>
 
                     {/* 3. WINE MENU */}
-                    <button onClick={() => handleCreateMenu('wine')} className="bg-white p-8 rounded-xl border border-gray-200 hover:border-primary hover:shadow-xl transition-all group text-center flex flex-col items-center h-full">
-                        <div className="w-20 h-20 bg-[#f4eceb] rounded-full flex items-center justify-center mb-6 group-hover:bg-[#5D4037] group-hover:text-white transition-colors text-[#5D4037]">
-                            <span className="material-symbols-outlined text-4xl">wine_bar</span>
+                    <button onClick={() => handleCreateMenu('wine')} className="bg-[#5D4037] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#7d574b]">
+                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
+                            <span className="material-symbols-outlined text-9xl">wine_bar</span>
                         </div>
-                        <h4 className="font-bold text-xl text-gray-800 mb-2">Carta de Vins</h4>
-                        <p className="text-sm text-gray-500">Específic per a vins, caves i licors. Organitzat per categories i D.O.</p>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Vins</span>
+                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Carta de Vins</h4>
+                        </div>
+                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Específic per a vins, caves i licors. Organitzat per categories i D.O.</p>
                     </button>
 
                     {/* 4. GROUP MENU */}
-                    <button onClick={() => handleCreateMenu('group')} className="bg-white p-8 rounded-xl border border-gray-200 hover:border-primary hover:shadow-xl transition-all group text-center flex flex-col items-center h-full">
-                        <div className="w-20 h-20 bg-[#eff2ea] rounded-full flex items-center justify-center mb-6 group-hover:bg-[#556B2F] group-hover:text-white transition-colors text-[#556B2F]">
-                            <span className="material-symbols-outlined text-4xl">diversity_3</span>
+                    <button onClick={() => handleCreateMenu('group')} className="bg-[#556B2F] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#6b853e]">
+                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
+                            <span className="material-symbols-outlined text-9xl">diversity_3</span>
                         </div>
-                        <h4 className="font-bold text-xl text-gray-800 mb-2">Menú de Grup / Fix</h4>
-                        <p className="text-sm text-gray-500">Per a menús tancats (Calçotada, Nadal, Diari...) amb preu fix i opcions.</p>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Menú de Grup</span>
+                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Menú de Grup / Fix</h4>
+                        </div>
+                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Per a menús tancats (Calçotada, Nadal, Diari...) amb preu fix i opcions.</p>
                     </button>
                 </div>
             </div>

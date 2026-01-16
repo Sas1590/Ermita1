@@ -94,7 +94,7 @@ export interface WineMenuConfig {
 // --- EXTRA MENU WRAPPER ---
 export interface ExtraMenu {
   id: string;
-  type: 'food' | 'wine' | 'group';
+  type: 'food' | 'wine' | 'group' | 'daily'; // Updated type definition to include daily
   title: string;
   subtitle?: string; // NEW
   icon?: string; 
@@ -110,6 +110,7 @@ export interface AppConfig {
   };
   adminSettings: {
     customDisplayName: string;
+    maxExtraMenus: number; // NEW: Cap for extra menus
   };
   menuGlobalFooter: string; // NEW: Global footer text for the Menu page
   hero: {
@@ -274,7 +275,8 @@ export const defaultAppConfig: AppConfig = {
     logoUrl: "", 
   },
   adminSettings: {
-    customDisplayName: ""
+    customDisplayName: "",
+    maxExtraMenus: 10 // Default limit
   },
   menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.", // Default Value
   hero: {
