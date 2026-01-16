@@ -520,6 +520,14 @@ interface ConfigProviderProps {
   children: ReactNode;
 }
 
+// HELPER: FORCE ARRAY (Firebase converts arrays to objects if keys are numeric but sparse)
+const toArray = (data: any) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    // If it's an object, convert values to array
+    return Object.values(data);
+};
+
 export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   const [config, setConfig] = useState<AppConfig>(defaultAppConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -559,7 +567,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            // For Food/Wine, check if it's new object or old array
            foodMenu: data.foodMenu || prev.foodMenu,
            wineMenu: data.wineMenu || prev.wineMenu,
-           extraMenus: data.extraMenus || prev.extraMenus || [], 
+           // CRITICAL FIX: Ensure extraMenus is always an array, even if DB returns object
+           extraMenus: toArray(data.extraMenus || prev.extraMenus), 
            groupMenu: data.groupMenu ? {
                 ...prev.groupMenu,
                 ...data.groupMenu,

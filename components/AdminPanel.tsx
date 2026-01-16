@@ -57,6 +57,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
               description: item.description || defaultDesc
           }));
       }
+      // SAFETY: Force extraMenus to be an array if it came in as object
+      if (initial.extraMenus && !Array.isArray(initial.extraMenus)) {
+          initial.extraMenus = Object.values(initial.extraMenus);
+      } else if (!initial.extraMenus) {
+          initial.extraMenus = [];
+      }
       return initial;
   });
 

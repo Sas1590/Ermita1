@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { IconPicker } from './AdminShared';
 
 // --- SHARED COMPONENTS ---
@@ -57,7 +57,8 @@ const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data
 
 // 1. PRICE HEADER EDITOR (Preu i IVA)
 const PriceHeaderEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    const showPrice = data.showPrice !== undefined ? data.showPrice : (!!data.price);
+    // DEFAULT VISIBLE IF UNDEFINED
+    const showPrice = data.showPrice !== undefined ? data.showPrice : true;
 
     const updateField = (field: string, val: any) => {
         onChange({ ...data, [field]: val });
@@ -94,7 +95,8 @@ const PriceHeaderEditor = ({ data, onChange }: { data: any, onChange: (d: any) =
 
 // 2. INFO BLOCK EDITOR (Intro i Al·lèrgens)
 const InfoBlockEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    const showInfo = data.showInfo !== undefined ? data.showInfo : (!!data.infoIntro || !!data.infoAllergy);
+    // DEFAULT VISIBLE IF UNDEFINED
+    const showInfo = data.showInfo !== undefined ? data.showInfo : true;
 
     const updateField = (field: string, val: any) => {
         onChange({ ...data, [field]: val });
@@ -161,10 +163,8 @@ const ItemStatusControls = ({ visible, strikethrough, onToggleVisible, onToggleS
 };
 
 const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    // Normalizar datos: Si es array (formato antiguo), lo convertimos a objeto con secciones.
+    // Normalizar datos
     const isLegacy = Array.isArray(data);
-    
-    // Construct valid object structure
     const sections = isLegacy ? data : (data?.sections || []);
     const title = isLegacy ? "Carta de Menjar" : (data?.title || "Carta de Menjar");
     const icon = isLegacy ? "restaurant_menu" : (data?.icon || "restaurant_menu");
@@ -173,7 +173,6 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
 
-    // Merge existing data with structure
     const currentData = isLegacy ? { title, subtitle, icon, recommended, sections, disclaimer, showDisclaimer } : data;
 
     const updateData = (newData: any) => {
@@ -229,7 +228,6 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                 defaultIcon="restaurant_menu" 
             />
 
-            {/* BUTTON MOVED TO TOP RIGHT */}
             <div className="flex justify-end mb-2">
                 <button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
                     <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
@@ -313,7 +311,7 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 
 const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     const isLegacy = Array.isArray(data);
-    const categories = isLegacy ? data : (data?.categories || data || []); 
+    const categories = isLegacy ? data : (data?.categories || []); 
     const title = isLegacy ? "Carta de Vins" : (data?.title || "Carta de Vins");
     const icon = isLegacy ? "wine_bar" : (data?.icon || "wine_bar");
     const subtitle = isLegacy ? "" : (data?.subtitle || "");
@@ -346,7 +344,6 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                 defaultIcon="wine_bar" 
             />
 
-            {/* BUTTON MOVED TO TOP RIGHT */}
             <div className="flex justify-end mb-2">
                 <button onClick={addCategory} className="bg-olive hover:bg-[#455726] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
                     <span className="material-symbols-outlined text-sm">add_circle</span> NOVA CATEGORIA
@@ -502,12 +499,23 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                     </div>
                 )}
             </div>
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                 <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                 <input 
+                    type="text" 
+                    value={currentData.footerText || ''} 
+                    onChange={(e) => updateData({ footerText: e.target.value })} 
+                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-gray-500" 
+                    placeholder="Ex: Cuina de mercat"
+                 />
+            </div>
         </div>
     );
 };
 
+// ... (GroupEditor and DailyEditor follow same logic, updated similarly below) ...
+
 const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    // Ensure defaults
     const currentData = {
         title: data?.title || "Menú de Grup",
         subtitle: data?.subtitle || "",
@@ -521,18 +529,17 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         infoIntro: data?.infoIntro || "",
         infoAllergy: data?.infoAllergy || "",
         footerText: data?.footerText || "",
-        // ADDED TO FIX BUG: Preserve visibility flags from data
-        showPrice: data?.showPrice !== undefined ? data.showPrice : (!!data?.price),
-        showInfo: data?.showInfo !== undefined ? data.showInfo : (!!data?.infoIntro || !!data?.infoAllergy)
+        showPrice: data?.showPrice !== undefined ? data.showPrice : true, // DEFAULT TRUE
+        showInfo: data?.showInfo !== undefined ? data.showInfo : true     // DEFAULT TRUE
     };
 
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
 
+    // ... (Handlers for Sections/Items same as before) ...
     const handleSectionChange = (idx: number, field: string, val: any) => {
         const newSections = currentData.sections.map((s: any, i: number) => i === idx ? { ...s, [field]: val } : s);
         updateData({ sections: newSections });
     };
-
     const handleItemChange = (sIdx: number, iIdx: number, field: string, val: any) => {
         const newSections = currentData.sections.map((s: any, i: number) => {
             if (i !== sIdx) return s;
@@ -541,14 +548,12 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         });
         updateData({ sections: newSections });
     };
-
     const addSection = () => updateData({ sections: [...currentData.sections, { title: "NOVA SECCIÓ", items: [] }] });
     const removeSection = (idx: number) => {
         const newSections = [...currentData.sections];
         newSections.splice(idx, 1);
         updateData({ sections: newSections });
     };
-
     const addItem = (sIdx: number) => {
         const newSections = currentData.sections.map((s: any, i: number) => {
             if (i !== sIdx) return s;
@@ -556,7 +561,6 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         });
         updateData({ sections: newSections });
     };
-
     const removeItem = (sIdx: number, iIdx: number) => {
         const newSections = currentData.sections.map((s: any, i: number) => {
             if (i !== sIdx) return s;
@@ -692,7 +696,6 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
     );
 };
 
-// --- NEW DAILY EDITOR (INDEPENDENT) ---
 const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     // Ensure defaults - specific for Daily
     const currentData = {
@@ -708,9 +711,9 @@ const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         infoIntro: data?.infoIntro || "",
         infoAllergy: data?.infoAllergy || "",
         footerText: data?.footerText || "",
-        // ADDED TO FIX BUG: Preserve visibility flags from data
-        showPrice: data?.showPrice !== undefined ? data.showPrice : (!!data?.price),
-        showInfo: data?.showInfo !== undefined ? data.showInfo : (!!data?.infoIntro || !!data?.infoAllergy)
+        // ADDED TO FIX BUG: Preserve visibility flags from data, DEFAULT TRUE
+        showPrice: data?.showPrice !== undefined ? data.showPrice : true, 
+        showInfo: data?.showInfo !== undefined ? data.showInfo : true
     };
 
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
@@ -897,12 +900,32 @@ export const MenuManager: React.FC<any> = ({
         if (id === 'group') return { type: 'group', data: localConfig.groupMenu };
         
         if (id && id.startsWith('extra_')) {
-            const index = parseInt(id.replace('extra_', ''));
-            const extra = localConfig.extraMenus?.[index];
+            const indexStr = id.replace('extra_', '');
+            const index = parseInt(indexStr);
+            
+            // ROBUST ACCESS: Try array index, fallback to object property if sparse/object
+            let extra = null;
+            if (Array.isArray(localConfig.extraMenus)) {
+                extra = localConfig.extraMenus[index];
+            } else if (localConfig.extraMenus && typeof localConfig.extraMenus === 'object') {
+                extra = localConfig.extraMenus[indexStr];
+            }
+
             if (extra) return { type: extra.type, data: extra.data, isExtra: true, index };
         }
         return null;
     };
+
+    const activeMenu = editingMenuId ? getMenuData(editingMenuId) : null;
+
+    // SELF-HEALING: If in editor mode but activeMenu is missing, revert to dashboard
+    useEffect(() => {
+        if (menuViewState === 'editor' && editingMenuId && !activeMenu) {
+            console.warn("MenuManager: Active menu not found for ID", editingMenuId, ". Reverting to dashboard.");
+            setMenuViewState('dashboard');
+            setEditingMenuId(null);
+        }
+    }, [menuViewState, editingMenuId, activeMenu, setMenuViewState, setEditingMenuId]);
 
     const handleUpdateMenu = (id: string, newData: any) => {
         if (id === 'daily') setLocalConfig({...localConfig, dailyMenu: newData});
@@ -989,23 +1012,23 @@ export const MenuManager: React.FC<any> = ({
 
         switch (requestedType) {
             case 'daily': 
-                defaultTitle = "Nou Menú Diari"; 
+                defaultTitle = "Menú Diari"; 
                 defaultSubtitle = "De Dimarts a Divendres"; 
                 defaultIcon = "lunch_dining";
                 actualType = 'daily';
                 break;
             case 'food': 
-                defaultTitle = "Nova Carta de Menjar"; 
+                defaultTitle = "Carta de Menjar"; 
                 defaultIcon = "restaurant_menu";
                 actualType = 'food';
                 break;
             case 'wine': 
-                defaultTitle = "Nova Carta de Vins"; 
+                defaultTitle = "Carta de Vins"; 
                 defaultIcon = "wine_bar";
                 actualType = 'wine';
                 break;
             case 'group': 
-                defaultTitle = "Nou Menú de Grup"; 
+                defaultTitle = "Menú de Grup"; 
                 defaultSubtitle = "Mínim 10 persones"; 
                 defaultIcon = "diversity_3";
                 actualType = 'group';
@@ -1019,9 +1042,20 @@ export const MenuManager: React.FC<any> = ({
             subtitle: defaultSubtitle,
             icon: defaultIcon,
             visible: true,
-            data: actualType === 'wine' 
-                ? { categories: [], showPrice: true, showInfo: true, showDisclaimer: true } 
-                : { sections: [], showPrice: true, showInfo: true, showDisclaimer: true }
+            recommended: false,
+            data: {
+                // Initialize based on type
+                ...(actualType === 'wine' ? { categories: [] } : { sections: [] }),
+                // DEFAULTS: VISIBLE PRICE AND INFO
+                showPrice: true, 
+                showInfo: true,
+                showDisclaimer: true,
+                price: "",
+                vat: "",
+                infoIntro: "",
+                infoAllergy: "",
+                disclaimer: ""
+            }
         };
         const newExtras = [...(localConfig.extraMenus || []), newExtra];
         setLocalConfig({...localConfig, extraMenus: newExtras});
@@ -1089,6 +1123,19 @@ export const MenuManager: React.FC<any> = ({
                     >
                         <span className="material-symbols-outlined text-lg">add_circle</span> Crear Nova Carta
                     </button>
+                </div>
+
+                {/* LEGEND BLOCK (New) */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col md:flex-row gap-4 md:gap-8 items-start md:items-center text-sm text-blue-800 shadow-sm">
+                    <span className="font-bold uppercase text-xs tracking-wider bg-blue-100 px-2 py-1 rounded text-blue-600 shrink-0">Llegenda Ràpida:</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-yellow-50 border border-yellow-200 rounded text-yellow-500 flex items-center justify-center shrink-0 shadow-sm"><span className="material-symbols-outlined text-sm">star</span></div>
+                        <span><strong>Destacat:</strong> Marca el menú com a recomanat principal.</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-green-50 border border-green-200 rounded text-green-600 flex items-center justify-center shrink-0 shadow-sm"><span className="material-symbols-outlined text-sm">visibility</span></div>
+                        <span><strong>Visible:</strong> Mostra o oculta el menú a la web pública.</span>
+                    </div>
                 </div>
 
                 {/* Core Menus Grid */}
@@ -1286,10 +1333,26 @@ export const MenuManager: React.FC<any> = ({
         );
     }
 
-    // RENDER: EDITOR
-    const activeMenu = editingMenuId ? getMenuData(editingMenuId) : null;
-    
-    if (!activeMenu) return <div>Error: Menú no trobat</div>;
+    // SAFETY FALLBACK IF MENU NOT FOUND (PREVENTS DEAD END)
+    if (!activeMenu) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center animate-[fadeIn_0.3s_ease-out]">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500">
+                    <span className="material-symbols-outlined text-3xl">error_outline</span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Error: Menú no trobat</h3>
+                <p className="text-gray-500 text-sm mb-6 max-w-xs">
+                    Sembla que el menú que intentes editar (ID: {editingMenuId}) ja no existeix o s'ha esborrat.
+                </p>
+                <button 
+                    onClick={() => { setMenuViewState('dashboard'); setEditingMenuId(null); }}
+                    className="bg-gray-800 text-white px-6 py-2 rounded shadow hover:bg-black transition-colors uppercase text-xs font-bold"
+                >
+                    Tornar al llistat
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-[fadeIn_0.3s_ease-out]">

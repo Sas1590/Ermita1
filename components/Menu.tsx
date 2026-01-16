@@ -123,8 +123,11 @@ const WineMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
 
     // Support both Legacy (Array) and New (Object) structure
     const isLegacy = Array.isArray(menuData);
-    const categories: WineCategory[] = isLegacy ? menuData : (menuData.categories || menuData || []);
+    // CRITICAL FIX: Ensure categories defaults to empty array if missing in object
+    const categories: WineCategory[] = isLegacy ? menuData : (menuData.categories || []);
     const disclaimer = isLegacy ? null : (menuData.showDisclaimer !== false ? menuData.disclaimer : null);
+
+    if (!Array.isArray(categories)) return null; // Safe guard
 
     return (
     <div className="p-8 md:p-16 space-y-16">
@@ -305,12 +308,51 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
   // --- BUILD MENU LIST DYNAMICALLY ---
   // FILTER HIDDEN MENUS HERE (Both core and extras)
+  // SAFETY: Filter out undefined extraMenus if the array is sparse
+  const extraMenusSafe = Array.isArray(config.extraMenus) ? config.extraMenus.filter(Boolean) : [];
+
   const allMenus = [
-      { id: 'daily', type: 'group', data: config.dailyMenu, fallbackTitle: 'Menú Diari', fallbackIcon: 'lunch_dining', fallbackSubtitle: 'De Dimarts a Divendres' },
-      { id: 'food', type: 'food', data: config.foodMenu, fallbackTitle: 'Carta de Menjar', fallbackIcon: 'restaurant_menu', fallbackSubtitle: '' },
-      { id: 'group', type: 'group', data: config.groupMenu, fallbackTitle: 'Menú de Grup', fallbackIcon: 'diversity_3', fallbackSubtitle: '' },
-      { id: 'wine', type: 'wine', data: config.wineMenu, fallbackTitle: 'Carta de Vins', fallbackIcon: 'wine_bar', fallbackSubtitle: '' },
-      ...(config.extraMenus || []).map((extra, idx) => ({
+      { 
+        id: 'daily', 
+        type: 'group', 
+        data: config.dailyMenu, 
+        fallbackTitle: 'Menú Diari', 
+        fallbackIcon: 'lunch_dining', 
+        fallbackSubtitle: 'De Dimarts a Divendres',
+        isExtra: false,
+        visible: undefined as boolean | undefined
+      },
+      { 
+        id: 'food', 
+        type: 'food', 
+        data: config.foodMenu, 
+        fallbackTitle: 'Carta de Menjar', 
+        fallbackIcon: 'restaurant_menu', 
+        fallbackSubtitle: '',
+        isExtra: false,
+        visible: undefined as boolean | undefined
+      },
+      { 
+        id: 'group', 
+        type: 'group', 
+        data: config.groupMenu, 
+        fallbackTitle: 'Menú de Grup', 
+        fallbackIcon: 'diversity_3', 
+        fallbackSubtitle: '',
+        isExtra: false,
+        visible: undefined as boolean | undefined
+      },
+      { 
+        id: 'wine', 
+        type: 'wine', 
+        data: config.wineMenu, 
+        fallbackTitle: 'Carta de Vins', 
+        fallbackIcon: 'wine_bar', 
+        fallbackSubtitle: '',
+        isExtra: false,
+        visible: undefined as boolean | undefined
+      },
+      ...extraMenusSafe.map((extra, idx) => ({
           id: `extra_${idx}`,
           type: extra.type,
           data: extra.data,
@@ -327,6 +369,7 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
       }
       // Core menus: check data.visible property (handle legacy array vs object)
       const data: any = item.data;
+      if (!data) return false;
       if (Array.isArray(data)) return true; // Legacy arrays are visible by default
       return data?.visible !== false;
   });
