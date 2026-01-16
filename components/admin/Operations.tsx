@@ -82,6 +82,7 @@ const BETA_DATA_DAILY = {
 
 // --- 2. CARTA MENJAR BETA DATA (UPDATED TO OBJECT STRUCTURE) ---
 const BETA_DATA_CARTA = {
+    title: "Carta de Menjar", // Added explicit title just in case
     // New fields default hidden for compatibility
     price: "",
     vat: "",
@@ -225,6 +226,7 @@ const BETA_DATA_CARTA = {
 
 // --- 3. CARTA VINS BETA DATA (UPDATED TO OBJECT STRUCTURE) ---
 const BETA_DATA_WINE = {
+    title: "Carta de Vins", // Added explicit title
     // New fields default hidden for compatibility
     price: "",
     vat: "",
@@ -289,7 +291,7 @@ const BETA_DATA_WINE = {
 
 // --- 4. MENÚ GRUP BETA DATA ---
 const BETA_DATA_GROUP = {
-    title: "MENÚ DE GRUP",
+    title: "Menú de Grup", // CHANGED FROM "MENÚ DE GRUP" to Title Case
     price: "35.00€",
     vat: "IVA INCLÒS",
     disclaimer: "Mínim 10 persones. Cal reservar amb antelació.",

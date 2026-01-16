@@ -390,7 +390,8 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
                         <div className="overflow-hidden min-h-0">
                             {menuItem.type === 'food' && <FoodMenuContent menuData={data} />}
                             {menuItem.type === 'wine' && <WineMenuContent menuData={data} />}
-                            {menuItem.type === 'group' && <GroupMenuContent menuData={data} />}
+                            {/* Updated: Handle 'daily' same as 'group' */}
+                            {(menuItem.type === 'group' || menuItem.type === 'daily') && <GroupMenuContent menuData={data} />}
                             
                             <div className="bg-[#e8e4d9] p-4 text-center text-[#5c544d] text-xs font-serif italic tracking-wider">
                                 {(!isLegacyArray && data?.footerText) ? data.footerText : "Ermita Paret Delgada"}
