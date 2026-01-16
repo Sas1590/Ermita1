@@ -3,7 +3,7 @@ import { IconPicker } from './AdminShared';
 
 // --- SHARED COMPONENTS ---
 
-// 0. GENERAL INFO BLOCK (Title, Subtitle, Icon) - Recommended Removed
+// 0. GENERAL INFO BLOCK (Title, Subtitle, Icon)
 const GeneralInfoEditor = ({ data, onChange, defaultTitle, defaultIcon }: { data: any, onChange: (d: any) => void, defaultTitle: string, defaultIcon: string }) => {
     const currentTitle = data.title !== undefined ? data.title : defaultTitle;
     const currentSubtitle = data.subtitle !== undefined ? data.subtitle : "";
@@ -689,6 +689,190 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
     );
 };
 
+// --- NEW DAILY EDITOR (INDEPENDENT) ---
+const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
+    // Ensure defaults - specific for Daily
+    const currentData = {
+        title: data?.title || "Menú Diari",
+        subtitle: data?.subtitle || "",
+        icon: data?.icon || "lunch_dining",
+        price: data?.price || "",
+        vat: data?.vat || "",
+        disclaimer: data?.disclaimer || "",
+        showDisclaimer: data?.showDisclaimer !== false,
+        sections: data?.sections || [],
+        drinks: data?.drinks || [],
+        infoIntro: data?.infoIntro || "",
+        infoAllergy: data?.infoAllergy || "",
+        footerText: data?.footerText || ""
+    };
+
+    const updateData = (newData: any) => onChange({ ...currentData, ...newData });
+
+    const handleSectionChange = (idx: number, field: string, val: any) => {
+        const newSections = currentData.sections.map((s: any, i: number) => i === idx ? { ...s, [field]: val } : s);
+        updateData({ sections: newSections });
+    };
+
+    const handleItemChange = (sIdx: number, iIdx: number, field: string, val: any) => {
+        const newSections = currentData.sections.map((s: any, i: number) => {
+            if (i !== sIdx) return s;
+            const newItems = s.items.map((item: any, j: number) => j === iIdx ? { ...item, [field]: val } : item);
+            return { ...s, items: newItems };
+        });
+        updateData({ sections: newSections });
+    };
+
+    const addSection = () => updateData({ sections: [...currentData.sections, { title: "NOVA SECCIÓ", items: [] }] });
+    const removeSection = (idx: number) => {
+        const newSections = [...currentData.sections];
+        newSections.splice(idx, 1);
+        updateData({ sections: newSections });
+    };
+
+    const addItem = (sIdx: number) => {
+        const newSections = currentData.sections.map((s: any, i: number) => {
+            if (i !== sIdx) return s;
+            return { ...s, items: [...(s.items || []), { nameCa: "", nameEs: "" }] };
+        });
+        updateData({ sections: newSections });
+    };
+
+    const removeItem = (sIdx: number, iIdx: number) => {
+        const newSections = currentData.sections.map((s: any, i: number) => {
+            if (i !== sIdx) return s;
+            const newItems = [...(s.items || [])];
+            newItems.splice(iIdx, 1);
+            return { ...s, items: newItems };
+        });
+        updateData({ sections: newSections });
+    };
+
+    return (
+        <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <GeneralInfoEditor 
+                data={currentData} 
+                onChange={updateData} 
+                defaultTitle="Menú Diari" 
+                defaultIcon="lunch_dining" 
+            />
+
+             {/* BUTTON MOVED TO TOP RIGHT */}
+            <div className="flex justify-end mb-2">
+                <button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
+                </button>
+            </div>
+
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+
+            {/* DRINKS SECTION */}
+             <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
+                <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2 text-sm uppercase">
+                    <span className="material-symbols-outlined text-blue-500">local_bar</span> Begudes Incloses
+                </h4>
+                <div className="space-y-2">
+                    {(currentData.drinks || []).map((drink: string, idx: number) => (
+                        <div key={idx} className="flex gap-2">
+                            <input 
+                                value={drink} 
+                                onChange={(e) => {
+                                    const newDrinks = [...currentData.drinks];
+                                    newDrinks[idx] = e.target.value;
+                                    updateData({ drinks: newDrinks });
+                                }}
+                                className="w-full border-b border-gray-200 py-1 outline-none text-sm"
+                            />
+                            <button onClick={() => {
+                                const newDrinks = [...currentData.drinks];
+                                newDrinks.splice(idx, 1);
+                                updateData({ drinks: newDrinks });
+                            }} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-sm">remove_circle</span></button>
+                        </div>
+                    ))}
+                    <button onClick={() => updateData({ drinks: [...currentData.drinks, ""] })} className="text-xs font-bold text-blue-500 mt-2">+ Afegir Beguda</button>
+                </div>
+             </div>
+
+            {/* SECTIONS & ITEMS */}
+            {currentData.sections.map((section: any, sIdx: number) => (
+                <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
+                            <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold text-[#8b5a2b] border-b border-transparent focus:border-[#8b5a2b] outline-none bg-transparent w-full" />
+                        </div>
+                        <div className="w-full md:w-32">
+                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
+                             <IconPicker 
+                                value={section.icon || ""} 
+                                onChange={(val) => handleSectionChange(sIdx, 'icon', val)}
+                            />
+                        </div>
+                        <button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button>
+                    </div>
+
+                    <div className="space-y-3 pl-0 md:pl-4 border-l-2 border-gray-100">
+                        {(section.items || []).map((item: any, iIdx: number) => (
+                            <div key={iIdx} className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded ${item.visible === false ? 'opacity-50 grayscale' : ''}`}>
+                                <div className="md:col-span-2 flex justify-start">
+                                    <ItemStatusControls 
+                                        visible={item.visible}
+                                        strikethrough={item.strikethrough}
+                                        onToggleVisible={() => handleItemChange(sIdx, iIdx, 'visible', item.visible === false ? true : false)}
+                                        onToggleStrike={() => handleItemChange(sIdx, iIdx, 'strikethrough', !item.strikethrough)}
+                                    />
+                                </div>
+                                <div className="md:col-span-5"><input type="text" value={item.nameCa} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameCa', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm font-bold ${item.strikethrough ? 'line-through text-gray-400' : ''}`} placeholder="Nom Català" /></div>
+                                <div className="md:col-span-4"><input type="text" value={item.nameEs} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameEs', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm text-gray-600 font-hand ${item.strikethrough ? 'line-through' : ''}`} placeholder="Nom Castellà" /></div>
+                                <div className="md:col-span-1 flex justify-center"><button onClick={() => removeItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-lg">remove_circle</span></button></div>
+                            </div>
+                        ))}
+                        <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#8b5a2b] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button>
+                    </div>
+                </div>
+            ))}
+
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase">
+                        <span className="material-symbols-outlined">info</span> Info Final / Disclaimer
+                    </h4>
+                    <button 
+                        onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })}
+                        className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${currentData.showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}
+                    >
+                        {currentData.showDisclaimer ? 'Visible' : 'Ocult'}
+                    </button>
+                </div>
+                {currentData.showDisclaimer && (
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label>
+                        <input 
+                            type="text" 
+                            value={currentData.disclaimer || ''} 
+                            onChange={(e) => updateData({ disclaimer: e.target.value })}
+                            className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none"
+                            placeholder="Ex: Mínim 10 persones..."
+                        />
+                    </div>
+                )}
+            </div>
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                 <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                 <input 
+                    type="text" 
+                    value={currentData.footerText || ''} 
+                    onChange={(e) => updateData({ footerText: e.target.value })} 
+                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-gray-500" 
+                    placeholder="Ex: Cuina de mercat"
+                 />
+            </div>
+        </div>
+    );
+};
+
 export const MenuManager: React.FC<any> = ({ 
     localConfig, 
     setLocalConfig,
@@ -784,15 +968,40 @@ export const MenuManager: React.FC<any> = ({
         }
     };
 
-    const handleCreateMenu = (type: 'food' | 'wine' | 'group' | 'daily') => {
+    const handleCreateMenu = (requestedType: 'food' | 'wine' | 'group' | 'daily') => {
+        let defaultTitle = "Nou Menú";
+        let defaultSubtitle = "";
+        let actualType: 'food' | 'wine' | 'group' | 'daily' = 'group';
+
+        switch (requestedType) {
+            case 'daily': 
+                defaultTitle = "Nou Menú Diari"; 
+                defaultSubtitle = "De Dimarts a Divendres"; 
+                actualType = 'daily';
+                break;
+            case 'food': 
+                defaultTitle = "Nova Carta de Menjar"; 
+                actualType = 'food';
+                break;
+            case 'wine': 
+                defaultTitle = "Nova Carta de Vins"; 
+                actualType = 'wine';
+                break;
+            case 'group': 
+                defaultTitle = "Nou Menú de Grup"; 
+                defaultSubtitle = "Mínim 10 persones"; 
+                actualType = 'group';
+                break;
+        }
+
         const newExtra = {
             id: `extra_${Date.now()}`,
-            type: type,
-            title: "Nou Menú",
-            subtitle: "",
-            icon: type === 'wine' ? 'wine_bar' : type === 'group' ? 'diversity_3' : type === 'daily' ? 'lunch_dining' : 'restaurant',
+            type: actualType,
+            title: defaultTitle,
+            subtitle: defaultSubtitle,
+            icon: actualType === 'wine' ? 'wine_bar' : actualType === 'group' ? 'diversity_3' : actualType === 'daily' ? 'lunch_dining' : 'restaurant',
             visible: true,
-            data: type === 'wine' ? { categories: [] } : type === 'group' ? { sections: [] } : { sections: [] }
+            data: actualType === 'wine' ? { categories: [] } : { sections: [] }
         };
         const newExtras = [...(localConfig.extraMenus || []), newExtra];
         setLocalConfig({...localConfig, extraMenus: newExtras});
@@ -863,52 +1072,57 @@ export const MenuManager: React.FC<any> = ({
                 </div>
 
                 {/* Core Menus Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    {coreMenus.map(m => (
-                        <div 
-                            key={m.id}
-                            className={`rounded-xl shadow-md border border-gray-100 flex flex-col overflow-hidden group transition-all duration-300 hover:shadow-xl ${!m.visible ? 'grayscale opacity-70' : ''}`}
-                        >
-                            {/* Colored Header Area */}
-                            <div className={`${m.theme} p-6 pb-12 relative overflow-hidden`}>
-                                {/* Watermark Icon (Bottom Right) */}
-                                <div className="absolute -bottom-4 -right-4 opacity-10 pointer-events-none transform rotate-12">
-                                    <span className="material-symbols-outlined text-8xl">{m.icon}</span>
+                <div>
+                    <h3 className="font-serif text-xl font-bold text-gray-700 mb-6 flex items-center gap-2">
+                        Menús Fixos
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        {coreMenus.map(m => (
+                            <div 
+                                key={m.id}
+                                className={`rounded-xl shadow-md border border-gray-100 flex flex-col overflow-hidden group transition-all duration-300 hover:shadow-xl ${!m.visible ? 'grayscale opacity-70' : ''}`}
+                            >
+                                {/* Colored Header Area */}
+                                <div className={`${m.theme} p-6 pb-12 relative overflow-hidden`}>
+                                    {/* Watermark Icon (Bottom Right) */}
+                                    <div className="absolute -bottom-4 -right-4 opacity-10 pointer-events-none transform rotate-12">
+                                        <span className="material-symbols-outlined text-8xl">{m.icon}</span>
+                                    </div>
+
+                                    <h3 className="font-serif font-bold text-xl mb-3 relative z-10">{m.title}</h3>
+                                    <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">{m.subtitle}</p>
                                 </div>
 
-                                <h3 className="font-serif font-bold text-xl mb-3 relative z-10">{m.title}</h3>
-                                <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">{m.subtitle}</p>
-                            </div>
-
-                            {/* White Action Footer */}
-                            <div className="bg-white p-3 flex items-center justify-between mt-auto gap-2 border-t border-gray-100">
-                                <button 
-                                    onClick={() => { setEditingMenuId(m.id); setMenuViewState('editor'); }}
-                                    className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold uppercase text-[10px] h-10 rounded flex items-center justify-center gap-2 transition-colors border border-gray-200"
-                                >
-                                    <span className="material-symbols-outlined text-sm">edit</span> EDITAR
-                                </button>
-                                
-                                <div className="flex gap-1">
+                                {/* White Action Footer */}
+                                <div className="bg-white p-3 flex items-center justify-between mt-auto gap-2 border-t border-gray-100">
                                     <button 
-                                        onClick={(e) => { e.stopPropagation(); handleToggleRecommended(m.id, m.recommended); }}
-                                        className={`w-10 h-10 rounded flex items-center justify-center border transition-colors ${m.recommended ? 'bg-yellow-50 border-yellow-200 text-yellow-500' : 'bg-white border-gray-200 text-gray-300 hover:text-gray-400'}`}
-                                        title={m.recommended ? "Destacat" : "Marcar com a destacat"}
+                                        onClick={() => { setEditingMenuId(m.id); setMenuViewState('editor'); }}
+                                        className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold uppercase text-[10px] h-10 rounded flex items-center justify-center gap-2 transition-colors border border-gray-200"
                                     >
-                                        <span className="material-symbols-outlined text-xl">{m.recommended ? 'star' : 'star_border'}</span>
+                                        <span className="material-symbols-outlined text-sm">edit</span> EDITAR
                                     </button>
+                                    
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleToggleRecommended(m.id, m.recommended); }}
+                                            className={`w-10 h-10 rounded flex items-center justify-center border transition-colors ${m.recommended ? 'bg-yellow-50 border-yellow-200 text-yellow-500' : 'bg-white border-gray-200 text-gray-300 hover:text-gray-400'}`}
+                                            title={m.recommended ? "Destacat" : "Marcar com a destacat"}
+                                        >
+                                            <span className="material-symbols-outlined text-xl">{m.recommended ? 'star' : 'star_border'}</span>
+                                        </button>
 
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleToggleVisibility(m.id, m.visible); }}
-                                        className={`w-10 h-10 rounded flex items-center justify-center border transition-colors ${m.visible ? 'bg-green-50 border-green-200 text-green-600' : 'bg-gray-50 border-gray-200 text-gray-300'}`}
-                                        title={m.visible ? "Visible" : "Ocult"}
-                                    >
-                                        <span className="material-symbols-outlined text-xl">{m.visible ? 'visibility' : 'visibility_off'}</span>
-                                    </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleToggleVisibility(m.id, m.visible); }}
+                                            className={`w-10 h-10 rounded flex items-center justify-center border transition-colors ${m.visible ? 'bg-green-50 border-green-200 text-green-600' : 'bg-gray-50 border-gray-200 text-gray-300'}`}
+                                            title={m.visible ? "Visible" : "Ocult"}
+                                        >
+                                            <span className="material-symbols-outlined text-xl">{m.visible ? 'visibility' : 'visibility_off'}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
 
                 {/* Extra Menus Section (If any exist) */}
@@ -921,20 +1135,31 @@ export const MenuManager: React.FC<any> = ({
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                             {localConfig.extraMenus.map((extra: any, idx: number) => {
-                                // Determine styling for extras (defaulting to a neutral gray/orange style)
+                                // Determine styling based on type with SOFTER colors
                                 const isVisible = extra.visible !== false;
                                 const isRec = extra.recommended === true;
                                 
+                                let themeClass = "";
+                                switch (extra.type) {
+                                    case 'daily': themeClass = "bg-[#E6D9B8] text-[#5c544d]"; break; // Softer Beige (Diari)
+                                    case 'food': themeClass = "bg-[#5c4d3c] text-white"; break; // Softer Dark Brown (Carta)
+                                    case 'wine': themeClass = "bg-[#8d6e63] text-white"; break; // Softer Wine Brown (Vins)
+                                    case 'group': themeClass = "bg-[#738054] text-white"; break; // Softer Olive (Grup)
+                                    default: themeClass = "bg-[#8b5a2b] text-white"; // Fallback
+                                }
+
                                 return (
                                     <div key={idx} className={`rounded-xl shadow-md border border-gray-100 flex flex-col overflow-hidden group transition-all duration-300 hover:shadow-xl bg-white ${!isVisible ? 'grayscale opacity-70' : ''}`}>
                                         {/* Colored Header Area (Lighter/Neutral for Extras) */}
-                                        <div className="bg-[#8b5a2b] p-6 pb-12 relative overflow-hidden text-white">
+                                        <div className={`${themeClass} p-6 pb-12 relative overflow-hidden`}>
                                             <div className="absolute -bottom-4 -right-4 opacity-10 pointer-events-none transform rotate-12">
                                                 <span className="material-symbols-outlined text-8xl">{extra.icon || 'restaurant'}</span>
                                             </div>
 
                                             <h3 className="font-serif font-bold text-xl mb-2 relative z-10 truncate pr-6">{extra.title || "Nou Menú"}</h3>
-                                            <p className="text-[10px] uppercase tracking-widest opacity-80 font-bold mb-1 relative z-10">{extra.type === 'food' ? 'Carta' : extra.type === 'wine' ? 'Vins' : 'Menú Fix'}</p>
+                                            <p className="text-[10px] uppercase tracking-widest opacity-80 font-bold mb-1 relative z-10">
+                                                {extra.type === 'food' ? 'CARTA' : extra.type === 'wine' ? 'VINS' : extra.type === 'daily' ? 'MENÚ DIARI' : 'MENÚ DE GRUP'}
+                                            </p>
                                         </div>
 
                                         {/* White Action Footer */}
@@ -1051,7 +1276,8 @@ export const MenuManager: React.FC<any> = ({
             {/* Render Specific Editor */}
             {activeMenu.type === 'food' && <FoodEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
             {activeMenu.type === 'wine' && <WineEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
-            {(activeMenu.type === 'group' || activeMenu.type === 'daily') && <GroupEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
+            {activeMenu.type === 'group' && <GroupEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
+            {activeMenu.type === 'daily' && <DailyEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
         </div>
     );
 };
