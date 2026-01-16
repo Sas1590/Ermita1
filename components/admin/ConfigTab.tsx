@@ -1,10 +1,108 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogoEditor, ImageArrayEditor, IconPicker } from './AdminShared';
 
 interface ConfigTabProps {
     localConfig: any;
     setLocalConfig: (config: any) => void;
 }
+
+// --- HELPER COMPONENT: IMAGE UPLOAD GUIDE ---
+const ImageUploadGuide = () => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50 overflow-hidden shadow-sm transition-all">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between px-6 py-4 bg-blue-100/50 hover:bg-blue-100 transition-colors text-left"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="bg-blue-500 text-white rounded-full p-1.5 shadow-sm">
+                        <span className="material-symbols-outlined text-lg block">help</span>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide">AJUDA: Com pujar imatges correctament?</h4>
+                        <p className="text-xs text-blue-700 mt-0.5">Guia ràpida per obtenir enllaços vàlids (Postimages)</p>
+                    </div>
+                </div>
+                <span className={`material-symbols-outlined text-blue-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+
+            {isOpen && (
+                <div className="px-6 py-6 border-t border-blue-200 bg-white/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base">info</span>
+                                Important: No pugem fitxers
+                            </h5>
+                            <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                                Aquest web funciona amb <strong>enllaços externs (URL)</strong> per mantenir-la ràpida i lleugera. 
+                                No pots pujar l'arxiu directament des del teu ordinador al panell; primer l'has de pujar a internet.
+                            </p>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                                L'enllaç correcte <strong>sempre ha d'acabar</strong> en una extensió d'imatge:<br/>
+                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono">.jpg</code> 
+                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.png</code> 
+                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.webp</code>
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
+                            <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base">rocket_launch</span>
+                                Pas a pas (Recomanat: Postimages)
+                            </h5>
+                            <ol className="space-y-3">
+                                <li className="flex gap-3 text-xs text-gray-700">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">1</span>
+                                    <span>
+                                        Entra a <a href="https://postimages.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-bold hover:text-blue-800">postimages.org</a> (no cal registre).
+                                    </span>
+                                </li>
+                                <li className="flex gap-3 text-xs text-gray-700">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">2</span>
+                                    <div className="bg-blue-50 p-3 rounded border border-blue-100 w-full">
+                                        <span className="block font-bold text-blue-800 mb-1 uppercase text-[10px] tracking-wider flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">settings</span> Configuració Obligatòria
+                                        </span>
+                                        <span className="block mb-1">Abans de prémer el botó de pujar, selecciona:</span>
+                                        <ul className="list-disc pl-4 mt-1 space-y-1 text-gray-600 font-medium">
+                                            <li><strong>"No cambiar el tamaño de mi imagen"</strong> (per evitar que es vegi borrosa).</li>
+                                            <li><strong>"Sin caducidad"</strong> (perquè no s'esborri mai de la web).</li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li className="flex gap-3 text-xs text-gray-700">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">3</span>
+                                    <span>
+                                        Prem el botó blau <strong>"Tria les imatges"</strong> i puja la teva foto.
+                                    </span>
+                                </li>
+                                <li className="flex gap-3 text-xs text-gray-700">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">4</span>
+                                    <span>
+                                        Un cop carregada, apareixerà una llista de codis.<br/>
+                                        Busca la fila que diu: <strong>Enllaç directe (Direct Link)</strong>.
+                                    </span>
+                                </li>
+                                <li className="flex gap-3 text-xs text-gray-700">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">5</span>
+                                    <span>
+                                        Copia aquell enllaç i enganxa'l a la casella del panell.
+                                        <span className="block mt-1 text-gray-500 italic font-medium">
+                                            * Aquest sistema és el mateix per a qualsevol foto que vulguis canviar a tota la web.
+                                        </span>
+                                    </span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfig }) => {
     
@@ -99,6 +197,9 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                     />
                 </div>
             </div>
+
+            {/* --- IMAGE UPLOAD GUIDE (POSTIMAGES) --- */}
+            <ImageUploadGuide />
 
             {/* 2. Portada (Imatges de Fons) (Amber Theme) */}
             <div className="bg-amber-50 p-6 rounded-xl shadow-sm border border-amber-200 relative overflow-hidden">
