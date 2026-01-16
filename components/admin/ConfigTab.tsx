@@ -517,7 +517,43 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, formVisible: !prev.contact.formVisible } })),
                             "Visible", "Ocult", "bg-gray-600 border-gray-700"
                         )}
-                        <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" /></div><p className="text-[10px] text-gray-400 italic mt-2">* Els camps del formulari (nom, email, etc.) són fixes per motius de programació i no es poden editar aquí.</p></div>
+                        <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4>
+                        
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
+                                <input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 border-t border-dashed border-gray-300 pt-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Nom</label>
+                                    <input type="text" value={localConfig.contact.formNameLabel} onChange={(e) => handleChange('contact', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Email</label>
+                                    <input type="text" value={localConfig.contact.formEmailLabel} onChange={(e) => handleChange('contact', 'formEmailLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Telèfon</label>
+                                    <input type="text" value={localConfig.contact.formPhoneLabel} onChange={(e) => handleChange('contact', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Assumpte</label>
+                                    <input type="text" value={localConfig.contact.formSubjectLabel} onChange={(e) => handleChange('contact', 'formSubjectLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Missatge</label>
+                                    <input type="text" value={localConfig.contact.formMessageLabel} onChange={(e) => handleChange('contact', 'formMessageLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Enviar</label>
+                                    <input type="text" value={localConfig.contact.formButtonText} onChange={(e) => handleChange('contact', 'formButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white font-bold text-gray-600" />
+                                </div>
+                            </div>
+
+                            <p className="text-[10px] text-gray-400 italic mt-2">* L'estructura dels camps és fixa per motius de programació, però pots editar els textos que veu l'usuari.</p>
+                        </div>
                     </div>
                 </div>
             </div>
