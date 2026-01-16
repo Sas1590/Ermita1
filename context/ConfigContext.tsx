@@ -9,6 +9,8 @@ export interface FoodMenuItem {
   nameCa: string;
   nameEs: string;
   price: string;
+  visible?: boolean;      // NEW
+  strikethrough?: boolean; // NEW
 }
 
 export interface MenuSection {
@@ -41,6 +43,8 @@ export interface FoodMenuConfig {
 export interface GroupMenuItem {
   nameCa: string;
   nameEs: string;
+  visible?: boolean;      // NEW
+  strikethrough?: boolean; // NEW
 }
 
 export interface GroupMenuSection {
@@ -54,6 +58,8 @@ export interface WineItem {
   name: string;
   desc: string;
   price: string;
+  visible?: boolean;      // NEW
+  strikethrough?: boolean; // NEW
 }
 
 export interface WineGroup {

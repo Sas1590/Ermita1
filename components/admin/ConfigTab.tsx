@@ -31,23 +31,40 @@ const ImageUploadGuide = () => {
             {isOpen && (
                 <div className="px-6 py-6 border-t border-blue-200 bg-white/50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-base">info</span>
-                                Important: No pugem fitxers
-                            </h5>
-                            <p className="text-xs text-gray-600 leading-relaxed mb-4">
-                                Aquest web funciona amb <strong>enllaços externs (URL)</strong> per mantenir-la ràpida i lleugera. 
-                                No pots pujar l'arxiu directament des del teu ordinador al panell; primer l'has de pujar a internet.
-                            </p>
-                            <p className="text-xs text-gray-600 leading-relaxed">
-                                L'enllaç correcte <strong>sempre ha d'acabar</strong> en una extensió d'imatge:<br/>
-                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono">.jpg</code> 
-                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.png</code> 
-                                <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.webp</code>
-                            </p>
+                        {/* LEFT COLUMN: EXPLANATION + PRIVACY NOTE */}
+                        <div className="flex flex-col h-full">
+                            <div className="mb-6">
+                                <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base">info</span>
+                                    Important: No pugem fitxers
+                                </h5>
+                                <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                                    Aquest web funciona amb <strong>enllaços externs (URL)</strong> per mantenir-la ràpida i lleugera. 
+                                    No pots pujar l'arxiu directament des del teu ordinador al panell; primer l'has de pujar a internet.
+                                </p>
+                                <p className="text-xs text-gray-600 leading-relaxed">
+                                    L'enllaç correcte <strong>sempre ha d'acabar</strong> en una extensió d'imatge:<br/>
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono">.jpg</code> 
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.png</code> 
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.webp</code>
+                                </p>
+                            </div>
+
+                            {/* PRIVACY NOTICE BOX (New) */}
+                            <div className="mt-auto bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
+                                <h5 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm">public</span>
+                                    Nota sobre Privacitat
+                                </h5>
+                                <p className="text-[10px] text-yellow-900/80 leading-relaxed">
+                                    Recorda que Postimages és un servei públic. Les imatges que hi pugis seran accessibles per a qualsevol persona que tingui l'enllaç.
+                                    <br/><br/>
+                                    Això és <strong>perfecte i segur per a fotos del restaurant</strong> (plats, local, equip...), però evita utilitzar-ho per pujar documents privats o dades sensibles.
+                                </p>
+                            </div>
                         </div>
 
+                        {/* RIGHT COLUMN: STEPS */}
                         <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
                             <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-base">rocket_launch</span>
@@ -90,7 +107,7 @@ const ImageUploadGuide = () => {
                                     <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">5</span>
                                     <span>
                                         Copia aquell enllaç i enganxa'l a la casella del panell.
-                                        <span className="block mt-1 text-gray-500 italic font-medium">
+                                        <span className="block mt-2 text-gray-500 italic font-medium bg-gray-50 p-2 rounded border border-gray-100">
                                             * Aquest sistema és el mateix per a qualsevol foto que vulguis canviar a tota la web.
                                         </span>
                                     </span>

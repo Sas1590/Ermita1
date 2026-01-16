@@ -80,13 +80,15 @@ const FoodMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                     <h4 className="font-serif text-3xl font-bold text-[#2c241b] uppercase tracking-[0.2em]">{section.category}</h4>
                 </div>
                 <ul className="space-y-6">
-                    {(section.items || []).map((item, i) => (
-                        <li key={i} className="group">
+                    {(section.items || [])
+                        .filter(item => item.visible !== false) // Hide items if visible is false
+                        .map((item, i) => (
+                        <li key={i} className={`group ${item.strikethrough ? 'opacity-60' : ''}`}>
                             <div className="flex justify-between items-start gap-4 relative">
                                 <div className="flex flex-col relative z-10 bg-[#F9F7F2] pr-4">
-                                    <span className="font-serif font-bold text-[#2c241b] text-lg md:text-xl">{item.nameCa}</span>
+                                    <span className={`font-serif font-bold text-[#2c241b] text-lg md:text-xl ${item.strikethrough ? 'line-through decoration-[#8b5a2b] decoration-2' : ''}`}>{item.nameCa}</span>
                                     {item.nameEs && (
-                                        <span className="font-hand text-gray-500 text-lg leading-none mt-1">{item.nameEs}</span>
+                                        <span className={`font-hand text-gray-500 text-lg leading-none mt-1 ${item.strikethrough ? 'line-through decoration-gray-400' : ''}`}>{item.nameEs}</span>
                                     )}
                                 </div>
                                 <div className="grow border-b-2 border-dotted border-[#8b5a2b] relative top-4 opacity-30"></div>
@@ -151,13 +153,15 @@ const WineMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                                 <h5 className="font-serif font-bold text-[#556b2f] italic text-xl mb-4 border-b border-[#e5e0d5] pb-2 inline-block">{group.sub}</h5>
                             )}
                             <ul className="space-y-5">
-                                {(group.items || []).map((item, i) => (
-                                    <li key={i} className="mb-4">
+                                {(group.items || [])
+                                    .filter(item => item.visible !== false)
+                                    .map((item, i) => (
+                                    <li key={i} className={`mb-4 ${item.strikethrough ? 'opacity-60' : ''}`}>
                                         <div className="flex justify-between items-start gap-4">
                                             <div>
-                                                <span className="font-sans font-bold text-[#2c241b] text-lg block">{item.name}</span>
+                                                <span className={`font-sans font-bold text-[#2c241b] text-lg block ${item.strikethrough ? 'line-through' : ''}`}>{item.name}</span>
                                                 {item.desc && (
-                                                    <span className="font-hand text-gray-500 text-lg leading-none">{item.desc}</span>
+                                                    <span className={`font-hand text-gray-500 text-lg leading-none ${item.strikethrough ? 'line-through' : ''}`}>{item.desc}</span>
                                                 )}
                                             </div>
                                             <span className="font-serif font-bold text-[#8b5a2b] text-lg shrink-0">{item.price}</span>
@@ -215,10 +219,12 @@ const GroupMenuContent: React.FC<{ menuData: any }> = ({ menuData }) => {
                         </div>
                         <h4 className="font-serif text-2xl font-bold text-[#556b2f] uppercase tracking-widest mb-6">{section.title}</h4>
                         <ul className="space-y-6">
-                            {(section.items || []).map((item, i) => (
-                                <li key={i} className="flex flex-col items-center gap-1">
-                                    <span className="font-serif text-xl text-[#2c241b] leading-tight font-bold">{item.nameCa}</span>
-                                    {item.nameEs && <span className="font-hand text-lg text-gray-500 leading-none">{item.nameEs}</span>}
+                            {(section.items || [])
+                                .filter(item => item.visible !== false)
+                                .map((item, i) => (
+                                <li key={i} className={`flex flex-col items-center gap-1 ${item.strikethrough ? 'opacity-60' : ''}`}>
+                                    <span className={`font-serif text-xl text-[#2c241b] leading-tight font-bold ${item.strikethrough ? 'line-through decoration-[#2c241b]' : ''}`}>{item.nameCa}</span>
+                                    {item.nameEs && <span className={`font-hand text-lg text-gray-500 leading-none ${item.strikethrough ? 'line-through' : ''}`}>{item.nameEs}</span>}
                                 </li>
                             ))}
                         </ul>
