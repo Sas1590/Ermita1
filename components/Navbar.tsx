@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../context/ConfigContext';
-import { db } from '../firebase';
+import { db, auth } from '../firebase'; // Added auth
 import { ref, onValue } from 'firebase/database';
 
 interface NavbarProps {
@@ -16,6 +16,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { config, isLoading } = useConfig(); 
   const [totalUnread, setTotalUnread] = useState(0);
+  const [displayName, setDisplayName] = useState("Admin"); 
 
   // --- DYNAMIC ICONS EXTRACTION ---
   const dailyIcon = config.dailyMenu?.icon || 'lunch_dining';
@@ -69,9 +70,11 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
   // Listen for unread messages AND pending reservations only if in Admin Mode
   useEffect(() => {
-    if (isAdminMode) {
+    if (isAdminMode && auth.currentUser) {
+      const uid = auth.currentUser.uid;
       const messagesRef = ref(db, 'contactMessages');
       const reservationsRef = ref(db, 'reservations');
+      const profileRef = ref(db, `adminProfiles/${uid}/displayName`);
 
       let unreadMessages = 0;
       let pendingReservations = 0;
@@ -99,12 +102,22 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
         updateCount();
       });
 
+      // PERSONAL NAME LOGIC (Cloud Only)
+      const unsubscribeProfile = onValue(profileRef, (snapshot) => {
+          if (snapshot.exists()) {
+              setDisplayName(snapshot.val());
+          } else {
+              setDisplayName("Admin");
+          }
+      });
+
       return () => {
         unsubscribeMessages();
         unsubscribeReservations();
+        unsubscribeProfile();
       };
     }
-  }, [isAdminMode]);
+  }, [isAdminMode, auth.currentUser]); // Added auth.currentUser to dependency array
 
   return (
     <nav
@@ -148,9 +161,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  <span className="material-symbols-outlined text-sm">verified_user</span>
                  {/* REMOVED 'uppercase' CLASS HERE */}
                  <span className="text-[10px] font-bold tracking-widest">
-                    {config.adminSettings?.customDisplayName 
-                        ? `Hola ${config.adminSettings.customDisplayName}` 
-                        : "Hola Admin"}
+                    Hola {displayName}
                  </span>
               </div>
               

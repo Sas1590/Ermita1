@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { ref, onValue, update, remove, push, set } from 'firebase/database';
+import { ref, onValue, update, remove, push, set, get } from 'firebase/database';
 import { AppConfig, defaultAppConfig } from '../../context/ConfigContext';
 
 interface OperationsProps {
@@ -172,6 +172,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     // --- UI STATES ---
     const [showInjectConfirm, setShowInjectConfirm] = useState<{ show: boolean, type: 'daily' | 'food' | 'wine' | 'group' | null }>({ show: false, type: null });
     const [showFactoryResetConfirm, setShowFactoryResetConfirm] = useState(false);
+    const [showSetMasterConfirm, setShowSetMasterConfirm] = useState(false); // NEW
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
     // --- NEW: GENERIC CONFIRMATION MODAL STATE ---
@@ -336,9 +337,65 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
             onConfirm: async () => { try { await remove(ref(db, `backups/${backupId}`)); } catch(e) { console.error(e); } setConfirmModal(prev => ({ ...prev, isOpen: false })); }
         });
     };
+
+    // --- NEW: MASTER DELIVERY MANAGEMENT ---
+    
+    // 1. Set current state as MASTER
+    const handleSetMasterVersion = async () => {
+        if (!config) return;
+        try {
+            const sanitizedConfig = JSON.parse(JSON.stringify(config));
+            // Save to a dedicated node 'websiteConfig_master' OR a dedicated backup slot
+            // Using a dedicated backup slot is easier to manage permissions if needed, but separate node is clearer logic
+            await set(ref(db, 'backups/master_delivery'), {
+                timestamp: Date.now(),
+                name: "Versió Entrega (Master)",
+                data: sanitizedConfig
+            });
+            showFeedback('success', "Versió d'Entrega guardada correctament.");
+            setShowSetMasterConfirm(false);
+        } catch (e) {
+            console.error(e);
+            showFeedback('error', "Error guardant la versió mestra.");
+        }
+    };
+
+    // 2. Modified Factory Reset (Restores Master if exists, else Default)
     const performFactoryReset = async () => {
         if (!updateConfig || !setLocalConfig) return;
-        try { await updateConfig(defaultAppConfig); setLocalConfig(defaultAppConfig); showFeedback('success', "Restaurat a fàbrica."); setShowFactoryResetConfirm(false); } catch (e) { console.error(e); showFeedback('error', "Error al restaurar."); }
+        
+        try {
+            // First, try to fetch the Master Delivery version
+            const snapshot = await get(ref(db, 'backups/master_delivery'));
+            
+            if (snapshot.exists()) {
+                const masterData = snapshot.val();
+                if (masterData && masterData.data) {
+                    await updateConfig(masterData.data);
+                    setLocalConfig(masterData.data);
+                    showFeedback('success', "Restaurada Versió Inicial (Entrega).");
+                } else {
+                    throw new Error("Master data corrupt");
+                }
+            } else {
+                // Fallback to code defaults if no master exists (Legacy behavior)
+                await updateConfig(defaultAppConfig);
+                setLocalConfig(defaultAppConfig);
+                showFeedback('success', "Restaurat a valors per defecte (Codi).");
+            }
+            setShowFactoryResetConfirm(false);
+        } catch (e) {
+            console.error(e);
+            // Fallback safety
+            try {
+                await updateConfig(defaultAppConfig);
+                setLocalConfig(defaultAppConfig);
+                showFeedback('success', "Restaurat a valors per defecte (Fallback).");
+            } catch (err) {
+                showFeedback('error', "Error crític al restaurar.");
+            }
+            setShowFactoryResetConfirm(false);
+        }
     };
 
     // --- LIMITS SAVING ---
@@ -463,7 +520,6 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 
                 {feedback && (<div className={`fixed top-4 right-4 z-[200] px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${feedback.type === 'success' ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}`}><span className="material-symbols-outlined text-2xl">{feedback.type === 'success' ? 'check_circle' : 'error'}</span><span className="font-bold">{feedback.msg}</span></div>)}
 
-                {/* ... (Limits section unchanged) ... */}
                 {/* --- ADVANCED LIMITS SECTION (WITH BOTH FIELDS) --- */}
                 <div className="bg-white p-6 rounded shadow-sm border border-purple-200">
                     <div className="flex items-center gap-3 mb-6 border-b border-purple-100 pb-4">
@@ -473,84 +529,17 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                             <p className="text-gray-500 text-sm">Controla els límits del sistema per a futures actualitzacions Premium.</p>
                         </div>
                     </div>
+                    {/* ... (Existing Limits Inputs) ... */}
                     <div className="bg-purple-50 p-6 rounded border border-purple-100 flex flex-col gap-6">
-                        
-                        {/* 1. MAX MENUS */}
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50">
-                            <div>
-                                <label className="block text-sm font-bold text-purple-900 mb-1">Màxim Menús Addicionals</label>
-                                <p className="text-xs text-purple-700">Defineix quants menús extra es poden crear com a màxim.</p>
-                            </div>
-                            <input 
-                                type="number" 
-                                min="0" 
-                                max="50" 
-                                value={tempMaxMenus} 
-                                onChange={(e) => setTempMaxMenus(e.target.value)}
-                                className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none"
-                            />
-                        </div>
-
-                        {/* 2. MAX HERO IMAGES */}
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50">
-                            <div>
-                                <label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Portada</label>
-                                <p className="text-xs text-purple-700">Límit d'imatges al carrusel de la pàgina principal.</p>
-                            </div>
-                            <input 
-                                type="number" 
-                                min="1" 
-                                max="20" 
-                                value={tempMaxHeroImages} 
-                                onChange={(e) => setTempMaxHeroImages(e.target.value)}
-                                className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none"
-                            />
-                        </div>
-
-                        {/* 3. MAX PRODUCT IMAGES */}
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50">
-                            <div>
-                                <label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Producte</label>
-                                <p className="text-xs text-purple-700">Límit d'imatges al carrusel de Filosofia (Columna esquerra).</p>
-                            </div>
-                            <input 
-                                type="number" 
-                                min="1" 
-                                max="20" 
-                                value={tempMaxProduct} 
-                                onChange={(e) => setTempMaxProduct(e.target.value)}
-                                className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none"
-                            />
-                        </div>
-
-                        {/* 4. MAX HISTORIC IMAGES */}
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Història</label>
-                                <p className="text-xs text-purple-700">Límit d'imatges al carrusel d'Història (Columna dreta).</p>
-                            </div>
-                            <input 
-                                type="number" 
-                                min="1" 
-                                max="20" 
-                                value={tempMaxHistoric} 
-                                onChange={(e) => setTempMaxHistoric(e.target.value)}
-                                className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none"
-                            />
-                        </div>
-
-                        <div className="flex justify-end pt-4 border-t border-purple-200">
-                            <button 
-                                onClick={handleSaveLimits}
-                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase px-6 py-3 rounded shadow-sm transition-colors flex items-center gap-2"
-                            >
-                                <span className="material-symbols-outlined text-lg">save</span> Guardar Límits
-                            </button>
-                        </div>
+                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Menús Addicionals</label><p className="text-xs text-purple-700">Defineix quants menús extra es poden crear com a màxim.</p></div><input type="number" min="0" max="50" value={tempMaxMenus} onChange={(e) => setTempMaxMenus(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
+                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Portada</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel de la pàgina principal.</p></div><input type="number" min="1" max="20" value={tempMaxHeroImages} onChange={(e) => setTempMaxHeroImages(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
+                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Producte</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel de Filosofia (Columna esquerra).</p></div><input type="number" min="1" max="20" value={tempMaxProduct} onChange={(e) => setTempMaxProduct(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
+                        <div className="flex items-center justify-between"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Història</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel d'Història (Columna dreta).</p></div><input type="number" min="1" max="20" value={tempMaxHistoric} onChange={(e) => setTempMaxHistoric(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
+                        <div className="flex justify-end pt-4 border-t border-purple-200"><button onClick={handleSaveLimits} className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase px-6 py-3 rounded shadow-sm transition-colors flex items-center gap-2"><span className="material-symbols-outlined text-lg">save</span> Guardar Límits</button></div>
                     </div>
                 </div>
 
-                {/* (Backups and Reset sections) */}
+                {/* --- BACKUPS SECTION --- */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4"><span className="material-symbols-outlined text-3xl text-primary">security</span><div><h3 className="font-serif text-xl font-bold text-gray-800">Còpies de Seguretat</h3><p className="text-gray-500 text-sm">Crea fotos de l'estat actual de la web.</p></div></div>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 flex items-start gap-3"><span className="material-symbols-outlined text-blue-500">info</span><p className="text-sm text-blue-700"><strong>Nota:</strong> Les còpies guarden la configuració visual (textos, fotos, menús). No guarden les reserves.</p></div>
@@ -572,6 +561,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                     {backups.length === 0 ? <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg"><p className="text-gray-400">No hi ha còpies.</p></div> : <div className="space-y-3">{backups.map((backup) => (<div key={backup.id} className="flex items-center justify-between bg-gray-50 p-4 rounded border border-gray-200 hover:shadow-md transition-shadow"><div className="flex items-center gap-3"><span className="material-symbols-outlined text-gray-400">backup</span><div><p className="font-bold text-gray-800 text-sm">{backup.name}</p><p className="text-xs text-gray-500 font-mono">{new Date(backup.timestamp).toLocaleString()}</p></div></div><div className="flex gap-2"><button onClick={() => handleRestoreBackup(backup)} className="text-blue-600 hover:text-blue-800 text-[10px] font-bold uppercase border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors">Restaurar</button><button onClick={() => handleDeleteBackup(backup.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition-colors"><span className="material-symbols-outlined text-sm">delete</span></button></div></div>))}</div>}
                 </div>
                 
+                {/* --- RESTORE BETA SECTION --- */}
                 <div className="bg-green-50 p-6 rounded shadow-sm border border-green-200">
                     <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2"><span className="material-symbols-outlined">menu_book</span> RESTAURACIÓ CARTA BETA (ORIGINAL)</h4>
                     <p className="text-xs text-green-700 mb-4">Utilitza aquests botons per recuperar les versions originals (Beta) dels 4 menús principals si s'han esborrat.</p>
@@ -583,13 +573,84 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                     </div>
                 </div>
 
-                <div className="bg-red-50 p-6 rounded shadow-sm border border-red-200">
-                    <h4 className="font-bold text-red-800 mb-2 flex items-center gap-2"><span className="material-symbols-outlined">warning</span> Zona de Perill</h4>
-                    <div className="flex flex-col sm:flex-row gap-4"><button onClick={() => setShowFactoryResetConfirm(true)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-xs font-bold uppercase shadow flex items-center gap-2 w-full justify-center sm:w-auto"><span className="material-symbols-outlined text-sm">restart_alt</span> Restaurar TOTA la Web (Fàbrica)</button></div>
+                {/* --- NEW: DELIVERY MANAGEMENT (DEVELOPER ZONE) --- */}
+                <div className="bg-indigo-50 p-6 rounded shadow-sm border border-indigo-200">
+                    <h4 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined">verified</span> Gestió de l'Entrega (Zona Desenvolupador)
+                    </h4>
+                    <p className="text-xs text-indigo-800 mb-4">
+                        Utilitza aquest botó quan hagis acabat la web. Això guardarà l'estat actual com a "Versió Inicial" perquè el client pugui restaurar-la si comet errors greus.
+                    </p>
+                    <button 
+                        onClick={() => setShowSetMasterConfirm(true)} 
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded text-xs font-bold uppercase shadow flex items-center gap-2 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-lg">save_as</span> Definir estat actual com a Versió d'Entrega
+                    </button>
                 </div>
 
+                {/* --- DANGER ZONE (MASTER RESTORE) --- */}
+                <div className="bg-red-50 p-6 rounded shadow-sm border border-red-200">
+                    <h4 className="font-bold text-red-800 mb-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined">warning</span> Zona de Perill
+                    </h4>
+                    <p className="text-xs text-red-700 mb-4">
+                        Aquesta acció esborrarà tots els canvis fets pel client i retornarà la web a l'estat exacte del dia de l'entrega.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <button 
+                            onClick={() => setShowFactoryResetConfirm(true)} 
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded text-xs font-bold uppercase shadow flex items-center gap-2 w-full justify-center sm:w-auto transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-lg">restart_alt</span> Restaurar Versió Inicial (Entrega)
+                        </button>
+                    </div>
+                </div>
+
+                {/* MODALS */}
                 {showInjectConfirm.show && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-green-600 text-center"><div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><span className="material-symbols-outlined text-3xl">{showInjectConfirm.type === 'food' ? 'restaurant_menu' : showInjectConfirm.type === 'wine' ? 'wine_bar' : showInjectConfirm.type === 'group' ? 'diversity_3' : 'lunch_dining'}</span></div><h3 className="font-serif text-xl font-bold text-gray-800 mb-2">{showInjectConfirm.type === 'food' ? 'Carregar CARTA_BETA?' : showInjectConfirm.type === 'wine' ? 'Carregar CARTAVINS_BETA?' : showInjectConfirm.type === 'group' ? 'Carregar MENUGRUP_BETA?' : 'Carregar MENUDIARI_BETA?'}</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed">Això <strong className="text-gray-800">sobrescriurà només aquesta secció</strong> amb la versió original/beta. Els altres menús no es tocaran.</p><div className="flex gap-3"><button onClick={() => setShowInjectConfirm({ show: false, type: null })} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performBetaInjection} className="flex-1 py-3 bg-green-600 text-white rounded font-bold uppercase text-xs hover:bg-green-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
-                {showFactoryResetConfirm && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-red-600 text-center"><div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">Restaurar de Fàbrica?</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed"><strong className="text-red-600">ATENCIÓ:</strong> Això esborrarà TOTA la configuració actual i deixarà la web com nova. No es pot desfer.</p><div className="flex gap-3"><button onClick={() => setShowFactoryResetConfirm(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performFactoryReset} className="flex-1 py-3 bg-red-600 text-white rounded font-bold uppercase text-xs hover:bg-red-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
+                
+                {/* FACTORY RESET CONFIRM */}
+                {showFactoryResetConfirm && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-red-600 text-center">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
+                                <span className="material-symbols-outlined text-3xl">history</span>
+                            </div>
+                            <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">Restaurar Versió Entrega?</h3>
+                            <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                                <strong className="text-red-600 block mb-2">ATENCIÓ: Això esborrarà TOTA la configuració actual.</strong> 
+                                La web tornarà a estar exactament com el dia que es va entregar al client.
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowFactoryResetConfirm(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
+                                <button onClick={performFactoryReset} className="flex-1 py-3 bg-red-600 text-white rounded font-bold uppercase text-xs hover:bg-red-700 shadow-md transition-colors">Sí, Restaurar</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SET MASTER CONFIRM */}
+                {showSetMasterConfirm && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-indigo-600 text-center">
+                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600">
+                                <span className="material-symbols-outlined text-3xl">save_as</span>
+                            </div>
+                            <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">Definir Versió Mestra?</h3>
+                            <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                                Estàs a punt de guardar l'estat actual com a <strong>Punt de Restauració d'Entrega</strong>. 
+                                <br/><br/>
+                                <span className="italic text-xs">Si en el futur es prem "Restaurar Versió Inicial", es carregarà exactament el que veus ara a la web.</span>
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowSetMasterConfirm(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
+                                <button onClick={handleSetMasterVersion} className="flex-1 py-3 bg-indigo-600 text-white rounded font-bold uppercase text-xs hover:bg-indigo-700 shadow-md transition-colors">Confirmar i Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {renderConfirmModal()}
 
                 {/* --- NEW BACKUP INPUT MODAL --- */}

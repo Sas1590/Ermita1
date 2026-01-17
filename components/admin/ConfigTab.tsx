@@ -4,6 +4,8 @@ import { LogoEditor, ImageArrayEditor, IconPicker } from './AdminShared';
 interface ConfigTabProps {
     localConfig: any;
     setLocalConfig: (config: any) => void;
+    userEmail: string;
+    // Removed personalName props as they are no longer used here
 }
 
 // --- HELPER COMPONENT: IMAGE UPLOAD GUIDE ---
@@ -121,7 +123,7 @@ const ImageUploadGuide = () => {
     );
 };
 
-export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfig }) => {
+export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfig, userEmail }) => {
     
     // Helper to handle simple key-value changes
     const handleChange = (section: string, key: string, value: string) => {
@@ -177,42 +179,6 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
 
     return (
         <div className="space-y-12 animate-[fadeIn_0.3s_ease-out]">
-            {/* 0. NEW: ADMIN CUSTOMIZATION (Green Theme) */}
-            <div className="bg-green-50 p-6 rounded-xl shadow-sm border border-green-200 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500"></div>
-                <h3 className="font-serif text-xl font-bold text-green-800 mb-6 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-green-200 flex items-center justify-center text-green-700">
-                        <span className="material-symbols-outlined">person_edit</span>
-                    </div>
-                    Configuració Usuari (Admin)
-                </h3>
-                <div className="bg-white p-4 rounded-lg border border-green-100 shadow-sm">
-                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Nom a mostrar (Navbar)</label>
-                    <div className="relative">
-                    <input
-                        type="text"
-                        maxLength={15}
-                        value={localConfig.adminSettings?.customDisplayName || ''}
-                        onChange={(e) => {
-                            setLocalConfig((prev: any) => ({
-                                ...prev,
-                                adminSettings: {
-                                    ...prev.adminSettings,
-                                    customDisplayName: e.target.value
-                                }
-                            }));
-                        }}
-                        className="block w-full md:w-1/2 border border-gray-300 rounded px-3 py-2 text-sm focus:border-green-500 outline-none pr-10"
-                        placeholder="Ex: Elena"
-                    />
-                    <span className="absolute top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none right-3 md:left-[calc(50%-2.5rem)] md:right-auto">
-                            {(localConfig.adminSettings?.customDisplayName || '').length}/15
-                    </span>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1 italic">Si escrius "Elena", a dalt posarà "Hola Elena". Si està buit, posarà "Hola Admin".</p>
-                </div>
-            </div>
-
             {/* 1. Brand Section (LOGO) (Orange Theme) */}
             <div className="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500"></div>
@@ -328,87 +294,118 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                 </div>
             </div>
 
-            {/* 4. NEW GASTRONOMY SECTION (Dark Theme Editor) - KEPT DARK BUT STYLE MATCHED */}
-            <div className={`bg-[#2c241b] text-white p-6 pt-16 rounded-xl shadow-lg border border-gray-600 relative overflow-hidden transition-all ${localConfig.gastronomy?.visible === false ? 'opacity-60 grayscale' : ''}`}>
+            {/* 4. NEW GASTRONOMY SECTION (UPDATED: Soft Teal Theme + Editable Title + Char Limit) */}
+            <div className={`bg-teal-50 p-6 pt-16 rounded-xl shadow-sm border border-teal-200 relative overflow-hidden transition-all ${localConfig.gastronomy?.visible === false ? 'opacity-60 grayscale' : ''}`}>
                 {renderVisibilityToggle(
                     localConfig.gastronomy?.visible !== false, 
                     () => setLocalConfig((prev:any) => ({ ...prev, gastronomy: { ...prev.gastronomy, visible: !prev.gastronomy?.visible } })),
-                    "Gastronomia Visible", "Gastronomia Ocult", "bg-[#d0bb95] border-[#a38f6d] text-black"
+                    "Gastronomia Visible", "Gastronomia Ocult", "bg-teal-600 border-teal-700 text-white"
                 )}
 
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#d0bb95]"></div>
-                <h3 className="font-serif text-xl font-bold text-[#d0bb95] mb-6 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center text-[#d0bb95]">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-teal-600"></div>
+                <h3 className="font-serif text-xl font-bold text-teal-800 mb-6 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded bg-teal-200 flex items-center justify-center text-teal-700">
                         <span className="material-symbols-outlined">restaurant</span>
                     </div>
-                    Gastronomia Local
+                    {/* DYNAMIC TITLE IN HEADER TO REFLECT EDIT */}
+                    {localConfig.gastronomy?.mainTitle || "Gastronomia Local"}
                 </h3>
                 
                 {/* Headers */}
-                <div className="bg-black/20 p-6 rounded-lg border border-white/5 mb-6">
+                <div className="bg-white p-6 rounded-lg border border-teal-100 shadow-sm mb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div><label className="block text-xs font-bold uppercase text-gray-400 mb-1">Títol Superior</label><input type="text" value={localConfig.gastronomy?.topTitle || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, topTitle: e.target.value}}))} className="block w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:border-[#d0bb95] outline-none" /></div>
-                        <div><label className="block text-xs font-bold uppercase text-gray-400 mb-1">Títol Principal</label><input type="text" value={localConfig.gastronomy?.mainTitle || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, mainTitle: e.target.value}}))} className="block w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:border-[#d0bb95] outline-none" /></div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Superior (Petit)</label>
+                            <input 
+                                type="text" 
+                                value={localConfig.gastronomy?.topTitle || ''} 
+                                onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, topTitle: e.target.value}}))} 
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:border-teal-500 outline-none bg-white" 
+                            />
+                        </div>
+                        <div>
+                            {/* THIS IS THE EDITABLE "GASTRONOMIA LOCAL" TITLE */}
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal (Gran H2)</label>
+                            <input 
+                                type="text" 
+                                value={localConfig.gastronomy?.mainTitle || ''} 
+                                onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, mainTitle: e.target.value}}))} 
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-teal-900 focus:border-teal-500 outline-none bg-white" 
+                            />
+                        </div>
                     </div>
-                    {/* Description - New Row & Textarea */}
+                    {/* Description - With Limit */}
                     <div>
-                        <label className="block text-xs font-bold uppercase text-gray-400 mb-1">Descripció</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-bold uppercase text-gray-500">Descripció</label>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                                (localConfig.gastronomy?.description?.length || 0) >= 350 
+                                ? 'bg-red-50 border-red-200 text-red-600 font-bold' 
+                                : 'bg-gray-50 border-gray-200 text-gray-400'
+                            }`}>
+                                {localConfig.gastronomy?.description?.length || 0}/350
+                            </span>
+                        </div>
                         <textarea 
                             rows={3} 
+                            maxLength={350} // ADDED LIMIT
                             value={localConfig.gastronomy?.description || ''} 
                             onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, description: e.target.value}}))} 
-                            className="block w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm text-white focus:border-[#d0bb95] outline-none resize-y" 
+                            className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:border-teal-500 outline-none resize-y bg-white" 
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {/* Card 1 */}
-                    <div className="bg-white/5 p-4 rounded-lg border border-white/10 shadow-lg">
-                        <h4 className="font-bold text-[#d0bb95] mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">lunch_dining</span> Targeta 1</h4>
+                    {/* Card 1 (Light Theme) */}
+                    <div className="bg-white/50 p-4 rounded-lg border border-teal-100 shadow-sm hover:bg-white transition-colors">
+                        <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">lunch_dining</span> Targeta 1</h4>
                         <div className="space-y-3">
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card1.title} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, title: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card1.subtitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, subtitle: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card1.description} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, description: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card1.title} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, title: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card1.subtitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, subtitle: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card1.description} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, description: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             <div className="flex gap-4">
-                                <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card1.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, price: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                                <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card1.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, footerText: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                                <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card1.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                                <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card1.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             </div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card1.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, buttonText: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card1.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card1.image} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, image: val}}}))} /></div>
                         </div>
                     </div>
-                    {/* Card 2 */}
-                    <div className="bg-white/5 p-4 rounded-lg border border-white/10 shadow-lg">
-                        <h4 className="font-bold text-[#d0bb95] mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">restaurant_menu</span> Targeta 2</h4>
+                    {/* Card 2 (Light Theme) */}
+                    <div className="bg-white/50 p-4 rounded-lg border border-teal-100 shadow-sm hover:bg-white transition-colors">
+                        <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">restaurant_menu</span> Targeta 2</h4>
                         <div className="space-y-3">
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card2.title} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, title: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card2.subtitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, subtitle: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card2.description} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, description: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card2.title} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, title: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card2.subtitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, subtitle: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card2.description} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, description: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             <div className="flex gap-4">
-                                <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card2.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, price: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
-                                <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card2.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, footerText: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                                <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card2.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                                <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card2.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             </div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card2.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, buttonText: e.target.value}}}))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white" /></div>
+                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card2.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card2.image} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, image: val}}}))} /></div>
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 border-t border-white/10 pt-4">
-                    <h4 className="font-bold text-[#d0bb95] mb-3 text-sm uppercase">Enllaços Peu de Pàgina</h4>
-                    <div className="mb-2"><label className="block text-[10px] text-gray-400 uppercase">Títol Peu</label><input value={localConfig.gastronomy?.footerTitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerTitle: e.target.value}}))} className="bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white w-full md:w-1/3" /></div>
+                <div className="mt-6 border-t border-teal-100 pt-4">
+                    <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase">Enllaços Peu de Pàgina</h4>
+                    <div className="mb-2"><label className="block text-[10px] text-gray-400 uppercase">Títol Peu</label><input value={localConfig.gastronomy?.footerTitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerTitle: e.target.value}}))} className="border border-gray-300 rounded px-2 py-1 text-sm w-full md:w-1/3 bg-white" /></div>
                     <div className="space-y-2">
                         {localConfig.gastronomy?.footerLinks.map((link:any, idx:number) => (
-                             <div key={idx} className="flex items-center gap-2 bg-white/5 p-2 rounded">
+                             <div key={idx} className="flex items-center gap-2 bg-white/50 p-2 rounded border border-gray-200">
                                 <div className="w-12"><IconPicker value={link.icon} onChange={(val) => { const newLinks = [...localConfig.gastronomy.footerLinks]; newLinks[idx].icon = val; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} /></div>
-                                <input value={link.label} onChange={(e) => { const newLinks = [...localConfig.gastronomy.footerLinks]; newLinks[idx].label = e.target.value; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} className="bg-transparent border-b border-white/20 text-white text-sm w-full outline-none" placeholder="Nom Enllaç" />
+                                <input value={link.label} onChange={(e) => { const newLinks = [...localConfig.gastronomy.footerLinks]; newLinks[idx].label = e.target.value; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} className="bg-transparent border-b border-gray-300 text-gray-700 text-sm w-full outline-none" placeholder="Nom Enllaç" />
                              </div>
                         ))}
                     </div>
                 </div>
             </div>
 
+            {/* ... Rest of existing components (Specialties, Philosophy, Contact) ... */}
+            {/* These sections remain exactly the same, they are just below the removed profile block */}
+            
             {/* 5. Specialties Section (Yellow Theme) */}
             <div className={`bg-yellow-50 p-6 pt-16 rounded-xl shadow-sm border border-yellow-200 relative overflow-hidden transition-all ${localConfig.specialties.visible === false ? 'opacity-60 grayscale' : ''}`}>
                 {/* VISIBILITY TOGGLE - WHOLE SPECIALTIES SECTION */}
@@ -608,119 +605,42 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                     </div>
                     Contacte
                 </h3>
-                
-                {/* Important Note Block (Re-styled as sticky note) */}
+                {/* ... Rest of contact section remains identical ... */}
+                {/* IMPORTANT: Ensure closing tags match the structure */}
                 <div className={`bg-[#fefce8] p-6 pt-16 mb-6 rounded-lg border border-yellow-200 shadow-sm relative transition-all ${localConfig.contact.importantNoteVisible === false ? 'opacity-60 grayscale' : ''}`}>
                     {renderVisibilityToggle(
                         localConfig.contact.importantNoteVisible !== false, 
                         () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, importantNoteVisible: !prev.contact.importantNoteVisible } })),
                         "Visible", "Ocult", "bg-yellow-600 border-yellow-700"
                     )}
-                    
+                    {/* ... content of sticky note ... */}
                     <div className="flex items-center gap-3 mb-4 border-b border-yellow-200 pb-3">
                         <div className="bg-[#fef08a] text-[#854d0e] w-10 h-10 flex items-center justify-center shadow-sm transform -rotate-3 border border-yellow-400/50 rounded-sm">
                             <span className="material-symbols-outlined">sticky_note_2</span>
                         </div>
                         <h4 className="font-bold text-[#854d0e] text-sm uppercase tracking-wide">Nota Adhesiva (Post-it)</h4>
                     </div>
-
-                    <div className="mb-3">
-                        <label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Títol Nota</label>
-                        <input 
-                            type="text" 
-                            value={localConfig.contact.importantNoteTitle} 
-                            onChange={(e) => handleChange('contact', 'importantNoteTitle', e.target.value)} 
-                            className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white text-yellow-900 font-bold font-hand" 
-                        />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 1 (Gran)</label>
-                            <input 
-                                type="text" 
-                                value={localConfig.contact.importantNoteMessage1} 
-                                onChange={(e) => handleChange('contact', 'importantNoteMessage1', e.target.value)} 
-                                className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 2 (Petit)</label>
-                            <input 
-                                type="text" 
-                                value={localConfig.contact.importantNoteMessage2} 
-                                onChange={(e) => handleChange('contact', 'importantNoteMessage2', e.target.value)} 
-                                className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" 
-                            />
-                        </div>
-                    </div>
+                    <div className="mb-3"><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Títol Nota</label><input type="text" value={localConfig.contact.importantNoteTitle} onChange={(e) => handleChange('contact', 'importantNoteTitle', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white text-yellow-900 font-bold font-hand" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 1 (Gran)</label><input type="text" value={localConfig.contact.importantNoteMessage1} onChange={(e) => handleChange('contact', 'importantNoteMessage1', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" /></div><div><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 2 (Petit)</label><input type="text" value={localConfig.contact.importantNoteMessage2} onChange={(e) => handleChange('contact', 'importantNoteMessage2', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" /></div></div>
                 </div>
-
+                
+                {/* Simplified remaining sections for XML brevity since they are unchanged logic, just ensuring hierarchy is closed properly */}
                 {/* Info Block */}
                 <div className={`bg-white p-6 pt-16 mb-6 rounded-lg border border-red-100 shadow-sm relative transition-all ${localConfig.contact.infoVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                    {renderVisibilityToggle(
-                        localConfig.contact.infoVisible !== false, 
-                        () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, infoVisible: !prev.contact.infoVisible } })),
-                        "Visible", "Ocult", "bg-red-700 border-red-800"
-                    )}
+                    {renderVisibilityToggle(localConfig.contact.infoVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, infoVisible: !prev.contact.infoVisible } })), "Visible", "Ocult", "bg-red-700 border-red-800")}
                     <h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Informació General</h4>
+                    {/* ... inputs ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label><input type="text" value={localConfig.contact.sectionTitle} onChange={(e) => handleChange('contact', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Localització</label><input type="text" value={localConfig.contact.locationTitle} onChange={(e) => handleChange('contact', 'locationTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 1</label><input type="text" value={localConfig.contact.addressLine1} onChange={(e) => handleChange('contact', 'addressLine1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 2</label><input type="text" value={localConfig.contact.addressLine2} onChange={(e) => handleChange('contact', 'addressLine2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Horari</label><input type="text" value={localConfig.contact.schedule} onChange={(e) => handleChange('contact', 'schedule', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Telèfons (separats per coma)</label><input type="text" value={localConfig.contact.phoneNumbers.join(', ')} onChange={(e) => handleChange('contact', 'phoneNumbers', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div><div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Google Maps</label><input type="text" value={localConfig.contact.mapUrl} onChange={(e) => handleChange('contact', 'mapUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div>
                 </div>
-
+                {/* Social & Form */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {/* Social Block */}
                     <div className={`p-4 pt-16 rounded-xl border border-pink-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-orange-50 relative overflow-hidden transition-all ${localConfig.contact.socialVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.contact.socialVisible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, socialVisible: !prev.contact.socialVisible } })),
-                            "Visible", "Ocult", "bg-purple-600 border-purple-700"
-                        )}
+                        {renderVisibilityToggle(localConfig.contact.socialVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, socialVisible: !prev.contact.socialVisible } })), "Visible", "Ocult", "bg-purple-600 border-purple-700")}
                         <div className="absolute top-0 right-0 p-2 opacity-10"><span className="material-symbols-outlined text-6xl text-purple-800">photo_camera</span></div><h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-orange-600 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-purple-600">group_work</span> Xarxes Socials (Instagram)</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Títol Xarxes</label><input type="text" value={localConfig.contact.socialTitle} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Descripció</label><input type="text" value={localConfig.contact.socialDescription} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Text Botó</label><input type="text" value={localConfig.contact.socialButtonText} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">URL Instagram</label><input type="text" value={localConfig.contact.instagramUrl} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-xs focus:border-purple-500 outline-none bg-white/80 text-purple-700" /></div></div>
                     </div>
-                    {/* Form Block */}
                     <div className={`p-4 pt-16 rounded-xl border border-gray-100 bg-gray-50 relative transition-all ${localConfig.contact.formVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.contact.formVisible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, formVisible: !prev.contact.formVisible } })),
-                            "Visible", "Ocult", "bg-gray-600 border-gray-700"
-                        )}
+                        {renderVisibilityToggle(localConfig.contact.formVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, formVisible: !prev.contact.formVisible } })), "Visible", "Ocult", "bg-gray-600 border-gray-700")}
                         <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4>
-                        
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
-                                <input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" />
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 border-t border-dashed border-gray-300 pt-4">
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Nom</label>
-                                    <input type="text" value={localConfig.contact.formNameLabel} onChange={(e) => handleChange('contact', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Email</label>
-                                    <input type="text" value={localConfig.contact.formEmailLabel} onChange={(e) => handleChange('contact', 'formEmailLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Telèfon</label>
-                                    <input type="text" value={localConfig.contact.formPhoneLabel} onChange={(e) => handleChange('contact', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Assumpte</label>
-                                    <input type="text" value={localConfig.contact.formSubjectLabel} onChange={(e) => handleChange('contact', 'formSubjectLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Missatge</label>
-                                    <input type="text" value={localConfig.contact.formMessageLabel} onChange={(e) => handleChange('contact', 'formMessageLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Enviar</label>
-                                    <input type="text" value={localConfig.contact.formButtonText} onChange={(e) => handleChange('contact', 'formButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white font-bold text-gray-600" />
-                                </div>
-                            </div>
-
-                            <p className="text-[10px] text-gray-400 italic mt-2">* L'estructura dels camps és fixa per motius de programació, però pots editar els textos que veu l'usuari.</p>
-                        </div>
+                        <div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.contact.formTitle} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 border-t border-dashed border-gray-300 pt-4"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Nom</label><input type="text" value={localConfig.contact.formNameLabel} onChange={(e) => handleChange('contact', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Email</label><input type="text" value={localConfig.contact.formEmailLabel} onChange={(e) => handleChange('contact', 'formEmailLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Telèfon</label><input type="text" value={localConfig.contact.formPhoneLabel} onChange={(e) => handleChange('contact', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Assumpte</label><input type="text" value={localConfig.contact.formSubjectLabel} onChange={(e) => handleChange('contact', 'formSubjectLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Missatge</label><input type="text" value={localConfig.contact.formMessageLabel} onChange={(e) => handleChange('contact', 'formMessageLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Enviar</label><input type="text" value={localConfig.contact.formButtonText} onChange={(e) => handleChange('contact', 'formButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white font-bold text-gray-600" /></div></div><p className="text-[10px] text-gray-400 italic mt-2">* L'estructura dels camps és fixa per motius de programació, però pots editar els textos que veu l'usuari.</p></div>
                     </div>
                 </div>
             </div>
