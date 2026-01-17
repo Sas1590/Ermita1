@@ -285,7 +285,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                 </button>
                 <button 
                   onClick={onLogout}
-                  className="text-red-400 hover:text-red-500 border border-red-400/30 px-3 py-1 rounded text-[10px] font-bold tracking-widest uppercase transition-colors"
+                  className="bg-red-600 hover:bg-red-700 text-white border border-red-600 px-3 py-1 rounded shadow-lg text-[10px] font-bold tracking-widest uppercase transition-colors"
                   title="Tancar Sessió"
                 >
                   Sortir
@@ -415,7 +415,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {isAdminMode && ( // Also conditional in mobile menu
              <div className="flex flex-col gap-4 mt-4 w-full px-12">
                 <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold border border-green-500">Obrir Panell</button>
-                <button onClick={() => { if(onLogout) onLogout(); setMobileMenuOpen(false); }} className="text-red-400 border border-red-400 px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold">Tancar Sessió</button>
+                <button onClick={() => { if(onLogout) onLogout(); setMobileMenuOpen(false); }} className="bg-red-600 text-white border border-red-600 px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold hover:bg-red-700 transition-colors">Tancar Sessió</button>
              </div>
           )}
         </div>

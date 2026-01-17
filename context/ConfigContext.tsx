@@ -135,6 +135,9 @@ export interface AppConfig {
     formNotesLabel: string;
     formPrivacyLabel: string;
     formCallUsLabel: string;
+    // NEW FIELDS FOR TEXT OVERLAY
+    heroDescription: string;
+    heroSchedule: string;
   };
   intro: {
     visible?: boolean;
@@ -306,7 +309,11 @@ export const defaultAppConfig: AppConfig = {
     formPaxLabel: "Gent:",
     formNotesLabel: "Notes:",
     formPrivacyLabel: "Si, accepto la privacitat.",
-    formCallUsLabel: "O truca'ns:"
+    formCallUsLabel: "O truca'ns:",
+    // Default text for hero description
+    heroDescription: "Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.",
+    // Default schedule for hero
+    heroSchedule: "De dimarts a diumenge de 11:00 a 17:00 h."
   },
   intro: {
     visible: true,
@@ -555,7 +562,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, // Ensure this new field is merged
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
-           hero: { ...prev.hero, ...data.hero },
+           hero: { ...prev.hero, ...data.hero }, // Will merge heroDescription and heroSchedule automatically
            intro: { ...prev.intro, ...data.intro },
            specialties: { ...prev.specialties, ...data.specialties },
            // Ensure philosophy and productButtonText exist

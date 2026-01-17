@@ -188,11 +188,37 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                     </div>
                     Identitat (Logo)
                 </h3>
-                <div className="bg-white p-4 rounded-lg border border-orange-100 shadow-sm">
-                    <LogoEditor 
-                        value={localConfig.brand.logoUrl} 
-                        onChange={(val) => handleChange('brand', 'logoUrl', val)} 
-                    />
+                <div className="bg-white p-4 rounded-lg border border-orange-100 shadow-sm space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Logo Principal</label>
+                        <LogoEditor 
+                            value={localConfig.brand.logoUrl} 
+                            onChange={(val) => handleChange('brand', 'logoUrl', val)} 
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-orange-100">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Descripció (Sota el logo)</label>
+                            <textarea
+                                rows={2}
+                                value={localConfig.hero.heroDescription || ''}
+                                onChange={(e) => handleChange('hero', 'heroDescription', e.target.value)}
+                                placeholder="Una experiència gastronòmica..."
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none bg-white resize-y"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Text Horari (Portada)</label>
+                            <input
+                                type="text"
+                                value={localConfig.hero.heroSchedule || ''}
+                                onChange={(e) => handleChange('hero', 'heroSchedule', e.target.value)}
+                                placeholder="De dimarts a diumenge de 11:00 a 17:00 h."
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none bg-white font-serif italic text-gray-600"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -283,14 +309,41 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                         {/* CHANGED FROM format_quote (WHICH LOOKS LIKE 99) TO description */}
                         <span className="material-symbols-outlined">description</span>
                     </div>
-                    Intro (Frase Inicial)
+                    {/* CHANGED FROM 'Intro (Frase Inicial)' TO JUST 'Intro' */}
+                    Intro
                 </h3>
                 <div className="bg-white p-6 rounded-lg border border-lime-100 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit</label><input type="text" value={localConfig.intro.smallTitle} onChange={(e) => handleChange('intro', 'smallTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" /></div>
-                        <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label><input type="text" value={localConfig.intro.mainTitle} onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" /></div>
+                        {/* SWAPPED ORDER: MAIN TITLE FIRST */}
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
+                            <input type="text" value={localConfig.intro.mainTitle} onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit</label>
+                            <input type="text" value={localConfig.intro.smallTitle} onChange={(e) => handleChange('intro', 'smallTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" />
+                        </div>
                     </div>
-                    <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció (Cita)</label><textarea value={localConfig.intro.description} onChange={(e) => handleChange('intro', 'description', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white"></textarea></div>
+                    <div>
+                        {/* ADDED CHARACTER COUNTER TO DESCRIPTION */}
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-bold uppercase text-gray-500">Descripció (Cita)</label>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                                (localConfig.intro.description?.length || 0) >= 350 
+                                ? 'bg-red-50 border-red-200 text-red-600 font-bold' 
+                                : 'bg-gray-50 border-gray-200 text-gray-400'
+                            }`}>
+                                {localConfig.intro.description?.length || 0}/350
+                            </span>
+                        </div>
+                        <textarea 
+                            value={localConfig.intro.description} 
+                            onChange={(e) => handleChange('intro', 'description', e.target.value)} 
+                            rows={3} 
+                            maxLength={350} // Added max length attribute
+                            className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white"
+                        ></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -299,7 +352,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                 {renderVisibilityToggle(
                     localConfig.gastronomy?.visible !== false, 
                     () => setLocalConfig((prev:any) => ({ ...prev, gastronomy: { ...prev.gastronomy, visible: !prev.gastronomy?.visible } })),
-                    "Gastronomia Visible", "Gastronomia Ocult", "bg-teal-600 border-teal-700 text-white"
+                    "Visible", "Ocult", "bg-teal-600 border-teal-700 text-white"
                 )}
 
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-teal-600"></div>
@@ -307,22 +360,13 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                     <div className="w-8 h-8 rounded bg-teal-200 flex items-center justify-center text-teal-700">
                         <span className="material-symbols-outlined">restaurant</span>
                     </div>
-                    {/* DYNAMIC TITLE IN HEADER TO REFLECT EDIT */}
-                    {localConfig.gastronomy?.mainTitle || "Gastronomia Local"}
+                    {/* CHANGED FROM DYNAMIC TO STATIC 'Gastronomia' */}
+                    Gastronomia
                 </h3>
                 
                 {/* Headers */}
                 <div className="bg-white p-6 rounded-lg border border-teal-100 shadow-sm mb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Superior (Petit)</label>
-                            <input 
-                                type="text" 
-                                value={localConfig.gastronomy?.topTitle || ''} 
-                                onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, topTitle: e.target.value}}))} 
-                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:border-teal-500 outline-none bg-white" 
-                            />
-                        </div>
                         <div>
                             {/* THIS IS THE EDITABLE "GASTRONOMIA LOCAL" TITLE */}
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal (Gran H2)</label>
@@ -331,6 +375,15 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                                 value={localConfig.gastronomy?.mainTitle || ''} 
                                 onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, mainTitle: e.target.value}}))} 
                                 className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-teal-900 focus:border-teal-500 outline-none bg-white" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Superior (Petit)</label>
+                            <input 
+                                type="text" 
+                                value={localConfig.gastronomy?.topTitle || ''} 
+                                onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, topTitle: e.target.value}}))} 
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:border-teal-500 outline-none bg-white" 
                             />
                         </div>
                     </div>

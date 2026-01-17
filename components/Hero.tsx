@@ -502,58 +502,73 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
             }
         `}>
           
-          {/* Logo Section */}
-          <div className={`flex flex-col items-center mb-8 transition-transform duration-700 w-full min-h-[200px] 
-              ${isFormVisible ? 'lg:justify-start lg:items-start' : 'justify-center'}
-          `}>
-             
-             {isLoading ? (
-               <div className="w-[200px] h-[200px] flex items-center justify-center">
-                 <div className="w-12 h-12 border-4 border-white/20 border-t-primary rounded-full animate-spin"></div>
-               </div>
-             ) : (
-                <div className="animate-fade-in-slow">
-                  {config.brand?.logoUrl ? (
-                      <img 
-                        src={config.brand.logoUrl} 
-                        alt="Ermita Paret Delgada" 
-                        className={`w-full max-w-[550px] md:max-w-[900px] h-auto object-contain mb-8 drop-shadow-2xl transition-all duration-500 ${!isFormVisible ? 'scale-110' : ''}`}
-                      />
-                  ) : (
-                      <div className="mb-4 text-white opacity-90">
-                          <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`drop-shadow-lg mx-auto ${isFormVisible ? 'lg:mx-0' : ''}`}>
-                            <circle cx="100" cy="100" r="90" stroke="white" strokeWidth="4" />
-                            <circle cx="100" cy="100" r="60" stroke="white" strokeWidth="2" strokeDasharray="5 5" />
-                            <path d="M70 60 V 120 Q 70 140 100 140 V 170" stroke="white" strokeWidth="6" strokeLinecap="round" />
-                            <path d="M55 60 V 90 Q 55 110 70 110" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                            <path d="M85 60 V 90 Q 85 110 70 110" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                            <path d="M130 60 V 140 Q 130 170 100 170" stroke="white" strokeWidth="6" strokeLinecap="round" />
-                            <path d="M130 60 Q 110 60 110 100 V 140" stroke="white" strokeWidth="4" strokeLinecap="round" />
-                          </svg>
-                          <div className="text-center mt-4">
-                              <h1 className="font-hand text-6xl md:text-8xl leading-none text-shadow-lg">
-                              Ermita <span className="block text-4xl md:text-5xl mt-2">Paret Delgada</span>
-                              </h1>
-                          </div>
-                      </div>
-                  )}
+          {/* CONTENT WRAPPER WITH LOADING STATE */}
+          {isLoading ? (
+             <div className="flex flex-col items-center lg:items-start w-full animate-pulse space-y-8">
+                 {/* Logo Placeholder */}
+                 <div className="w-64 h-64 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-white/20 border-t-primary rounded-full animate-spin"></div>
+                 </div>
+                 {/* Text Placeholder */}
+                 <div className="space-y-3 w-full max-w-md">
+                    <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                    <div className="h-4 bg-white/10 rounded w-5/6"></div>
+                    <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                 </div>
+                 {/* Schedule Placeholder */}
+                 <div className="w-full max-w-xs pt-4">
+                    <div className="h-px bg-white/10 mb-4 w-24"></div>
+                    <div className="h-6 bg-white/10 rounded w-2/3"></div>
+                 </div>
+             </div>
+          ) : (
+             <div className="flex flex-col items-center lg:items-start w-full animate-fade-in-slow">
+                {/* Logo Section */}
+                <div className={`flex flex-col items-center mb-8 transition-transform duration-700 w-full min-h-[200px] 
+                    ${isFormVisible ? 'lg:justify-start lg:items-start' : 'justify-center'}
+                `}>
+                    {config.brand?.logoUrl ? (
+                        <img 
+                            src={config.brand.logoUrl} 
+                            alt="Ermita Paret Delgada" 
+                            className={`w-full max-w-[550px] md:max-w-[900px] h-auto object-contain mb-8 drop-shadow-2xl transition-all duration-500 ${!isFormVisible ? 'scale-110' : ''}`}
+                        />
+                    ) : (
+                        <div className="mb-4 text-white opacity-90">
+                            <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={`drop-shadow-lg mx-auto ${isFormVisible ? 'lg:mx-0' : ''}`}>
+                                <circle cx="100" cy="100" r="90" stroke="white" strokeWidth="4" />
+                                <circle cx="100" cy="100" r="60" stroke="white" strokeWidth="2" strokeDasharray="5 5" />
+                                <path d="M70 60 V 120 Q 70 140 100 140 V 170" stroke="white" strokeWidth="6" strokeLinecap="round" />
+                                <path d="M55 60 V 90 Q 55 110 70 110" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                                <path d="M85 60 V 90 Q 85 110 70 110" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                                <path d="M130 60 V 140 Q 130 170 100 170" stroke="white" strokeWidth="6" strokeLinecap="round" />
+                                <path d="M130 60 Q 110 60 110 100 V 140" stroke="white" strokeWidth="4" strokeLinecap="round" />
+                            </svg>
+                            <div className="text-center mt-4">
+                                <h1 className="font-hand text-6xl md:text-8xl leading-none text-shadow-lg">
+                                Ermita <span className="block text-4xl md:text-5xl mt-2">Paret Delgada</span>
+                                </h1>
+                            </div>
+                        </div>
+                    )}
                 </div>
-             )}
-          </div>
 
-          <p className={`font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed mt-4 animate-fade-in-slow 
-                ${isFormVisible ? 'text-center lg:text-left' : 'text-center mx-auto'}
-          `} style={{ animationDelay: '0.3s' }}>
-            Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.
-          </p>
+                {/* DYNAMIC DESCRIPTION */}
+                <p className={`font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed mt-4 
+                        ${isFormVisible ? 'text-center lg:text-left' : 'text-center mx-auto'}
+                `}>
+                    {config.hero.heroDescription}
+                </p>
 
-          {/* Schedule Display */}
-          <div className={`mt-8 flex flex-col items-center animate-fade-in-slow ${isFormVisible ? 'lg:items-start' : ''}`} style={{ animationDelay: '0.5s' }}>
-             <div className="h-px w-24 bg-primary/40 mb-4"></div>
-             <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : ''}`}>
-               {config.contact.schedule}
-             </p>
-          </div>
+                {/* DYNAMIC Schedule Display */}
+                <div className={`mt-8 flex flex-col items-center ${isFormVisible ? 'lg:items-start' : ''}`}>
+                    <div className="h-px w-24 bg-primary/40 mb-4"></div>
+                    <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : ''}`}>
+                    {config.hero.heroSchedule || config.contact.schedule}
+                    </p>
+                </div>
+             </div>
+          )}
         </div>
 
         {/* Right Content - Sticky Note Reservation Form - CONDITIONALLY RENDERED */}
