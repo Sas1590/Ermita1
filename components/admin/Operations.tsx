@@ -42,8 +42,6 @@ interface BackupItem {
     data: AppConfig;
 }
 
-// ... (Legacy data constants unchanged: BETA_DATA_DAILY, BETA_DATA_CARTA, etc.)
-// Keeping them here for brevity as they are unchanged. 
 // --- 1. MENÚ DIARI BETA DATA ---
 const BETA_DATA_DAILY = {
     title: "Menú Diari",
@@ -165,6 +163,11 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
 
     // --- BACKUPS STATE ---
     const [backups, setBackups] = useState<BackupItem[]>([]);
+    const [creatingBackup, setCreatingBackup] = useState(false);
+    
+    // --- NEW BACKUP INPUT MODAL STATE ---
+    const [showBackupInput, setShowBackupInput] = useState(false);
+    const [newBackupName, setNewBackupName] = useState('');
 
     // --- UI STATES ---
     const [showInjectConfirm, setShowInjectConfirm] = useState<{ show: boolean, type: 'daily' | 'food' | 'wine' | 'group' | null }>({ show: false, type: null });
@@ -241,7 +244,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         setTimeout(() => setFeedback(null), 4000);
     };
 
-    // --- ACTIONS (Reservations, Inbox, Backups - unchanged logic) ---
+    // --- ACTIONS ---
     const handleUpdateReservationStatus = async (resId: string, newStatus: 'confirmed' | 'cancelled' | 'pending') => {
         try { await update(ref(db, `reservations/${resId}`), { status: newStatus }); } catch (e) { console.error(e); }
     };
@@ -254,7 +257,6 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     const handleToggleMessageReadStatus = async (messageId: string, currentStatus: boolean) => {
         try { 
             await update(ref(db, `contactMessages/${messageId}`), { read: !currentStatus }); 
-            // Updated Feedback Logic
             if (!currentStatus) showFeedback('success', "Missatge mogut a l'Històric."); 
             else showFeedback('success', "Missatge retornat a Pendents."); 
         } catch (e) { console.error(e); }
@@ -265,13 +267,62 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
             onConfirm: async () => { try { await remove(ref(db, `contactMessages/${messageId}`)); } catch (e) { console.error(e); } setConfirmModal(prev => ({ ...prev, isOpen: false })); }
         });
     };
-    const handleCreateBackup = async () => {
-        if (!config) return;
+    
+    // --- 1. START BACKUP PROCESS (OPEN MODAL) ---
+    const handleInitiateBackup = () => {
+        if (!config) {
+            setConfirmModal({
+                isOpen: true, title: "Error", message: "No s'ha pogut llegir la configuració actual.", type: 'danger',
+                onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+            });
+            return;
+        }
+        // Set default name and open modal
         const defaultName = `Còpia ${new Date().toLocaleString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-        const customName = window.prompt("Escriu un nom per a la còpia (ex: Carta_BETA):", defaultName);
-        if (customName === null) return;
-        try { await push(ref(db, 'backups'), { timestamp: Date.now(), name: customName || defaultName, data: config }); showFeedback('success', `Còpia "${customName || defaultName}" creada.`); } catch (e) { showFeedback('error', "Error creant la còpia."); }
+        setNewBackupName(defaultName);
+        setShowBackupInput(true);
     };
+
+    // --- 2. PERFORM BACKUP (NO ALERTS) ---
+    const handleConfirmCreateBackup = async () => {
+        if (!newBackupName.trim()) return; // Prevent empty names
+        
+        setShowBackupInput(false); // Close input modal
+        setCreatingBackup(true); // Show loader on button
+
+        try { 
+            // CRITICAL FIX: Sanitize config to remove 'undefined' values which cause Firebase errors
+            const sanitizedConfig = JSON.parse(JSON.stringify(config));
+
+            await push(ref(db, 'backups'), { 
+                timestamp: Date.now(), 
+                name: newBackupName, 
+                data: sanitizedConfig 
+            }); 
+            
+            showFeedback('success', `Còpia "${newBackupName}" creada correctament.`); 
+        } catch (e: any) { 
+            console.error("Error detallat al crear còpia:", e);
+            let errorMsg = "Error desconegut creant la còpia.";
+            if (e.code === 'PERMISSION_DENIED') {
+                errorMsg = "Permís denegat. Comprova que tens la sessió iniciada a Firebase.";
+            } else if (e.message && e.message.includes('undefined')) {
+                errorMsg = "Error de dades: La configuració conté camps invàlids.";
+            }
+            
+            // SHOW ERROR IN MODAL, NOT ALERT
+            setConfirmModal({
+                isOpen: true,
+                title: "Error al crear còpia",
+                message: errorMsg,
+                type: 'danger',
+                onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+            });
+        } finally {
+            setCreatingBackup(false);
+        }
+    };
+
     const handleRestoreBackup = (backup: BackupItem) => {
         if (!updateConfig || !setLocalConfig) return;
         setConfirmModal({
@@ -292,18 +343,17 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
 
     // --- LIMITS SAVING ---
     const handleSaveLimits = async () => {
+        // ... (Limits logic unchanged)
         const menusNum = parseInt(tempMaxMenus, 10);
         const heroNum = parseInt(tempMaxHeroImages, 10);
         const prodNum = parseInt(tempMaxProduct, 10);
         const histNum = parseInt(tempMaxHistoric, 10);
 
         if (isNaN(menusNum) || menusNum < 0 || isNaN(heroNum) || heroNum < 0 || isNaN(prodNum) || prodNum < 0 || isNaN(histNum) || histNum < 0) {
-            alert("Si us plau, introdueix números vàlids.");
-            // Reset to current config values
-            setTempMaxMenus(config?.adminSettings?.maxExtraMenus?.toString() || "10");
-            setTempMaxHeroImages(config?.adminSettings?.maxHeroImages?.toString() || "5");
-            setTempMaxProduct(config?.adminSettings?.maxProductImages?.toString() || "5");
-            setTempMaxHistoric(config?.adminSettings?.maxHistoricImages?.toString() || "5");
+             setConfirmModal({
+                isOpen: true, title: "Error", message: "Si us plau, introdueix números vàlids.", type: 'warning',
+                onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+            });
             return;
         }
 
@@ -315,16 +365,10 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
             maxHistoricImages: histNum
         };
 
-        if (setLocalConfig) {
-            setLocalConfig((prev: any) => ({ ...prev, adminSettings: newSettings }));
-        }
+        if (setLocalConfig) setLocalConfig((prev: any) => ({ ...prev, adminSettings: newSettings }));
         if (updateConfig) {
-            try {
-                await updateConfig({ adminSettings: newSettings });
-                showFeedback('success', "Límits actualitzats correctament.");
-            } catch(e) {
-                showFeedback('error', "Error guardant els límits.");
-            }
+            try { await updateConfig({ adminSettings: newSettings }); showFeedback('success', "Límits actualitzats."); } 
+            catch(e) { showFeedback('error', "Error guardant els límits."); }
         }
     };
 
@@ -345,6 +389,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         } catch (e) { console.error(e); showFeedback('error', "Error injectant les dades."); }
     };
 
+    // --- SHARED MODAL RENDERER ---
     const renderConfirmModal = () => (
         confirmModal.isOpen && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
@@ -353,8 +398,12 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                     <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">{confirmModal.title}</h3>
                     <p className="text-gray-500 mb-6 text-sm leading-relaxed">{confirmModal.message}</p>
                     <div className="flex gap-3">
-                        <button onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
-                        <button onClick={confirmModal.onConfirm} className={`flex-1 py-3 text-white rounded font-bold uppercase text-xs shadow-md transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}>Confirmar</button>
+                        {confirmModal.type !== 'info' && (
+                            <button onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
+                        )}
+                        <button onClick={confirmModal.onConfirm} className={`flex-1 py-3 text-white rounded font-bold uppercase text-xs shadow-md transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
+                            {confirmModal.type === 'info' ? 'Entesos' : 'Confirmar'}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -382,7 +431,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         
         let displayedMsgs = [];
 
-        // GLOBAL SEARCH LOGIC: If search exists, search ALL messages (Global), ignore tab filter
+        // GLOBAL SEARCH LOGIC
         if (searchTerm.trim() !== '') {
             const lowerTerm = searchTerm.toLowerCase();
             displayedMsgs = messages.filter(m => 
@@ -393,7 +442,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 (m.message && m.message.toLowerCase().includes(lowerTerm))
             );
         } else {
-            // STANDARD FILTER LOGIC: If no search, respect tabs
+            // STANDARD FILTER LOGIC
             displayedMsgs = inboxFilter === 'unread' ? unreadMsgs : readMsgs;
         }
 
@@ -414,6 +463,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 
                 {feedback && (<div className={`fixed top-4 right-4 z-[200] px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${feedback.type === 'success' ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}`}><span className="material-symbols-outlined text-2xl">{feedback.type === 'success' ? 'check_circle' : 'error'}</span><span className="font-bold">{feedback.msg}</span></div>)}
 
+                {/* ... (Limits section unchanged) ... */}
                 {/* --- ADVANCED LIMITS SECTION (WITH BOTH FIELDS) --- */}
                 <div className="bg-white p-6 rounded shadow-sm border border-purple-200">
                     <div className="flex items-center gap-3 mb-6 border-b border-purple-100 pb-4">
@@ -500,11 +550,25 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                     </div>
                 </div>
 
-                {/* (Backups and Reset sections same as before) */}
+                {/* (Backups and Reset sections) */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4"><span className="material-symbols-outlined text-3xl text-primary">security</span><div><h3 className="font-serif text-xl font-bold text-gray-800">Còpies de Seguretat</h3><p className="text-gray-500 text-sm">Crea fotos de l'estat actual de la web.</p></div></div>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 flex items-start gap-3"><span className="material-symbols-outlined text-blue-500">info</span><p className="text-sm text-blue-700"><strong>Nota:</strong> Les còpies guarden la configuració visual (textos, fotos, menús). No guarden les reserves.</p></div>
-                    <div className="flex justify-between items-center mb-6"><h4 className="font-bold text-gray-700">Historial</h4><button onClick={handleCreateBackup} className="bg-primary hover:bg-accent text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-md transition-all"><span className="material-symbols-outlined text-sm">save</span> Crear còpia</button></div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h4 className="font-bold text-gray-700">Historial</h4>
+                        {/* CHANGED TO USE handleInitiateBackup (Modal flow) instead of direct call */}
+                        <button 
+                            onClick={handleInitiateBackup} 
+                            disabled={creatingBackup}
+                            className={`bg-primary hover:bg-accent text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-md transition-all ${creatingBackup ? 'opacity-70 cursor-wait' : ''}`}
+                        >
+                            {creatingBackup ? (
+                                <><span className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></span> Guardant...</>
+                            ) : (
+                                <><span className="material-symbols-outlined text-sm">save</span> Crear còpia</>
+                            )}
+                        </button>
+                    </div>
                     {backups.length === 0 ? <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg"><p className="text-gray-400">No hi ha còpies.</p></div> : <div className="space-y-3">{backups.map((backup) => (<div key={backup.id} className="flex items-center justify-between bg-gray-50 p-4 rounded border border-gray-200 hover:shadow-md transition-shadow"><div className="flex items-center gap-3"><span className="material-symbols-outlined text-gray-400">backup</span><div><p className="font-bold text-gray-800 text-sm">{backup.name}</p><p className="text-xs text-gray-500 font-mono">{new Date(backup.timestamp).toLocaleString()}</p></div></div><div className="flex gap-2"><button onClick={() => handleRestoreBackup(backup)} className="text-blue-600 hover:text-blue-800 text-[10px] font-bold uppercase border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded transition-colors">Restaurar</button><button onClick={() => handleDeleteBackup(backup.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition-colors"><span className="material-symbols-outlined text-sm">delete</span></button></div></div>))}</div>}
                 </div>
                 
@@ -527,6 +591,35 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 {showInjectConfirm.show && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-green-600 text-center"><div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><span className="material-symbols-outlined text-3xl">{showInjectConfirm.type === 'food' ? 'restaurant_menu' : showInjectConfirm.type === 'wine' ? 'wine_bar' : showInjectConfirm.type === 'group' ? 'diversity_3' : 'lunch_dining'}</span></div><h3 className="font-serif text-xl font-bold text-gray-800 mb-2">{showInjectConfirm.type === 'food' ? 'Carregar CARTA_BETA?' : showInjectConfirm.type === 'wine' ? 'Carregar CARTAVINS_BETA?' : showInjectConfirm.type === 'group' ? 'Carregar MENUGRUP_BETA?' : 'Carregar MENUDIARI_BETA?'}</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed">Això <strong className="text-gray-800">sobrescriurà només aquesta secció</strong> amb la versió original/beta. Els altres menús no es tocaran.</p><div className="flex gap-3"><button onClick={() => setShowInjectConfirm({ show: false, type: null })} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performBetaInjection} className="flex-1 py-3 bg-green-600 text-white rounded font-bold uppercase text-xs hover:bg-green-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
                 {showFactoryResetConfirm && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-red-600 text-center"><div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600"><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">Restaurar de Fàbrica?</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed"><strong className="text-red-600">ATENCIÓ:</strong> Això esborrarà TOTA la configuració actual i deixarà la web com nova. No es pot desfer.</p><div className="flex gap-3"><button onClick={() => setShowFactoryResetConfirm(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performFactoryReset} className="flex-1 py-3 bg-red-600 text-white rounded font-bold uppercase text-xs hover:bg-red-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
                 {renderConfirmModal()}
+
+                {/* --- NEW BACKUP INPUT MODAL --- */}
+                {showBackupInput && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-primary text-center">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                                <span className="material-symbols-outlined text-3xl">save</span>
+                            </div>
+                            <h3 className="font-serif text-xl font-bold text-gray-800 mb-2">Nom de la Còpia</h3>
+                            <p className="text-gray-500 mb-4 text-xs">Tria un nom per identificar aquest punt de restauració.</p>
+                            
+                            <input 
+                                type="text" 
+                                value={newBackupName} 
+                                onChange={(e) => setNewBackupName(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-primary mb-6 text-center font-bold"
+                                placeholder="Ex: Còpia Dimarts"
+                                autoFocus
+                            />
+
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowBackupInput(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
+                                <button onClick={handleConfirmCreateBackup} className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent shadow-md transition-colors">
+                                    Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
