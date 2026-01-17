@@ -110,7 +110,10 @@ export interface AppConfig {
   };
   adminSettings: {
     customDisplayName: string;
-    maxExtraMenus: number; // NEW: Cap for extra menus
+    maxExtraMenus: number; // Cap for extra menus
+    maxHeroImages: number; // Cap for hero slider images
+    maxProductImages: number; // NEW: Cap for product slider images
+    maxHistoricImages: number; // NEW: Cap for historic slider images
   };
   menuGlobalFooter: string; // NEW: Global footer text for the Menu page
   hero: {
@@ -276,7 +279,10 @@ export const defaultAppConfig: AppConfig = {
   },
   adminSettings: {
     customDisplayName: "",
-    maxExtraMenus: 10 // Default limit
+    maxExtraMenus: 10, // Default limit menus
+    maxHeroImages: 5, // Default limit hero images
+    maxProductImages: 5, // Default limit product images
+    maxHistoricImages: 5 // Default limit historic images
   },
   menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.", // Default Value
   hero: {

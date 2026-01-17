@@ -268,12 +268,19 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
 
                     {/* Message */}
                     <div className="space-y-1">
-                        <label className="font-hand text-2xl text-gray-300 pl-2">{config.contact.formMessageLabel}</label>
+                        <div className="flex justify-between items-end">
+                            <label className="font-hand text-2xl text-gray-300 pl-2">{config.contact.formMessageLabel}</label>
+                            {/* UPDATED COUNTER LOGIC AND MAX 1000 */}
+                            <span className={`text-[10px] font-sans ${formData.message.length >= 1000 ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+                                {formData.message.length} / 1000
+                            </span>
+                        </div>
                         <textarea 
                             name="message"
                             value={formData.message}
                             onChange={handleChange}
                             required
+                            maxLength={1000} // UPDATED LIMIT
                             rows={4} 
                             placeholder="Explica'ns de què es tracta..." 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors resize-none placeholder-white/20"

@@ -177,8 +177,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4">
       
-      {/* Main Container - Fixed height with internal scroll */}
-      <div className="bg-beige text-secondary rounded-lg shadow-2xl max-w-6xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
+      {/* Main Container - Increased to max-w-7xl to support 4 columns on laptops */}
+      <div className="bg-beige text-secondary rounded-lg shadow-2xl max-w-7xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
         
         {/* Header */}
         <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">

@@ -107,14 +107,9 @@ const Philosophy: React.FC = () => {
               <h3 className="font-serif text-3xl font-bold text-white mb-3">
                 {config.philosophy.productTitle}
               </h3>
-              <p className="font-sans text-gray-400 leading-relaxed mb-4">
+              <p className="font-sans text-gray-400 leading-relaxed">
                 {config.philosophy.productDescription}
               </p>
-              {/* UPDATED: Dynamic Link Text */}
-              <a href="#carta" className="inline-flex items-center gap-2 font-bold text-primary uppercase tracking-widest text-xs hover:text-white transition-colors decoration-2 underline-offset-4">
-                {config.philosophy.productButtonText || "VEURE LA NOSTRA CARTA"}
-                <span className="material-symbols-outlined text-sm">arrow_outward</span>
-              </a>
             </div>
 
           </div>

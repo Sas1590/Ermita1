@@ -160,6 +160,21 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
         </button>
     );
 
+    // Get max hero images from config, default to 5 if undefined
+    const maxHeroImages = localConfig.adminSettings?.maxHeroImages || 5;
+    const currentHeroImagesCount = (localConfig.hero.backgroundImages || []).length;
+    const isHeroFull = currentHeroImagesCount >= maxHeroImages;
+
+    // Dynamic limits for Philosophy (Default 5)
+    const maxProductImages = localConfig.adminSettings?.maxProductImages || 5;
+    const maxHistoricImages = localConfig.adminSettings?.maxHistoricImages || 5;
+    
+    const currentProductCount = (localConfig.philosophy.productImages || []).length;
+    const currentHistoricCount = (localConfig.philosophy.historicImages || []).length;
+    
+    const isProductFull = currentProductCount >= maxProductImages;
+    const isHistoricFull = currentHistoricCount >= maxHistoricImages;
+
     return (
         <div className="space-y-12 animate-[fadeIn_0.3s_ease-out]">
             {/* 0. NEW: ADMIN CUSTOMIZATION (Green Theme) */}
@@ -221,12 +236,26 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
             {/* 2. Portada (Imatges de Fons) (Amber Theme) */}
             <div className="bg-amber-50 p-6 rounded-xl shadow-sm border border-amber-200 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
-                <h3 className="font-serif text-xl font-bold text-amber-800 mb-6 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-amber-200 flex items-center justify-center text-amber-700">
-                        <span className="material-symbols-outlined">image</span>
+                
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <h3 className="font-serif text-xl font-bold text-amber-800 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-amber-200 flex items-center justify-center text-amber-700">
+                            <span className="material-symbols-outlined">image</span>
+                        </div>
+                        Portada (Imatges de Fons)
+                    </h3>
+                    
+                    {/* VISUAL COUNTER (Badge) */}
+                    <div className={`px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-2 ${
+                        isHeroFull
+                        ? 'bg-red-50 text-red-600 border-red-200' 
+                        : 'bg-green-50 text-green-700 border-green-200'
+                    }`}>
+                        <span className="material-symbols-outlined text-sm">{isHeroFull ? 'block' : 'add_photo_alternate'}</span>
+                        <span>Imatges: {currentHeroImagesCount} / {maxHeroImages}</span>
                     </div>
-                    Portada (Imatges de Fons)
-                </h3>
+                </div>
+
                 <div className="bg-white p-4 rounded-lg border border-amber-100 shadow-sm">
                     <ImageArrayEditor 
                         images={localConfig.hero.backgroundImages}
@@ -235,6 +264,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             hero: { ...prev.hero, backgroundImages: newImages }
                         }))}
                         labelPrefix="Slide"
+                        maxLimit={maxHeroImages} // Pass dynamic limit here
                     />
                 </div>
             </div>
@@ -508,13 +538,19 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label>
                             <textarea value={localConfig.philosophy.productDescription} onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
                         </div>
-                        {/* NEW BUTTON TEXT EDITOR */}
-                        <div className="mb-4">
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Text Botó Producte</label>
-                            <input type="text" value={localConfig.philosophy.productButtonText || ''} onChange={(e) => handleChange('philosophy', 'productButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" placeholder="VEURE LA NOSTRA CARTA" />
-                        </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatges Producte (Slides)</label>
+                            {/* HEADER WITH BADGE FOR PRODUCT IMAGES */}
+                            <div className="flex justify-between items-end mb-2">
+                                <label className="block text-[10px] font-bold uppercase text-gray-400">Imatges Producte (Slides)</label>
+                                <div className={`px-2 py-1 rounded-full font-bold text-[9px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-1 ${
+                                    isProductFull
+                                    ? 'bg-red-50 text-red-600 border-red-200' 
+                                    : 'bg-green-50 text-green-700 border-green-200'
+                                }`}>
+                                    <span className="material-symbols-outlined text-[10px]">{isProductFull ? 'block' : 'add_photo_alternate'}</span>
+                                    <span>Imatges: {currentProductCount} / {maxProductImages}</span>
+                                </div>
+                            </div>
                             <ImageArrayEditor 
                                 images={localConfig.philosophy.productImages}
                                 onChange={(newImages) => setLocalConfig((prev:any) => ({
@@ -522,6 +558,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                                     philosophy: { ...prev.philosophy, productImages: newImages }
                                 }))}
                                 labelPrefix="Producte"
+                                maxLimit={maxProductImages}
                             />
                         </div>
                     </div>
@@ -536,7 +573,18 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Història</label><textarea value={localConfig.philosophy.historicDescription} onChange={(e) => handleChange('philosophy', 'historicDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Imatges Història (Slides)</label>
+                            {/* HEADER WITH BADGE FOR HISTORIC IMAGES */}
+                            <div className="flex justify-between items-end mb-2">
+                                <label className="block text-[10px] font-bold uppercase text-gray-400">Imatges Història (Slides)</label>
+                                <div className={`px-2 py-1 rounded-full font-bold text-[9px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-1 ${
+                                    isHistoricFull
+                                    ? 'bg-red-50 text-red-600 border-red-200' 
+                                    : 'bg-green-50 text-green-700 border-green-200'
+                                }`}>
+                                    <span className="material-symbols-outlined text-[10px]">{isHistoricFull ? 'block' : 'add_photo_alternate'}</span>
+                                    <span>Imatges: {currentHistoricCount} / {maxHistoricImages}</span>
+                                </div>
+                            </div>
                             <ImageArrayEditor 
                                 images={localConfig.philosophy.historicImages}
                                 onChange={(newImages) => setLocalConfig((prev:any) => ({
@@ -544,6 +592,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                                     philosophy: { ...prev.philosophy, historicImages: newImages }
                                 }))}
                                 labelPrefix="Història"
+                                maxLimit={maxHistoricImages}
                             />
                         </div>
                     </div>
