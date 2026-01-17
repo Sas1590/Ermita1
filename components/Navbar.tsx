@@ -30,12 +30,29 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
   const showWine = Array.isArray(config.wineMenu) ? true : config.wineMenu?.visible !== false;
   const showGroup = config.groupMenu?.visible !== false;
 
+  // RECOMMENDED CHECKS
+  const isDailyRec = config.dailyMenu?.recommended === true;
+  const isFoodRec = !Array.isArray(config.foodMenu) && config.foodMenu?.recommended === true;
+  const isWineRec = !Array.isArray(config.wineMenu) && config.wineMenu?.recommended === true;
+  const isGroupRec = config.groupMenu?.recommended === true;
+
   // Helper to render icon in Navbar (Handling mini_rhombus vs Material Symbol)
   const renderNavIcon = (iconName: string, extraClasses: string = "") => {
       if (iconName === 'mini_rhombus') {
           return <div className={`w-2 h-2 rotate-45 bg-current ${extraClasses}`}></div>;
       }
       return <span className={`material-symbols-outlined ${extraClasses}`}>{iconName}</span>;
+  };
+
+  // Helper for Menu Item Styling based on Recommendation
+  const getMenuItemClass = (isRecommended: boolean) => {
+      const baseClass = "w-full px-6 py-4 text-left transition-colors flex items-center justify-between group/item border-b border-white/10 ";
+      if (isRecommended) {
+          // GOLDEN HIGHLIGHT STYLE
+          return baseClass + "bg-primary/20 text-primary font-bold hover:bg-primary hover:text-black";
+      }
+      // STANDARD STYLE
+      return baseClass + "bg-transparent text-white hover:bg-white/10 hover:text-primary";
   };
 
   // Visibility Flags
@@ -168,11 +185,12 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             {/* Added pt-4 to create a safe hover bridge so dropdown doesn't close easily */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top flex flex-col z-50">
                <div className="bg-black/95 text-white shadow-xl border border-white/10">
-                 {/* CORE MENUS - RESPECT VISIBILITY */}
+                 
+                 {/* CORE MENUS - RESPECT VISIBILITY & RECOMMENDATION */}
                  {showDaily && (
                     <button 
                     onClick={() => onOpenMenu('daily')} 
-                    className="w-full px-6 py-4 text-left bg-white/5 hover:bg-primary hover:text-black transition-colors flex items-center justify-between group/item border-b border-white/10"
+                    className={getMenuItemClass(isDailyRec)}
                     >
                     Menú Diari
                     {renderNavIcon(dailyIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
@@ -182,7 +200,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  {showFood && (
                     <button 
                     onClick={() => onOpenMenu('food')} 
-                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
+                    className={getMenuItemClass(isFoodRec)}
                     >
                     Carta de Menjar
                     {renderNavIcon(foodIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
@@ -191,7 +209,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  {showWine && (
                     <button 
                     onClick={() => onOpenMenu('wine')} 
-                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-b border-white/5 transition-colors flex items-center justify-between group/item"
+                    className={getMenuItemClass(isWineRec)}
                     >
                     Carta de Vins
                     {renderNavIcon(wineIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
@@ -200,7 +218,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  {showGroup && (
                     <button 
                     onClick={() => onOpenMenu('group')} 
-                    className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary transition-colors flex items-center justify-between group/item"
+                    className={getMenuItemClass(isGroupRec)}
                     >
                     Menú de Grup
                     {renderNavIcon(groupIcon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
@@ -210,11 +228,12 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                  {/* Dynamic Extra Menus Links in Navbar Dropdown (Optional but nice) */}
                  {(config.extraMenus || []).filter(m => m.visible !== false).map((menu, idx) => {
                     const icon = menu.icon || (menu.type === 'wine' ? 'wine_bar' : menu.type === 'group' ? 'diversity_3' : 'add');
+                    const isExtraRec = menu.recommended === true;
                     return (
                         <button 
                             key={menu.id}
                             onClick={() => onOpenMenu(`extra_${idx}`)} 
-                            className="w-full px-6 py-4 text-left hover:bg-white/10 hover:text-primary border-t border-white/5 transition-colors flex items-center justify-between group/item"
+                            className={getMenuItemClass(isExtraRec)}
                         >
                             {menu.title}
                             {renderNavIcon(icon, "text-sm opacity-0 group-hover/item:opacity-100 transition-opacity")}
@@ -249,7 +268,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
              <div className="flex items-center gap-2 ml-4">
                  <button 
                   onClick={() => onOpenAdminPanel('config')}
-                  className="bg-primary hover:bg-accent text-white px-3 py-1 rounded shadow-lg transition-colors text-[10px] font-bold tracking-widest uppercase"
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded shadow-lg transition-colors text-[10px] font-bold tracking-widest uppercase border border-green-500"
                 >
                   Panell
                 </button>
@@ -318,13 +337,48 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
           <div className="flex flex-col items-center gap-4 w-full">
             <span className="text-white/50 text-xs tracking-widest uppercase">Carta / Menú</span>
-            {showDaily && <button onClick={() => { onOpenMenu('daily'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm text-primary font-bold hover:text-white">Menú Diari</button>}
-            {showFood && <button onClick={() => { onOpenMenu('food'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Menjar</button>}
-            {showWine && <button onClick={() => { onOpenMenu('wine'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Carta de Vins</button>}
-            {showGroup && <button onClick={() => { onOpenMenu('group'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Menú de Grup</button>}
+            {/* MOBILE ITEMS WITH HIGHLIGHT LOGIC */}
+            {showDaily && (
+                <button 
+                    onClick={() => { onOpenMenu('daily'); setMobileMenuOpen(false); }} 
+                    className={`uppercase tracking-widest text-sm transition-colors ${isDailyRec ? 'text-primary font-bold border-b border-primary/30 pb-1' : 'hover:text-primary'}`}
+                >
+                    Menú Diari
+                </button>
+            )}
+            {showFood && (
+                <button 
+                    onClick={() => { onOpenMenu('food'); setMobileMenuOpen(false); }} 
+                    className={`uppercase tracking-widest text-sm transition-colors ${isFoodRec ? 'text-primary font-bold border-b border-primary/30 pb-1' : 'hover:text-primary'}`}
+                >
+                    Carta de Menjar
+                </button>
+            )}
+            {showWine && (
+                <button 
+                    onClick={() => { onOpenMenu('wine'); setMobileMenuOpen(false); }} 
+                    className={`uppercase tracking-widest text-sm transition-colors ${isWineRec ? 'text-primary font-bold border-b border-primary/30 pb-1' : 'hover:text-primary'}`}
+                >
+                    Carta de Vins
+                </button>
+            )}
+            {showGroup && (
+                <button 
+                    onClick={() => { onOpenMenu('group'); setMobileMenuOpen(false); }} 
+                    className={`uppercase tracking-widest text-sm transition-colors ${isGroupRec ? 'text-primary font-bold border-b border-primary/30 pb-1' : 'hover:text-primary'}`}
+                >
+                    Menú de Grup
+                </button>
+            )}
             {/* Dynamic Mobile Links */}
             {(config.extraMenus || []).filter(m => m.visible !== false).map((menu, idx) => (
-                <button key={menu.id} onClick={() => { onOpenMenu(`extra_${idx}`); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">{menu.title}</button>
+                <button 
+                    key={menu.id} 
+                    onClick={() => { onOpenMenu(`extra_${idx}`); setMobileMenuOpen(false); }} 
+                    className={`uppercase tracking-widest text-sm transition-colors ${menu.recommended ? 'text-primary font-bold border-b border-primary/30 pb-1' : 'hover:text-primary'}`}
+                >
+                    {menu.title}
+                </button>
             ))}
           </div>
           
@@ -349,7 +403,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
           {isAdminMode && ( // Also conditional in mobile menu
              <div className="flex flex-col gap-4 mt-4 w-full px-12">
-                <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-primary text-white px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold">Obrir Panell</button>
+                <button onClick={() => { onOpenAdminPanel('config'); setMobileMenuOpen(false); }} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold border border-green-500">Obrir Panell</button>
                 <button onClick={() => { if(onLogout) onLogout(); setMobileMenuOpen(false); }} className="text-red-400 border border-red-400 px-4 py-2 rounded shadow-lg uppercase tracking-widest text-xs font-bold">Tancar Sessió</button>
              </div>
           )}
