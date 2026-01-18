@@ -383,9 +383,13 @@ const Menu: React.FC<MenuProps> = ({ activeTab, onToggleTab }) => {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 md:px-8 w-full">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-5xl md:text-7xl text-white font-bold tracking-[0.2em] uppercase drop-shadow-lg">La Carta</h2>
+          <h2 className="font-serif text-5xl md:text-7xl text-white font-bold tracking-[0.2em] uppercase drop-shadow-lg">
+            {config.menuHeader?.title || "La Carta"}
+          </h2>
           <div className="w-full max-w-xs mx-auto h-px bg-gradient-to-r from-transparent via-primary to-transparent mt-6 mb-2"></div>
-          <span className="font-hand text-primary/80 text-2xl tracking-wider">Sabors de la nostra terra</span>
+          <span className="font-hand text-primary/80 text-2xl tracking-wider">
+            {config.menuHeader?.subtitle || "Sabors de la nostra terra"}
+          </span>
         </div>
 
         <div className="space-y-8">

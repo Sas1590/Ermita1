@@ -115,6 +115,10 @@ export interface AppConfig {
     maxProductImages: number; // NEW: Cap for product slider images
     maxHistoricImages: number; // NEW: Cap for historic slider images
   };
+  menuHeader: {
+    title: string;
+    subtitle: string;
+  };
   menuGlobalFooter: string; // NEW: Global footer text for the Menu page
   hero: {
     reservationVisible?: boolean;
@@ -287,6 +291,10 @@ export const defaultAppConfig: AppConfig = {
     maxHeroImages: 5, // Default limit hero images
     maxProductImages: 5, // Default limit product images
     maxHistoricImages: 5 // Default limit historic images
+  },
+  menuHeader: {
+    title: "La Carta",
+    subtitle: "Sabors de la nostra terra"
   },
   menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.", // Default Value
   hero: {
@@ -562,6 +570,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            ...prev,
            ...data,
            menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, // Ensure this new field is merged
+           menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader, // NEW: Merge Menu Header
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
            hero: { ...prev.hero, ...data.hero }, // Will merge heroDescription and heroSchedule automatically

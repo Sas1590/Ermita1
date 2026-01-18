@@ -157,30 +157,140 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
 };
 
 const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    const currentData = { title: "Menú de Grup", icon: "diversity_3", ...data, sections: data?.sections || [], drinks: data?.drinks || [], showPrice: data?.showPrice !== undefined ? data.showPrice : true, showInfo: data?.showInfo !== undefined ? data.showInfo : true };
+    const isLegacy = Array.isArray(data);
+    const sections = isLegacy ? [] : (data?.sections || []);
+    const currentData = {
+        title: "Menú de Grup",
+        subtitle: "",
+        icon: "diversity_3",
+        price: "",
+        vat: "",
+        disclaimer: "",
+        showDisclaimer: true,
+        infoIntro: "",
+        infoAllergy: "",
+        footerText: "",
+        drinks: [],
+        sections: [],
+        ...data
+    };
+
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
-    const handleSectionChange = (idx: number, field: string, val: any) => { const newSections = currentData.sections.map((s: any, i: number) => i === idx ? { ...s, [field]: val } : s); updateData({ sections: newSections }); };
-    const handleItemChange = (sIdx: number, iIdx: number, field: string, val: any) => { const newSections = currentData.sections.map((s: any, i: number) => i !== sIdx ? s : { ...s, items: s.items.map((item: any, j: number) => j === iIdx ? { ...item, [field]: val } : item) }); updateData({ sections: newSections }); };
-    const addSection = () => updateData({ sections: [...currentData.sections, { title: "NOVA SECCIÓ", items: [] }] });
-    const removeSection = (idx: number) => { const ns = [...currentData.sections]; ns.splice(idx, 1); updateData({ sections: ns }); };
-    const addItem = (sIdx: number) => { const ns = currentData.sections.map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || []), { nameCa: "", nameEs: "" }] }); updateData({ sections: ns }); };
-    const removeItem = (sIdx: number, iIdx: number) => { const ns = currentData.sections.map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || [])].filter((_,j) => j !== iIdx) }); updateData({ sections: ns }); };
+
+    const handleSectionChange = (idx: number, field: string, val: string) => {
+        const newSections = (currentData.sections || []).map((s: any, i: number) => i === idx ? { ...s, [field]: val } : s);
+        updateData({ sections: newSections });
+    };
+
+    const addSection = () => updateData({ sections: [...(currentData.sections || []), { title: "NOVA SECCIÓ", icon: "restaurant", items: [] }] });
+    const removeSection = (idx: number) => { const ns = [...(currentData.sections || [])]; ns.splice(idx, 1); updateData({ sections: ns }); };
+
+    const addItem = (sIdx: number) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || []), { nameCa: "", nameEs: "" }] });
+        updateData({ sections: ns });
+    };
+    
+    const removeItem = (sIdx: number, iIdx: number) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || [])].filter((_: any, j: number) => j !== iIdx) });
+        updateData({ sections: ns });
+    };
+
+    const handleItemChange = (sIdx: number, iIdx: number, field: string, val: any) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: (s.items || []).map((it: any, j: number) => j === iIdx ? { ...it, [field]: val } : it) });
+        updateData({ sections: ns });
+    };
+
+    const handleDrinkChange = (idx: number, val: string) => {
+        const newDrinks = [...(currentData.drinks || [])];
+        newDrinks[idx] = val;
+        updateData({ drinks: newDrinks });
+    };
+    const addDrink = () => updateData({ drinks: [...(currentData.drinks || []), ""] });
+    const removeDrink = (idx: number) => { const nd = [...(currentData.drinks || [])]; nd.splice(idx, 1); updateData({ drinks: nd }); };
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Menú de Grup" defaultIcon="diversity_3" />
-            <div className="flex justify-end mb-2"><button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors"><span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ</button></div>
+            
+            <div className="flex justify-end mb-2">
+                <button onClick={addSection} className="bg-[#556B2F] hover:bg-[#3d4d21] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
+                </button>
+            </div>
+
             <PriceHeaderEditor data={currentData} onChange={updateData} />
             <InfoBlockEditor data={currentData} onChange={updateData} />
-            <div className="bg-white p-6 rounded shadow-sm border border-gray-200"><h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined text-blue-500">local_bar</span> BEGUDES</h4><div className="space-y-2">{(currentData.drinks || []).map((drink: string, idx: number) => (<div key={idx} className="flex gap-2"><input value={drink} onChange={(e) => { const newDrinks = [...currentData.drinks]; newDrinks[idx] = e.target.value; updateData({ drinks: newDrinks }); }} className="w-full border-b border-gray-200 py-1 outline-none text-sm" /><button onClick={() => { const newDrinks = [...currentData.drinks]; newDrinks.splice(idx, 1); updateData({ drinks: newDrinks }); }} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-sm">remove_circle</span></button></div>))}<button onClick={() => updateData({ drinks: [...currentData.drinks, ""] })} className="text-xs font-bold text-blue-500 mt-2">+ Afegir Beguda</button></div></div>
-            {currentData.sections.map((section: any, sIdx: number) => (
+
+            {(currentData.sections || []).map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
-                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4"><div className="flex-1"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label><input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold text-[#8b5a2b] border-b border-transparent focus:border-[#8b5a2b] outline-none bg-transparent w-full" /></div><div className="w-full md:w-32"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label><IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/></div><button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button></div>
-                    <div className="space-y-3 pl-0 md:pl-4 border-l-2 border-gray-100">{(section.items || []).map((item: any, iIdx: number) => (<div key={iIdx} className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded ${item.visible===false?'opacity-50 grayscale':''}`}><div className="md:col-span-2 flex justify-start"><ItemStatusControls visible={item.visible} strikethrough={item.strikethrough} onToggleVisible={() => handleItemChange(sIdx, iIdx, 'visible', item.visible === false ? true : false)} onToggleStrike={() => handleItemChange(sIdx, iIdx, 'strikethrough', !item.strikethrough)}/></div><div className="md:col-span-5"><input type="text" value={item.nameCa} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameCa', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm font-bold ${item.strikethrough?'line-through':''}`} placeholder="Nom Català" /></div><div className="md:col-span-4"><input type="text" value={item.nameEs} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameEs', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm text-gray-600 font-hand ${item.strikethrough?'line-through':''}`} placeholder="Nom Castellà" /></div><div className="md:col-span-1 flex justify-center"><button onClick={() => removeItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-lg">remove_circle</span></button></div></div>))}<button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#8b5a2b] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button></div>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
+                            <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold text-[#556B2F] border-b border-transparent focus:border-[#556B2F] outline-none bg-transparent w-full" placeholder="Ex: Primers Plats" />
+                        </div>
+                        <div className="w-full md:w-32">
+                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
+                             <IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/>
+                        </div>
+                        <button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button>
+                    </div>
+
+                    <div className="space-y-3 pl-0 md:pl-4 border-l-2 border-gray-100">
+                        {(section.items || []).map((item: any, iIdx: number) => (
+                            <div key={iIdx} className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded ${item.visible === false ? 'opacity-50 grayscale' : ''}`}>
+                                <div className="md:col-span-2 flex justify-start">
+                                    <ItemStatusControls 
+                                        visible={item.visible} 
+                                        strikethrough={item.strikethrough} 
+                                        onToggleVisible={() => handleItemChange(sIdx, iIdx, 'visible', item.visible === false ? true : false)} 
+                                        onToggleStrike={() => handleItemChange(sIdx, iIdx, 'strikethrough', !item.strikethrough)}
+                                    />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="text" value={item.nameCa} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameCa', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm font-bold ${item.strikethrough ? 'line-through text-gray-400' : ''}`} placeholder="Nom Català" />
+                                </div>
+                                <div className="md:col-span-5">
+                                    <input type="text" value={item.nameEs} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameEs', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm text-gray-600 font-hand ${item.strikethrough ? 'line-through' : ''}`} placeholder="Nom Castellà" />
+                                </div>
+                                <div className="md:col-span-1 flex justify-center">
+                                    <button onClick={() => removeItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-lg">remove_circle</span></button>
+                                </div>
+                            </div>
+                        ))}
+                        <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#556B2F] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button>
+                    </div>
                 </div>
             ))}
-            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className="text-[10px] font-bold uppercase px-3 py-1 rounded border bg-red-600 text-white">{currentData.showDisclaimer?'Visible':'Ocult'}</button></div>{currentData.showDisclaimer && (<input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" />)}</div>
-            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label><input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" /></div>
+
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> Begudes incloses / Altres</h4>
+                </div>
+                <div className="space-y-2">
+                    {(currentData.drinks || []).map((drink: string, idx: number) => (
+                        <div key={idx} className="flex gap-2">
+                            <input value={drink} onChange={(e) => handleDrinkChange(idx, e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" placeholder="Ex: Aigua, Vi..." />
+                            <button onClick={() => removeDrink(idx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined">remove_circle</span></button>
+                        </div>
+                    ))}
+                    <button onClick={addDrink} className="text-xs font-bold text-gray-500 flex items-center gap-1 uppercase tracking-wider mt-2"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Línia</button>
+                </div>
+            </div>
+
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4>
+                    <button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${currentData.showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}>{currentData.showDisclaimer ? 'Visible' : 'Ocult'}</button>
+                </div>
+                {currentData.showDisclaimer && (
+                    <input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" placeholder="Ex: Mínim 10 persones." />
+                )}
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                <input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" placeholder="Ex: Cuina de mercat"/>
+            </div>
         </div>
     );
 };
@@ -436,7 +546,7 @@ export const MenuManager: React.FC<any> = ({
                     </button>
                 </div>
 
-                {/* LEGEND BLOCK (NEW) */}
+                {/* LEGEND BLOCK */}
                 <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-lg flex flex-wrap gap-6 text-xs text-blue-800/80">
                     <div className="flex items-center gap-2">
                         <span className="bg-white p-1 rounded border border-blue-200 text-green-600 shadow-sm"><span className="material-symbols-outlined text-base block">visibility</span></span>
@@ -445,6 +555,35 @@ export const MenuManager: React.FC<any> = ({
                     <div className="flex items-center gap-2">
                         <span className="bg-white p-1 rounded border border-blue-200 text-yellow-500 shadow-sm"><span className="material-symbols-outlined text-base block">star</span></span>
                         <span><strong>Estrella (Destacat):</strong> Pinta el botó de la barra de navegació en daurat per cridar l'atenció.</span>
+                    </div>
+                </div>
+
+                {/* --- MENU HEADER CONFIGURATION (NEW) --- */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 className="font-serif text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">branding_watermark</span> Capçalera Principal
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
+                            <input 
+                                type="text" 
+                                value={localConfig.menuHeader?.title || ''} 
+                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...localConfig.menuHeader, title: e.target.value}})}
+                                className="block w-full border border-gray-300 rounded px-4 py-2 text-sm outline-none focus:border-[#8b5a2b] font-serif font-bold text-gray-800"
+                                placeholder="Ex: LA CARTA"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Subtítol</label>
+                            <input 
+                                type="text" 
+                                value={localConfig.menuHeader?.subtitle || ''} 
+                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...localConfig.menuHeader, subtitle: e.target.value}})}
+                                className="block w-full border border-gray-300 rounded px-4 py-2 text-sm outline-none focus:border-[#8b5a2b] font-hand text-gray-600 text-lg"
+                                placeholder="Ex: Sabors de la nostra terra"
+                            />
+                        </div>
                     </div>
                 </div>
 
