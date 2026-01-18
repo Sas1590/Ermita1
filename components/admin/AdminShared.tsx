@@ -101,7 +101,7 @@ export const LogoEditor = ({ value, onChange }: { value: string, onChange: (val:
     );
 };
 
-// --- IMAGE ARRAY EDITOR COMPONENT ---
+// --- IMAGE ARRAY EDITOR COMPONENT (DRAGGABLE) ---
 export const ImageArrayEditor = ({ 
     images, 
     onChange, 
@@ -114,6 +114,7 @@ export const ImageArrayEditor = ({
     maxLimit?: number;
 }) => {
     const safeImages = Array.isArray(images) ? images : [];
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const handleChange = (index: number, val: string) => {
         const newArr = [...safeImages];
@@ -133,17 +134,70 @@ export const ImageArrayEditor = ({
         }
     };
 
+    // --- DRAG AND DROP HANDLERS ---
+    const onDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        // Required for Firefox
+        e.dataTransfer.effectAllowed = "move";
+        // Optional: Set a transparent drag image or similar if needed, 
+        // but default usually works fine for rows.
+    };
+
+    const onDragOver = (e: React.DragEvent) => {
+        e.preventDefault(); // Necessary to allow dropping
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const onDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        
+        if (draggedIndex === null || draggedIndex === targetIndex) {
+            setDraggedIndex(null);
+            return;
+        }
+
+        const newArr = [...safeImages];
+        const itemToMove = newArr[draggedIndex];
+        
+        // Remove from old index
+        newArr.splice(draggedIndex, 1);
+        // Insert at new index
+        newArr.splice(targetIndex, 0, itemToMove);
+        
+        onChange(newArr);
+        setDraggedIndex(null);
+    };
+
+    const onDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
     return (
         <div className="space-y-3">
             {safeImages.map((url, idx) => (
-                <div key={idx} className="flex gap-4 items-start bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm transition-all hover:shadow-md hover:border-gray-300 group">
+                <div 
+                    key={idx} 
+                    draggable
+                    onDragStart={(e) => onDragStart(e, idx)}
+                    onDragOver={onDragOver}
+                    onDrop={(e) => onDrop(e, idx)}
+                    onDragEnd={onDragEnd}
+                    className={`flex gap-3 items-center bg-gray-50 p-2 pr-3 rounded-lg border border-gray-200 shadow-sm transition-all group ${
+                        draggedIndex === idx ? 'opacity-40 border-dashed border-gray-400 bg-gray-100 scale-95' : 'hover:shadow-md hover:border-gray-300'
+                    }`}
+                >
+                    {/* DRAG HANDLE */}
+                    <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-1 self-stretch flex items-center justify-center border-r border-gray-200 pr-2">
+                        <span className="material-symbols-outlined text-lg">drag_indicator</span>
+                    </div>
+
                     {/* Thumbnail Preview */}
-                    <div className="w-20 h-20 bg-gray-200 rounded overflow-hidden shrink-0 border border-gray-300 flex items-center justify-center bg-white relative">
+                    <div className="w-16 h-16 bg-gray-200 rounded overflow-hidden shrink-0 border border-gray-300 flex items-center justify-center bg-white relative">
                         {url ? (
                             <img 
                                 src={url} 
                                 alt={`Preview ${idx}`} 
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-cover pointer-events-none" // Prevent image drag interfering with row drag
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                     const sibling = (e.target as HTMLImageElement).parentElement?.querySelector('span');
@@ -155,10 +209,10 @@ export const ImageArrayEditor = ({
                     </div>
 
                     {/* Inputs */}
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 space-y-1 py-1">
                         <div className="flex justify-between items-center">
-                            <label className="text-[10px] font-bold uppercase text-gray-500">{labelPrefix} {idx + 1}</label>
-                            <button onClick={() => handleRemove(idx)} className="text-red-400 hover:text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 hover:bg-red-50 px-2 py-0.5 rounded transition-colors opacity-50 group-hover:opacity-100">
+                            <label className="text-[9px] font-bold uppercase text-gray-500 tracking-wide">{labelPrefix} {idx + 1}</label>
+                            <button onClick={() => handleRemove(idx)} className="text-red-300 hover:text-red-600 text-[10px] font-bold uppercase flex items-center gap-1 hover:bg-red-50 px-2 py-0.5 rounded transition-colors opacity-50 group-hover:opacity-100">
                                 <span className="material-symbols-outlined text-sm">delete</span>
                             </button>
                         </div>
@@ -166,7 +220,7 @@ export const ImageArrayEditor = ({
                             type="text" 
                             value={url} 
                             onChange={(e) => handleChange(idx, e.target.value)} 
-                            className="block w-full border border-gray-300 rounded px-3 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white font-mono text-gray-600 placeholder-gray-300"
+                            className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white font-mono text-gray-600 placeholder-gray-300 transition-colors"
                             placeholder="https://..."
                         />
                     </div>

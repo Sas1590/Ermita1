@@ -106,26 +106,33 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
 
                 </div>
 
-                {/* Footer Links */}
-                <div className="flex flex-col items-center">
-                    <span className="text-[#8b5a2b] text-[10px] uppercase tracking-[0.25em] font-bold mb-6 block">
-                        {gastronomy.footerTitle}
-                    </span>
-                    <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-                        {gastronomy.footerLinks.map((link, idx) => (
-                            <button 
-                                key={idx}
-                                onClick={() => onRedirectToMenu(link.targetTab)}
-                                className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors group"
-                            >
-                                <span className="material-symbols-outlined text-xl text-primary group-hover:scale-110 transition-transform">{link.icon}</span>
-                                <span className="font-serif italic text-lg decoration-primary decoration-1 underline-offset-4 group-hover:underline">
-                                    {link.label}
-                                </span>
-                            </button>
-                        ))}
+                {/* Footer Links - Only visible if configured AND toggled ON */}
+                {gastronomy.footerVisible !== false && (
+                    <div className="flex flex-col items-center">
+                        <span className="text-[#8b5a2b] text-[10px] uppercase tracking-[0.25em] font-bold mb-6 block">
+                            {gastronomy.footerTitle}
+                        </span>
+                        <div className="flex flex-wrap justify-center gap-8 md:gap-16">
+                            {gastronomy.footerLinks.map((link, idx) => {
+                                // HIDE LINK IF TARGET IS EMPTY
+                                if (!link.targetTab || link.targetTab.trim() === '') return null;
+                                
+                                return (
+                                    <button 
+                                        key={idx}
+                                        onClick={() => onRedirectToMenu(link.targetTab)}
+                                        className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors group"
+                                    >
+                                        <span className="material-symbols-outlined text-xl text-primary group-hover:scale-110 transition-transform">{link.icon}</span>
+                                        <span className="font-serif italic text-lg decoration-primary decoration-1 underline-offset-4 group-hover:underline">
+                                            {link.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
             </div>
         </section>

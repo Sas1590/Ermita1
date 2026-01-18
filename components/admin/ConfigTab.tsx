@@ -162,6 +162,35 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
         </button>
     );
 
+    // DYNAMIC MENU OPTIONS FOR SELECTORS (Includes ICON now)
+    const menuOptions = [
+        { 
+            id: 'daily', 
+            label: 'Menú Diari (Fix)', 
+            icon: localConfig.dailyMenu?.icon || 'lunch_dining' 
+        },
+        { 
+            id: 'food', 
+            label: 'Carta de Menjar (Fix)', 
+            icon: (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.icon) ? localConfig.foodMenu.icon : 'restaurant_menu' 
+        },
+        { 
+            id: 'wine', 
+            label: 'Carta de Vins (Fix)', 
+            icon: (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.icon) ? localConfig.wineMenu.icon : 'wine_bar' 
+        },
+        { 
+            id: 'group', 
+            label: 'Menú de Grup (Fix)', 
+            icon: localConfig.groupMenu?.icon || 'diversity_3' 
+        },
+        ...(Array.isArray(localConfig.extraMenus) ? localConfig.extraMenus : []).map((menu: any, idx: number) => ({
+            id: `extra_${idx}`,
+            label: `${menu.title || 'Sense Títol'} (Extra)`,
+            icon: menu.icon || 'restaurant'
+        }))
+    ];
+
     // Get max hero images from config, default to 5 if undefined
     const maxHeroImages = localConfig.adminSettings?.maxHeroImages || 5;
     const currentHeroImagesCount = (localConfig.hero.backgroundImages || []).length;
@@ -426,7 +455,28 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                                 <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card1.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                                 <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card1.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             </div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card1.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            
+                            {/* UPDATED CARD 1 BUTTON AND TARGET SELECTOR */}
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] text-gray-400 uppercase">Text Botó</label>
+                                    <input value={localConfig.gastronomy?.card1.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-[10px] text-gray-400 uppercase">Enllaç (Destí)</label>
+                                    <select 
+                                        value={localConfig.gastronomy?.card1.targetTab} 
+                                        onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, targetTab: e.target.value}}}))} 
+                                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:border-teal-500"
+                                    >
+                                        <option value="">Selecciona menú...</option>
+                                        {menuOptions.map(opt => (
+                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card1.image} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, image: val}}}))} /></div>
                         </div>
                     </div>
@@ -441,22 +491,96 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                                 <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card2.price} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                                 <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card2.footerText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
                             </div>
-                            <div><label className="block text-[10px] text-gray-400 uppercase">Text Botó</label><input value={localConfig.gastronomy?.card2.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                            
+                            {/* UPDATED CARD 2 BUTTON AND TARGET SELECTOR */}
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] text-gray-400 uppercase">Text Botó</label>
+                                    <input value={localConfig.gastronomy?.card2.buttonText} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-[10px] text-gray-400 uppercase">Enllaç (Destí)</label>
+                                    <select 
+                                        value={localConfig.gastronomy?.card2.targetTab} 
+                                        onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, targetTab: e.target.value}}}))} 
+                                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:border-teal-500"
+                                    >
+                                        <option value="">Selecciona menú...</option>
+                                        {menuOptions.map(opt => (
+                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card2.image} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, image: val}}}))} /></div>
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 border-t border-teal-100 pt-4">
+                {/* NEW: FOOTER LINKS SECTION WITH INDEPENDENT VISIBILITY TOGGLE */}
+                <div className={`mt-6 pt-16 p-4 rounded-xl border border-teal-100 bg-teal-100/30 relative overflow-hidden transition-all ${localConfig.gastronomy?.footerVisible === false ? 'opacity-60 grayscale' : ''}`}>
+                    {renderVisibilityToggle(
+                        localConfig.gastronomy?.footerVisible !== false, 
+                        () => setLocalConfig((prev:any) => ({ ...prev, gastronomy: { ...prev.gastronomy, footerVisible: !prev.gastronomy?.footerVisible } })),
+                        "Enllaços Visibles", "Enllaços Ocults", "bg-teal-600 border-teal-700 text-white"
+                    )}
+                    
                     <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase">Enllaços Peu de Pàgina</h4>
                     <div className="mb-2"><label className="block text-[10px] text-gray-400 uppercase">Títol Peu</label><input value={localConfig.gastronomy?.footerTitle} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerTitle: e.target.value}}))} className="border border-gray-300 rounded px-2 py-1 text-sm w-full md:w-1/3 bg-white" /></div>
                     <div className="space-y-2">
-                        {localConfig.gastronomy?.footerLinks.map((link:any, idx:number) => (
-                             <div key={idx} className="flex items-center gap-2 bg-white/50 p-2 rounded border border-gray-200">
-                                <div className="w-12"><IconPicker value={link.icon} onChange={(val) => { const newLinks = [...localConfig.gastronomy.footerLinks]; newLinks[idx].icon = val; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} /></div>
-                                <input value={link.label} onChange={(e) => { const newLinks = [...localConfig.gastronomy.footerLinks]; newLinks[idx].label = e.target.value; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} className="bg-transparent border-b border-gray-300 text-gray-700 text-sm w-full outline-none" placeholder="Nom Enllaç" />
-                             </div>
-                        ))}
+                        {localConfig.gastronomy?.footerLinks.map((link:any, idx:number) => {
+                             // --- VISUAL FIX: LOOKUP ICON FROM MENU OPTIONS ---
+                             const activeOption = menuOptions.find(opt => opt.id === link.targetTab);
+                             const displayIcon = activeOption ? activeOption.icon : (link.icon || 'link');
+                             const hasSelection = link.targetTab && link.targetTab !== "";
+
+                             return (
+                                 <div key={idx} className="flex items-center gap-3 bg-white/50 p-3 rounded border border-gray-200">
+                                    {/* STATIC ICON DISPLAY (Auto-calculated) */}
+                                    {hasSelection ? (
+                                        <div className="w-10 h-10 flex items-center justify-center bg-teal-50 border border-teal-100 rounded text-teal-700 shrink-0 shadow-sm transition-all animate-[fadeIn_0.2s_ease-out]">
+                                            <span className="material-symbols-outlined text-xl">
+                                                {displayIcon}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        // Placeholder for empty state
+                                        <div className="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 border-dashed rounded text-gray-300 shrink-0 transition-all">
+                                            <span className="material-symbols-outlined text-xl">add_link</span>
+                                        </div>
+                                    )}
+                                    
+                                    {/* DROPDOWN FOR MENU SELECTION */}
+                                    <div className="flex-1 min-w-0">
+                                        <label className="block text-[9px] font-bold uppercase text-gray-400 mb-0.5">Enllaça a:</label>
+                                        <select 
+                                            value={link.targetTab} 
+                                            onChange={(e) => { 
+                                                const selectedId = e.target.value;
+                                                const selectedOption = menuOptions.find(opt => opt.id === selectedId);
+                                                
+                                                // Clean label removing suffix (Fix)/(Extra)
+                                                const cleanLabel = selectedOption ? selectedOption.label.replace(/ \((Fix|Extra)\)$/, '') : '';
+                                                const newIcon = selectedOption ? selectedOption.icon : 'link'; // Fallback icon
+                                                
+                                                const newLinks = [...localConfig.gastronomy.footerLinks]; 
+                                                newLinks[idx].targetTab = selectedId; 
+                                                newLinks[idx].label = cleanLabel; // Automatically set label based on selection
+                                                newLinks[idx].icon = newIcon;     // Automatically set icon based on selection
+                                                setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) 
+                                            }} 
+                                            className="bg-transparent border-b border-gray-300 text-gray-800 text-sm w-full outline-none py-1 font-medium cursor-pointer hover:border-teal-500 focus:border-teal-500 transition-colors" 
+                                        >
+                                            <option value="">Selecciona destí...</option>
+                                            {menuOptions.map(opt => (
+                                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                 </div>
+                             );
+                        })}
                     </div>
                 </div>
             </div>

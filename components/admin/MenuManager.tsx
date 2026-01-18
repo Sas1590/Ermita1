@@ -577,6 +577,25 @@ export const MenuManager: React.FC<any> = ({
                         </div>
                     </div>
                 )}
+
+                {/* --- GLOBAL FOOTER CONFIGURATION (NEW) --- */}
+                <div className="pt-8 border-t border-gray-200">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Text al Peu de la Pàgina de Menús (Global)</label>
+                        <input 
+                            type="text" 
+                            value={localConfig.menuGlobalFooter || ''} 
+                            onChange={(e) => setLocalConfig({...localConfig, menuGlobalFooter: e.target.value})}
+                            className="block w-full border border-gray-300 rounded px-4 py-3 text-sm outline-none focus:border-[#8b5a2b] focus:ring-1 focus:ring-[#8b5a2b] transition-all text-gray-700"
+                            placeholder="Ex: * Preus en euros, impostos inclosos..."
+                        />
+                        <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">info</span>
+                            Aquest text es mostrarà al final de tot de la secció "La Carta", sota tots els menús.
+                        </p>
+                    </div>
+                </div>
+
             </div>
         );
     }

@@ -16,7 +16,7 @@ const SpecialtyCard: React.FC<SpecialtyCardProps> = ({
   badge,
   description
 }) => (
-  <div className="group relative h-[500px] w-full overflow-hidden bg-black cursor-pointer shadow-xl">
+  <div className="group relative h-[500px] w-full overflow-hidden bg-black shadow-xl">
     {/* Image with zoom effect */}
     <img 
       src={image} 

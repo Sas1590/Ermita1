@@ -202,6 +202,7 @@ export interface AppConfig {
     };
     footerTitle: string;
     footerLinks: Array<{ label: string; icon: string; targetTab: string }>;
+    footerVisible?: boolean; // NEW: Control visibility of the footer links section
   };
   
   dailyMenu: {
@@ -405,7 +406,8 @@ export const defaultAppConfig: AppConfig = {
       { label: "Menú Calçotada", icon: "restaurant", targetTab: "extra_1" },
       { label: "Menú Infantil", icon: "child_care", targetTab: "food" },
       { label: "Carta de Vins", icon: "wine_bar", targetTab: "wine" }
-    ]
+    ],
+    footerVisible: true // Default to true
   },
   
   dailyMenu: {
