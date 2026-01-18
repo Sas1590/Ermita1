@@ -569,7 +569,7 @@ export const MenuManager: React.FC<any> = ({
                             <input 
                                 type="text" 
                                 value={localConfig.menuHeader?.title || ''} 
-                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...localConfig.menuHeader, title: e.target.value}})}
+                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...(localConfig.menuHeader || {}), title: e.target.value}})}
                                 className="block w-full border border-gray-300 rounded px-4 py-2 text-sm outline-none focus:border-[#8b5a2b] font-serif font-bold text-gray-800"
                                 placeholder="Ex: LA CARTA"
                             />
@@ -579,7 +579,7 @@ export const MenuManager: React.FC<any> = ({
                             <input 
                                 type="text" 
                                 value={localConfig.menuHeader?.subtitle || ''} 
-                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...localConfig.menuHeader, subtitle: e.target.value}})}
+                                onChange={(e) => setLocalConfig({...localConfig, menuHeader: {...(localConfig.menuHeader || {}), subtitle: e.target.value}})}
                                 className="block w-full border border-gray-300 rounded px-4 py-2 text-sm outline-none focus:border-[#8b5a2b] font-hand text-gray-600 text-lg"
                                 placeholder="Ex: Sabors de la nostra terra"
                             />
