@@ -42,9 +42,13 @@ interface BackupItem {
     data: AppConfig;
 }
 
-// --- 1. MENÚ DIARI BETA DATA ---
+// --- 1. MENÚ DIARI BETA DATA (UPDATED 2024) ---
 const BETA_DATA_DAILY = {
     title: "Menú Diari",
+    subtitle: "DE DIMARTS A DIVENDRES",
+    icon: "lunch_dining",
+    visible: true,
+    recommended: true,
     price: "18€",
     vat: "IVA inclòs",
     disclaimer: "Vàlid de dimarts a divendres (no festius)",
@@ -52,25 +56,25 @@ const BETA_DATA_DAILY = {
         {
             title: "PRIMERS PLATS",
             items: [
-                { nameCa: "Amanida de formatge de cabra amb fruits secs", nameEs: "Ensalada de queso de cabra" },
-                { nameCa: "Canelons casolans de l'àvia", nameEs: "Canelones caseros de la abuela" },
-                { nameCa: "Escudella barrejada", nameEs: "Escudella catalana" }
+                { nameCa: "Amanida de formatge de cabra amb fruits secs", nameEs: "Ensalada de queso de cabra", visible: true },
+                { nameCa: "Canelons casolans de l'àvia", nameEs: "Canelones caseros de la abuela", visible: true },
+                { nameCa: "Escudella barrejada", nameEs: "Escudella catalana", visible: true }
             ]
         },
         {
             title: "SEGONS PLATS",
             items: [
-                { nameCa: "Botifarra a la brasa amb mongetes", nameEs: "Butifarra a la brasa con judías" },
-                { nameCa: "Peix fresc de la llotja", nameEs: "Pescado fresco del día" },
-                { nameCa: "Pollastre de pagès rostit", nameEs: "Pollo de payés asado" }
+                { nameCa: "Botifarra a la brasa amb mongetes", nameEs: "Butifarra a la brasa con judías", visible: true },
+                { nameCa: "Peix fresc de la llotja", nameEs: "Pescado fresco del día", visible: true },
+                { nameCa: "Pollastre de pagès rostit", nameEs: "Pollo de payés asado", visible: true }
             ]
         },
         {
             title: "POSTRES",
             items: [
-                { nameCa: "Crema Catalana", nameEs: "Crema Catalana" },
-                { nameCa: "Flam d'ou casolà", nameEs: "Flan de huevo casero" },
-                { nameCa: "Fruita del temps", nameEs: "Fruta del tiempo" }
+                { nameCa: "Crema Catalana", nameEs: "Crema Catalana", visible: true },
+                { nameCa: "Flam d'ou casolà", nameEs: "Flan de huevo casero", visible: true },
+                { nameCa: "Fruita del temps", nameEs: "Fruta del tiempo", visible: true }
             ]
         }
     ],
@@ -80,8 +84,13 @@ const BETA_DATA_DAILY = {
     footerText: "Cuina de mercat"
 };
 
+// --- 2. CARTA MENJAR BETA DATA (UPDATED 2024) ---
 const BETA_DATA_CARTA = {
     title: "Carta de Menjar", 
+    subtitle: "",
+    icon: "restaurant_menu",
+    visible: true,
+    recommended: false,
     price: "",
     vat: "",
     infoIntro: "",
@@ -90,18 +99,71 @@ const BETA_DATA_CARTA = {
     showInfo: false,
     showDisclaimer: true,
     disclaimer: "",
-    sections: [{id: "sec_tapas", category: "TAPES · TAPAS", icon: "tapas", items: [{ nameCa: "Gilda d'anxova de Perellò 1898", nameEs: "Anxova 00, oliva gordal, piparra de Navarra i tomàquet sec (1 unitat).", price: "3.50€" }]}]
+    sections: [
+        {
+            id: "sec_tapas", 
+            category: "TAPES · TAPAS", 
+            icon: "tapas", 
+            items: [
+                { nameCa: "Gilda d'anxova de Perellò 1898", nameEs: "Anxova 00, oliva gordal, piparra de Navarra i tomàquet sec (1 unitat).", price: "3.50€", visible: true }
+            ]
+        }
+    ]
 };
 
+// --- 3. CARTA VINS BETA DATA (UPDATED 2024) ---
 const BETA_DATA_WINE = {
-    title: "Carta de Vins", price: "", vat: "", infoIntro: "", infoAllergy: "", showPrice: false, showInfo: false, showDisclaimer: true, disclaimer: "",
-    categories: [{category: "VINS NEGRES", groups: [{sub: "D.O. TERRA ALTA", items: [{ name: "Llàgrimes de Tardor", desc: "Garnatxa, Carinyena", price: "18.50€" }]}]}]
+    title: "Carta de Vins", 
+    subtitle: "",
+    icon: "wine_bar",
+    visible: true,
+    recommended: false,
+    price: "", 
+    vat: "", 
+    infoIntro: "", 
+    infoAllergy: "", 
+    showPrice: false, 
+    showInfo: false, 
+    showDisclaimer: true, 
+    disclaimer: "",
+    categories: [
+        {
+            category: "VINS NEGRES", 
+            icon: "wine_bar",
+            groups: [
+                {
+                    sub: "D.O. TERRA ALTA", 
+                    items: [
+                        { name: "Llàgrimes de Tardor", desc: "Garnatxa, Carinyena", price: "18.50€", visible: true }
+                    ]
+                }
+            ]
+        }
+    ]
 };
 
+// --- 4. MENÚ GRUP BETA DATA (UPDATED 2024) ---
 const BETA_DATA_GROUP = {
-    title: "Menú de Grup", price: "35.00€", vat: "IVA INCLÒS", disclaimer: "Mínim 10 persones. Cal reservar amb antelació.",
-    sections: [{title: "PICA-PICA (PER COMPARTIR)", items: [{ nameCa: "Assortiment d'embotits ibèrics i formatges", nameEs: "Surtido de embutidos ibéricos y quesos" }]}],
-    drinks: ["Aigua mineral", "Vi de la casa (Negre/Blanc)", "Cafès"], infoIntro: "El menú inclou pa, aigua, vi i cafè.", infoAllergy: "Si us plau, consulteu els al·lèrgens al nostre personal."
+    title: "Menú de Grup", 
+    subtitle: "MÍNIM 10 PERSONES",
+    icon: "diversity_3",
+    visible: true,
+    recommended: false,
+    price: "35.00€", 
+    vat: "IVA INCLÒS", 
+    disclaimer: "Mínim 10 persones. Cal reservar amb antelació.",
+    sections: [
+        {
+            title: "PICA-PICA (PER COMPARTIR)", 
+            icon: "tapas",
+            items: [
+                { nameCa: "Assortiment d'embotits ibèrics i formatges", nameEs: "Surtido de embutidos ibéricos y quesos", visible: true }
+            ]
+        }
+    ],
+    drinks: ["Aigua mineral", "Vi de la casa (Negre/Blanc)", "Cafès"], 
+    infoIntro: "El menú inclou pa, aigua, vi i cafè.", 
+    infoAllergy: "Si us plau, consulteu els al·lèrgens al nostre personal."
 };
 
 // --- SUB-COMPONENT: MESSAGE CARD ---
