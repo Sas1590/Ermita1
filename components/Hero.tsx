@@ -12,42 +12,30 @@ const SmartBackgroundImage: React.FC<{ src: string; isActive: boolean; index: nu
   const [currentSrc, setCurrentSrc] = useState<string | null>(null);
   const [attemptIndex, setAttemptIndex] = useState(0);
 
-  // Lista de extensiones a probar si falla o si no tiene extensión
   const extensionsToTry = ['.jpg', '.png', '.webp', '.jpeg'];
 
   useEffect(() => {
-    // Si la imagen ya tiene extensión completa (ej: http... o /img/foto.jpg), usarla tal cual primero.
-    // Si no tiene extensión (ej: /slides/slide1), empezar a probar extensiones.
     const hasExtension = src.match(/\.[0-9a-z]+$/i);
-    
     if (hasExtension) {
       setCurrentSrc(src);
       setAttemptIndex(0);
     } else {
-      // Si no tiene extensión, probamos la primera de la lista
       setCurrentSrc(`${src}${extensionsToTry[0]}`);
       setAttemptIndex(0);
     }
   }, [src]);
 
   const handleError = () => {
-    // Si falla la carga, intentamos la siguiente extensión
     const nextAttempt = attemptIndex + 1;
-    
-    // Si la fuente original tenía extensión, intentamos hacer swap inteligente
     const hasOriginalExtension = src.match(/\.[0-9a-z]+$/i);
 
     if (hasOriginalExtension) {
-        // Lógica simple de swap para paths completos
         if (currentSrc?.toLowerCase().endsWith('.jpg')) {
             setCurrentSrc(currentSrc.replace(/.jpg$/i, '.png'));
-        } else if (currentSrc?.toLowerCase().endsWith('.png')) {
-             // Stop trying, we assume jpg/png are the only main ones for simple swaps
         }
         return;
     }
 
-    // Si estamos probando extensiones manualmente
     if (nextAttempt < extensionsToTry.length) {
       setCurrentSrc(`${src}${extensionsToTry[nextAttempt]}`);
       setAttemptIndex(nextAttempt);
@@ -89,38 +77,32 @@ const CustomDateTimePicker: React.FC<{
     const [viewMode, setViewMode] = useState<'date' | 'time'>('date'); 
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Initial load from value prop
     useEffect(() => {
         if (value) {
-            // Value is expected to be "YYYY-MM-DDTHH:mm"
             const d = new Date(value);
             if (!isNaN(d.getTime())) {
                 setSelectedDate(d);
-                // Format time as HH:mm
                 const hours = d.getHours().toString().padStart(2, '0');
                 const minutes = d.getMinutes().toString().padStart(2, '0');
                 setSelectedTimeSlot(`${hours}:${minutes}`);
             }
         } else {
-            // Reset internal state if value is cleared externally
             setSelectedDate(null);
             setSelectedTimeSlot(null);
             setViewMode('date');
         }
     }, [value]);
 
-    // Reset view to date when opening
     useEffect(() => {
         if (isOpen) {
              if (!selectedDate) {
                  setViewMode('date');
              } else {
-                 setViewMode('date'); // Always start at date for context
+                 setViewMode('date'); 
              }
         }
     }, [isOpen]);
 
-    // Close on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -131,7 +113,6 @@ const CustomDateTimePicker: React.FC<{
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Helpers for Calendar
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -173,7 +154,6 @@ const CustomDateTimePicker: React.FC<{
         setViewDate(newDate);
     };
 
-    // Generate Time Slots based on Config
     const generateTimeSlots = () => {
         const slots = [];
         const [startHour, startMin] = (configStart || "13:00").split(':').map(Number);
@@ -200,7 +180,6 @@ const CustomDateTimePicker: React.FC<{
         return d.toLocaleString('ca-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
     };
 
-    // Calendar Grid Gen
     const daysInMonth = getDaysInMonth(viewDate);
     const startOffset = getFirstDayOfMonth(viewDate);
     const days = [];
@@ -211,7 +190,6 @@ const CustomDateTimePicker: React.FC<{
         const isSelected = selectedDate?.getDate() === i && selectedDate?.getMonth() === viewDate.getMonth() && selectedDate?.getFullYear() === viewDate.getFullYear();
         const isToday = new Date().getDate() === i && new Date().getMonth() === viewDate.getMonth() && new Date().getFullYear() === viewDate.getFullYear();
         
-        // Disable past dates logic
         const checkDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), i);
         const isPast = checkDate.setHours(23,59,59,999) < new Date().setHours(0,0,0,0);
 
@@ -232,7 +210,6 @@ const CustomDateTimePicker: React.FC<{
 
     return (
         <div className="relative" ref={wrapperRef}>
-            {/* READ ONLY INPUT TRIGGER */}
             <div 
                 onClick={() => setIsOpen(!isOpen)}
                 className="bg-white/50 border-b-2 border-gray-300 hover:border-accent cursor-pointer px-2 py-1 w-full text-gray-600 font-sans text-sm flex justify-between items-center"
@@ -241,14 +218,11 @@ const CustomDateTimePicker: React.FC<{
                 <span className="material-symbols-outlined text-gray-400 text-lg">calendar_month</span>
             </div>
 
-            {/* POPUP */}
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-[300px] sm:w-[320px] bg-[#fdfbf7] bg-paper-texture shadow-2xl rounded-sm border border-primary/30 z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
                     
-                    {/* VIEW 1: CALENDAR */}
                     {viewMode === 'date' && (
                         <div className="animate-[fadeIn_0.2s_ease-out]">
-                            {/* Header Month */}
                             <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
                                 <button onClick={(e) => {e.preventDefault(); navigateMonth('prev')}} className="p-1 hover:text-primary"><span className="material-symbols-outlined">chevron_left</span></button>
                                 <span className="font-serif font-bold text-secondary capitalize">
@@ -257,24 +231,20 @@ const CustomDateTimePicker: React.FC<{
                                 <button onClick={(e) => {e.preventDefault(); navigateMonth('next')}} className="p-1 hover:text-primary"><span className="material-symbols-outlined">chevron_right</span></button>
                             </div>
 
-                            {/* Days Header */}
                             <div className="grid grid-cols-7 mb-2 text-center">
                                 {['Dl','Dt','Dc','Dj','Dv','Ds','Dg'].map(d => (
                                     <span key={d} className="text-[10px] uppercase font-bold text-gray-400">{d}</span>
                                 ))}
                             </div>
 
-                            {/* Calendar Grid */}
                             <div className="grid grid-cols-7 gap-1 mb-2 place-items-center">
                                 {days}
                             </div>
                         </div>
                     )}
 
-                    {/* VIEW 2: TIME SLOTS */}
                     {viewMode === 'time' && (
                         <div className="animate-[fadeIn_0.2s_ease-out]">
-                            {/* Header With Back Button */}
                             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
                                 <button 
                                     onClick={(e) => { e.preventDefault(); setViewMode('date'); }}
@@ -329,36 +299,29 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
-  // --- RESERVATION STATE ---
   const [formData, setFormData] = useState({
       name: '',
       phone: '',
-      pax: '', // Default to empty string to encourage typing
+      pax: '', 
       notes: '',
       privacy: false
   });
   const [dateTime, setDateTime] = useState("");
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   
-  // Validation State
   const [phoneError, setPhoneError] = useState('');
   const [privacyError, setPrivacyError] = useState(false);
 
-  // Group Warning Modal State
   const [showGroupWarning, setShowGroupWarning] = useState(false);
 
-  // Check if reservation form should be visible
   const isFormVisible = config.hero?.reservationVisible !== false;
 
-  // Construct dynamic error message from config
   const dynamicErrorMsg = `${config.hero.reservationErrorMessage} ${config.hero.reservationTimeStart} a ${config.hero.reservationTimeEnd}`;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
       
-      // Phone Validation Logic
       if (name === 'phone') {
-          // Check if contains letters
           const hasLetters = /[a-zA-Z]/.test(value);
           if (hasLetters) {
               setPhoneError("Si us plau, introdueix només números.");
@@ -367,10 +330,8 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           }
       }
 
-      // PAX Logic check (Group Menu Warning) - UPDATED TO INCLUDE 10 (>= 10)
       if (name === 'pax') {
           const num = parseInt(value, 10);
-          // Check immediately if number is valid and greater than or equal to 10
           if (!isNaN(num) && num >= 10) {
               setShowGroupWarning(true);
           }
@@ -381,7 +342,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData(prev => ({ ...prev, privacy: e.target.checked }));
-      if (e.target.checked) setPrivacyError(false); // Clear error when checked
+      if (e.target.checked) setPrivacyError(false); 
   };
 
   const handleGroupRedirect = (shouldRedirect: boolean) => {
@@ -389,17 +350,14 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
       if (shouldRedirect && onRedirectToMenu) {
           onRedirectToMenu('group');
       }
-      // If no redirect (clicked No), user stays on form with the number they typed.
   };
 
   const handleSubmit = async () => {
-      // Basic Validation
       if (!formData.name || !formData.phone || !dateTime || !formData.pax) {
           alert("Si us plau, omple el nom, telèfon, persones i data de reserva.");
           return;
       }
       
-      // Strict Phone Validation before submit
       const digitsOnly = formData.phone.replace(/[^0-9]/g, '');
       if (/[a-zA-Z]/.test(formData.phone) || digitsOnly.length < 6) {
           setPhoneError("El telèfon no sembla correcte (mínim 6 dígits).");
@@ -407,7 +365,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           return;
       }
 
-      // Privacy Validation - Visual Error, no alert
       if (!formData.privacy) {
           setPrivacyError(true);
           return;
@@ -417,23 +374,18 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
       try {
           const reservationsRef = ref(db, 'reservations');
-          
-          // Split Date and Time for cleaner storage
-          // dateTime format from picker is YYYY-MM-DDTHH:mm
           const [datePart, timePart] = dateTime.split('T');
 
           await push(reservationsRef, {
               ...formData,
-              date: datePart, // YYYY-MM-DD
-              time: timePart, // HH:mm
-              dateTimeIso: dateTime, // Keep ISO just in case
+              date: datePart, 
+              time: timePart, 
+              dateTimeIso: dateTime, 
               createdAt: Date.now(),
-              status: 'pending' // pending, confirmed, cancelled
+              status: 'pending' 
           });
 
           setFormStatus('success');
-          // No automatic timeout anymore. User must close it manually.
-          // We reset form data here so if they reopen or click 'Make another', it's clean.
           setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
           setDateTime("");
           setPhoneError("");
@@ -445,7 +397,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
       }
   };
 
-  // Listener para el efecto blur al hacer scroll
   useEffect(() => {
     const handleScroll = () => {
         setScrolled(window.scrollY > 50);
@@ -465,7 +416,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   return (
     <header id="reserva" className="relative min-h-screen flex items-center justify-center pt-20 pb-20 lg:pt-0 lg:pb-0 overflow-hidden">
       
-      {/* CSS to hide input number spinners */}
       <style>{`
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
@@ -477,7 +427,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
         }
       `}</style>
 
-      {/* Background Slider with Conditional Blur */}
       <div className="absolute inset-0 z-0 bg-[#1d1a15]">
         {backgroundImages.map((image, index) => (
           <SmartBackgroundImage 
@@ -485,16 +434,14 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
             src={image} 
             index={index} 
             isActive={index === currentImageIndex} 
-            blur={!scrolled} // Si NO hemos bajado (estamos arriba), aplicamos blur
+            blur={!scrolled} 
           />
         ))}
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#1d1a15] via-transparent to-black/30 z-10 pointer-events-none"></div>
       </div>
 
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         
-        {/* Left Content - Dynamic Size if Form is hidden */}
         <div className={`text-white flex flex-col items-center mt-12 lg:mt-0 transition-all duration-500
             ${isFormVisible 
                 ? 'lg:col-span-7 lg:items-start' 
@@ -502,20 +449,16 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
             }
         `}>
           
-          {/* CONTENT WRAPPER WITH LOADING STATE */}
           {isLoading ? (
              <div className="flex flex-col items-center lg:items-start w-full animate-pulse space-y-8">
-                 {/* Logo Placeholder */}
                  <div className="w-64 h-64 rounded-full border-4 border-white/10 bg-white/5 flex items-center justify-center">
                     <div className="w-16 h-16 border-4 border-white/20 border-t-primary rounded-full animate-spin"></div>
                  </div>
-                 {/* Text Placeholder */}
                  <div className="space-y-3 w-full max-w-md">
                     <div className="h-4 bg-white/10 rounded w-3/4"></div>
                     <div className="h-4 bg-white/10 rounded w-5/6"></div>
                     <div className="h-4 bg-white/10 rounded w-1/2"></div>
                  </div>
-                 {/* Schedule Placeholder */}
                  <div className="w-full max-w-xs pt-4">
                     <div className="h-px bg-white/10 mb-4 w-24"></div>
                     <div className="h-6 bg-white/10 rounded w-2/3"></div>
@@ -523,7 +466,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
              </div>
           ) : (
              <div className="flex flex-col items-center lg:items-start w-full animate-fade-in-slow">
-                {/* Logo Section */}
                 <div className={`flex flex-col items-center mb-8 transition-transform duration-700 w-full min-h-[200px] 
                     ${isFormVisible ? 'lg:justify-start lg:items-start' : 'justify-center'}
                 `}>
@@ -553,14 +495,12 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                     )}
                 </div>
 
-                {/* DYNAMIC DESCRIPTION */}
                 <p className={`font-sans font-light text-lg md:text-xl text-gray-200 max-w-lg leading-relaxed mt-4 
                         ${isFormVisible ? 'text-center lg:text-left' : 'text-center mx-auto'}
                 `}>
                     {config.hero.heroDescription}
                 </p>
 
-                {/* DYNAMIC Schedule Display */}
                 <div className={`mt-8 flex flex-col items-center ${isFormVisible ? 'lg:items-start' : ''}`}>
                     <div className="h-px w-24 bg-primary/40 mb-4"></div>
                     <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : ''}`}>
@@ -571,9 +511,8 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           )}
         </div>
 
-        {/* Right Content - Sticky Note Reservation Form - CONDITIONALLY RENDERED */}
         {isFormVisible && (
-            <div className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow" style={{ animationDelay: '0.6s' }}>
+            <div id="formulari-reserva" className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow scroll-mt-32" style={{ animationDelay: '0.6s' }}>
             <div className="relative w-full max-w-md transform rotate-1 hover:rotate-0 transition-transform duration-500">
                 
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-red-700 rounded-full shadow-md z-20 border-2 border-red-900"></div>
@@ -590,7 +529,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
                         
                         <div className="flex flex-col items-center gap-3">
-                            {/* UPDATED BUTTON: CLEANER, CORPORATE BROWN */}
                             <button 
                                 onClick={() => setFormStatus('idle')}
                                 className="px-8 py-3 bg-[#8b5a2b] hover:bg-[#6b4521] text-white font-sans font-bold text-sm uppercase tracking-widest rounded shadow-md transition-all transform hover:-translate-y-0.5"
@@ -613,7 +551,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                             <input 
                                 type="text" 
                                 name="name"
-                                maxLength={40} // Limit added
+                                maxLength={40} 
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 placeholder="Pere..." 
@@ -630,7 +568,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 placeholder="6..." 
                                 className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
                             />
-                            {/* Mensaje de error flotante */}
                             {phoneError && (
                                 <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
                                     {phoneError}
@@ -642,7 +579,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         <div className="grid grid-cols-2 gap-4 relative z-40">
                         <div className="flex flex-col">
                             <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
-                            {/* CUSTOM DATE PICKER IMPLEMENTATION */}
                             <CustomDateTimePicker 
                                 value={dateTime}
                                 onChange={setDateTime}
@@ -653,7 +589,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                             />
                         </div>
                         
-                        {/* --- MODIFIED PAX INPUT (Gent + Handwritten Style) --- */}
                         <div className="flex flex-col">
                             <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
                             <input 
@@ -664,7 +599,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 placeholder="2"
                                 value={formData.pax}
                                 onChange={handleInputChange}
-                                // Applied same styling as phone input (font-marker, bg, border, padding)
                                 className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
                             />
                         </div>
@@ -677,12 +611,12 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleInputChange}
-                                placeholder="Algèrgies, terrassa..." 
+                                // CORRECCIÓN ORTOGRÁFICA APLICADA AQUÍ:
+                                placeholder="Al·lèrgies, terrassa..." 
                                 className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
                             />
                         </div>
 
-                        {/* PRIVACY SECTION WITH ERROR VALIDATION */}
                         <div className="flex flex-col pt-2">
                             <div className="flex items-center gap-2">
                                 <input 
@@ -694,7 +628,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 />
                                 <label htmlFor="privacy" className={`text-sm font-hand ${privacyError ? 'text-red-500 font-bold' : 'text-gray-600'}`}>{config.hero.formPrivacyLabel}</label>
                             </div>
-                            {/* Visual Error Message */}
                             {privacyError && (
                                 <p className="text-red-500 text-xs font-sans pl-6 mt-1 animate-pulse font-bold">Has d'acceptar la política de privacitat.</p>
                             )}
@@ -743,7 +676,6 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
         <span className="material-symbols-outlined">keyboard_arrow_down</span>
       </div>
 
-      {/* --- GROUP MENU WARNING MODAL (High Z-Index) --- */}
       {showGroupWarning && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGroupWarning(false)}></div>

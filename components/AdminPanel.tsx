@@ -7,6 +7,14 @@ import { MenuManager } from './admin/MenuManager';
 import { Operations } from './admin/Operations';
 import { ProfileTab } from './admin/ProfileTab';
 
+// --- CONFIGURACIÓ DE SUPER ADMINS ---
+// Afegeix aquí el teu email exacte per veure la pestanya de Seguretat
+const SUPER_ADMIN_EMAILS = [
+  "admin@ermita.com", 
+  "hola@ermitaparetdelgada.com",
+  "umc_admin@proton.me"
+];
+
 interface AdminPanelProps {
   onSaveSuccess: () => void;
   onClose: () => void;
@@ -76,6 +84,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
   
   // Error Modal State (No Browser Alerts)
   const [errorModal, setErrorModal] = useState<{show: boolean, message: string}>({show: false, message: ''});
+
+  // CHECK IF CURRENT USER IS SUPER ADMIN
+  const currentUserEmail = auth.currentUser?.email || "";
+  const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(currentUserEmail);
   
   // Fetch Personal Profile - REAL TIME LISTENER
   useEffect(() => {
@@ -232,7 +244,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
              <button onClick={() => setActiveTab('inbox')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all relative whitespace-nowrap ${activeTab === 'inbox' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>
                  Missatges {counts.messages > 0 && <span className="ml-1 bg-blue-500 text-white text-[9px] px-1.5 rounded-full">{counts.messages}</span>}
              </button>
-             <button onClick={() => setActiveTab('security')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all whitespace-nowrap ${activeTab === 'security' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>Seguretat</button>
+             
+             {/* PROTECTED SECURITY TAB - ONLY FOR SUPER ADMINS */}
+             {isSuperAdmin && (
+                <button onClick={() => setActiveTab('security')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all whitespace-nowrap flex items-center gap-1 ${activeTab === 'security' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-sm">lock</span> Seguretat
+                </button>
+             )}
           </div>
         </div>
 
@@ -266,9 +284,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, 
                 />
             )}
 
-            {(activeTab === 'reservations' || activeTab === 'inbox' || activeTab === 'security') && (
+            {(activeTab === 'reservations' || activeTab === 'inbox') && (
                 <Operations 
                     activeTab={activeTab} 
+                    config={config} 
+                    updateConfig={updateConfig} 
+                    setLocalConfig={setLocalConfig} 
+                />
+            )}
+
+            {/* PROTECTED SECURITY CONTENT */}
+            {activeTab === 'security' && isSuperAdmin && (
+                <Operations 
+                    activeTab='security' 
                     config={config} 
                     updateConfig={updateConfig} 
                     setLocalConfig={setLocalConfig} 

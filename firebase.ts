@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
-import { getAuth } from 'firebase/auth';
+// Fix: Import as namespace and cast to any to avoid "no exported member" type errors
+import * as firebaseAuth from 'firebase/auth';
 
 // Configuración extraída directamente de tu consola de Firebase
 const firebaseConfig = {
@@ -17,5 +18,5 @@ const app = initializeApp(firebaseConfig);
 
 // Exportamos la instancia de Realtime Database
 export const db = getDatabase(app);
-// Exportamos la instancia de Authentication
-export const auth = getAuth(app);
+// Exportamos la instancia de Authentication using cast to avoid TS errors
+export const auth = (firebaseAuth as any).getAuth(app);

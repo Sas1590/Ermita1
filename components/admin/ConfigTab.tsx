@@ -317,7 +317,12 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                         {/* SWAPPED ORDER: MAIN TITLE FIRST */}
                         <div>
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
-                            <input type="text" value={localConfig.intro.mainTitle} onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" />
+                            <input 
+                                type="text" 
+                                value={localConfig.intro.mainTitle} 
+                                onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} 
+                                className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-olive focus:border-olive outline-none bg-white" 
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit</label>
@@ -585,8 +590,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                             <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Etiqueta Nota (Post-it)</label><input type="text" value={localConfig.philosophy.cardTag} onChange={(e) => handleChange('philosophy', 'cardTag', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" /></div>
                         </div>
                         <div className="mb-4">
-                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label>
-                            <textarea value={localConfig.philosophy.productDescription} onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
+                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label><textarea value={localConfig.philosophy.productDescription} onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
                         </div>
                         <div>
                             {/* HEADER WITH BADGE FOR PRODUCT IMAGES */}

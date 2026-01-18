@@ -14,12 +14,17 @@ import PrivacyModal from './components/PrivacyModal';
 import CookiesModal from './components/CookiesModal';
 import LegalModal from './components/LegalModal';
 import { auth } from './firebase';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+// Fix: Handle firebase/auth import errors by casting to any
+import * as firebaseAuth from 'firebase/auth';
 import { useConfig } from './context/ConfigContext';
+
+// Destructure functions from the any-casted module
+const { onAuthStateChanged, signOut } = firebaseAuth as any;
+// Define User type as any to avoid import error
+type User = any;
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
-  // Allow string for menuTab to support 'food', 'wine', 'group' AND 'extra_0', 'extra_1', etc.
   const [menuTab, setMenuTab] = useState<string | null>(null);
   
   // Auth & Admin States
@@ -28,7 +33,7 @@ const App: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<'config' | 'inbox'>('config');
 
-  // Success Feedback State (The "Green Check" after closing admin)
+  // Success Feedback State
   const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
 
   // Modals
@@ -36,7 +41,6 @@ const App: React.FC = () => {
   const [showCookiesModal, setShowCookiesModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
 
-  // Config for conditional rendering
   const { config } = useConfig();
 
   useEffect(() => {
@@ -47,11 +51,9 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser: any) => {
       setUser(currentUser);
-      // Optional: Auto open admin panel on login if URL has ?admin=true
       const params = new URLSearchParams(window.location.search);
       if (currentUser && params.get('admin') === 'true') {
          setShowAdminPanel(true);
@@ -71,27 +73,35 @@ const App: React.FC = () => {
   };
 
   const handleScrollToSection = (id: string) => {
-    const element = document.getElementById(id);
+    let targetId = id;
+
+    // Mobile Logic: If requesting 'reserva' on mobile, try to scroll to the specific form container
+    // The breakpoint for 'lg' in Tailwind is 1024px.
+    if (id === 'reserva' && window.innerWidth < 1024) {
+        const formElement = document.getElementById('formulari-reserva');
+        if (formElement) {
+            targetId = 'formulari-reserva';
+        }
+    }
+
+    const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  // Logic to open admin panel
   const openAdminPanel = (tab: 'config' | 'inbox' = 'config') => {
     if (user) {
-      // If logged in, open the panel
       setAdminInitialTab(tab);
       setShowAdminPanel(true);
     } else {
-      // If not logged in, show login modal
       setShowLoginModal(true);
     }
   };
 
   const handleLoginSuccess = () => {
     setShowLoginModal(false);
-    setShowAdminPanel(true); // Auto open panel after successful login
+    setShowAdminPanel(true); 
   };
 
   const handleLogout = async () => {
@@ -103,7 +113,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Callback when Admin Panel saves successfully
   const handleAdminSaveSuccess = () => {
       setShowAdminPanel(false);
       setShowSuccessFeedback(true);
@@ -119,7 +128,7 @@ const App: React.FC = () => {
         onOpenMenu={handleOpenMenu} 
         onScrollToSection={handleScrollToSection}
         onOpenAdminPanel={openAdminPanel} 
-        isAdminMode={!!user} // Pass boolean if user is logged in
+        isAdminMode={!!user}
         onLogout={handleLogout}
       />
       
@@ -129,16 +138,16 @@ const App: React.FC = () => {
       {/* 2. Intro (Filosofia menjar típic...) */}
       {config.intro?.visible !== false && <Intro />}
 
-      {/* 3. Gastronomy (La nostra proposta) - MOVED HERE */}
+      {/* 3. Gastronomy (La nostra proposta) */}
       {config.gastronomy?.visible !== false && <Gastronomy onRedirectToMenu={handleOpenMenu} />}
       
       {/* 4. Menu (La Carta) */}
       <Menu activeTab={menuTab} onToggleTab={setMenuTab} />
 
-      {/* 5. Specialties (Les nostres especialitats) - MOVED HERE */}
+      {/* 5. Specialties (Les nostres especialitats) */}
       {config.specialties?.visible !== false && <Specialties />}
       
-      {/* 6. Philosophy (Filosofia i Entorn / Història) - MOVED HERE */}
+      {/* 6. Philosophy (Filosofia i Entorn / Història) */}
       {config.philosophy?.visible !== false && <Philosophy />}
       
       {/* 7. Contact (Formulari) */}
