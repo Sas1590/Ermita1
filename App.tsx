@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false); 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<'config' | 'inbox'>('config');
+  const [adminInitialTab, setAdminInitialTab] = useState<string>('config');
 
   // Success Feedback State
   const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
@@ -90,7 +90,7 @@ const App: React.FC = () => {
     }
   };
 
-  const openAdminPanel = (tab: 'config' | 'inbox' = 'config') => {
+  const openAdminPanel = (tab: string = 'config') => {
     if (user) {
       setAdminInitialTab(tab);
       setShowAdminPanel(true);

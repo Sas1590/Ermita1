@@ -17,9 +17,7 @@ const Gastronomy: React.FC<GastronomyProps> = ({ onRedirectToMenu }) => {
                 
                 {/* Header */}
                 <div className="text-center mb-16 space-y-4">
-                    <span className="font-sans text-xs md:text-sm tracking-[0.2em] text-[#D0BB95] uppercase block">
-                        {gastronomy.topTitle}
-                    </span>
+                    {/* Top Title removed as requested */}
                     <h2 className="font-serif italic text-5xl md:text-7xl text-white font-medium">
                         {gastronomy.mainTitle}
                     </h2>

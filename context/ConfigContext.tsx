@@ -386,8 +386,8 @@ export const defaultAppConfig: AppConfig = {
   },
   gastronomy: {
     visible: true,
-    topTitle: "LA NOSTRA PROPOSTA",
-    mainTitle: "Gastronomia Local",
+    topTitle: "", // Empty as requested to remove 'La Nostra Proposta'
+    mainTitle: "Gastronomia", // Simplified title
     description: "Productes de quilòmetre zero, receptes de tota la vida i el sabor autèntic de la brasa.",
     card1: {
       title: "Menú Diari",

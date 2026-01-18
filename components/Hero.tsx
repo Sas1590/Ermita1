@@ -465,7 +465,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                  </div>
              </div>
           ) : (
-             <div className="flex flex-col items-center lg:items-start w-full animate-fade-in-slow">
+             <div className={`flex flex-col w-full animate-fade-in-slow ${isFormVisible ? 'items-center lg:items-start' : 'items-center'}`}>
                 <div className={`flex flex-col items-center mb-8 transition-transform duration-700 w-full min-h-[200px] 
                     ${isFormVisible ? 'lg:justify-start lg:items-start' : 'justify-center'}
                 `}>
@@ -501,9 +501,9 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                     {config.hero.heroDescription}
                 </p>
 
-                <div className={`mt-8 flex flex-col items-center ${isFormVisible ? 'lg:items-start' : ''}`}>
+                <div className={`mt-8 flex flex-col items-center ${isFormVisible ? 'lg:items-start' : 'items-center'}`}>
                     <div className="h-px w-24 bg-primary/40 mb-4"></div>
-                    <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : ''}`}>
+                    <p className={`font-serif italic text-xl md:text-2xl text-primary tracking-wide text-shadow-lg text-center ${isFormVisible ? 'lg:text-left' : 'text-center'}`}>
                     {config.hero.heroSchedule || config.contact.schedule}
                     </p>
                 </div>

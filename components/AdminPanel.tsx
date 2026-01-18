@@ -1,389 +1,276 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth, db } from '../firebase';
 import { useConfig } from '../context/ConfigContext';
-import { db, auth } from '../firebase';
-import { ref, onValue } from 'firebase/database'; // Removed 'get', added 'onValue'
 import { ConfigTab } from './admin/ConfigTab';
 import { MenuManager } from './admin/MenuManager';
-import { Operations } from './admin/Operations';
 import { ProfileTab } from './admin/ProfileTab';
+import { Operations } from './admin/Operations';
+import { ref, get, onValue } from 'firebase/database';
 
-// --- CONFIGURACIÓ DE SUPER ADMINS ---
-// Afegeix aquí el teu email exacte per veure la pestanya de Seguretat
+// AFEGEIX AQUÍ ELS EMAILS QUE PODEN VEURE LA PESTANYA "SEGURETAT" (Còpies, Restaurar, Límits)
 const SUPER_ADMIN_EMAILS = [
-  "admin@ermita.com", 
-  "hola@ermitaparetdelgada.com",
-  "umc_admin@proton.me"
+    'umc_admin@proton.me'
 ];
 
 interface AdminPanelProps {
-  onSaveSuccess: () => void;
-  onClose: () => void;
-  initialTab?: 'config' | 'inbox' | 'reservations'; 
+    initialTab?: string;
+    onSaveSuccess: () => void;
+    onClose: () => void;
 }
 
-// Helper to validate if an image URL actually loads
-const validateImageUrl = (url: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-        if (!url || url.trim() === '') {
-            resolve(false);
-            return;
+export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', onSaveSuccess, onClose }) => {
+    const { config, updateConfig } = useConfig();
+    const [localConfig, setLocalConfig] = useState(config);
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    
+    // Notification Counts State
+    const [counts, setCounts] = useState({ inbox: 0, reservations: 0 });
+    
+    // Menu Manager State
+    const [menuViewState, setMenuViewState] = useState<'dashboard' | 'type_selection' | 'editor'>('dashboard');
+    const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+
+    // Profile State
+    const [personalAdminName, setPersonalAdminName] = useState("");
+
+    useEffect(() => {
+        setLocalConfig(config);
+    }, [config]);
+
+    useEffect(() => {
+        if (auth.currentUser) {
+            // CHECK IF USER IS SUPER ADMIN BASED ON EMAIL
+            const userEmail = auth.currentUser.email || '';
+            const isSuper = SUPER_ADMIN_EMAILS.includes(userEmail);
+            setIsSuperAdmin(isSuper);
+
+            // Fetch profile name
+            const uid = auth.currentUser.uid;
+            get(ref(db, `adminProfiles/${uid}/displayName`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    setPersonalAdminName(snapshot.val());
+                }
+            });
+
+            // --- REALTIME LISTENERS FOR NOTIFICATIONS ---
+            const messagesRef = ref(db, 'contactMessages');
+            const reservationsRef = ref(db, 'reservations');
+
+            const unsubMsg = onValue(messagesRef, (snapshot) => {
+                let count = 0;
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    // Count unread messages
+                    count = Object.values(data).filter((m: any) => !m.read).length;
+                }
+                setCounts(prev => ({ ...prev, inbox: count }));
+            });
+
+            const unsubRes = onValue(reservationsRef, (snapshot) => {
+                let count = 0;
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    // Count pending reservations
+                    count = Object.values(data).filter((r: any) => r.status === 'pending').length;
+                }
+                setCounts(prev => ({ ...prev, reservations: count }));
+            });
+
+            return () => {
+                unsubMsg();
+                unsubRes();
+            };
         }
-        const img = new Image();
-        img.src = url;
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
-    });
-};
+    }, []);
 
-const filterValidImages = async (images: string[]): Promise<string[]> => {
-    if (!Array.isArray(images)) return [];
-    
-    const validImages: string[] = [];
-    
-    const checks = images.map(async (url) => {
-        const isValid = await validateImageUrl(url);
-        return isValid ? url : null;
-    });
+    // Redirect if active tab is security but user is not superadmin
+    useEffect(() => {
+        if (activeTab === 'security' && !isSuperAdmin && auth.currentUser) {
+            setActiveTab('config');
+        }
+    }, [activeTab, isSuperAdmin]);
 
-    const results = await Promise.all(checks);
-    return results.filter((url): url is string => url !== null);
-};
+    const handleSave = async () => {
+        await updateConfig(localConfig);
+        onSaveSuccess();
+    };
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onSaveSuccess, onClose, initialTab = 'config' }) => {
-  const { config, updateConfig } = useConfig();
-  
-  // Local state for edits (Website Config)
-  const [localConfig, setLocalConfig] = useState(() => {
-      const initial = JSON.parse(JSON.stringify(config));
-      // Hydrate defaults if missing
-      const defaultDesc = "Descobreix els sabors autèntics de la nostra terra.";
-      if(initial.specialties?.items) {
-          initial.specialties.items = initial.specialties.items.map((item: any) => ({
-              ...item,
-              description: item.description || defaultDesc
-          }));
-      }
-      // SAFETY: Force extraMenus to be an array if it came in as object
-      if (initial.extraMenus && !Array.isArray(initial.extraMenus)) {
-          initial.extraMenus = Object.values(initial.extraMenus);
-      } else if (!initial.extraMenus) {
-          initial.extraMenus = [];
-      }
-      return initial;
-  });
+    const handleMenuDelete = (menuId: string) => {
+        if (menuId.startsWith('extra_')) {
+            const index = parseInt(menuId.replace('extra_', ''));
+            const newExtras = [...(localConfig.extraMenus || [])];
+            newExtras.splice(index, 1);
+            setLocalConfig({ ...localConfig, extraMenus: newExtras });
+            setMenuViewState('dashboard');
+            setEditingMenuId(null);
+        }
+    };
 
-  // NEW: Local state for Personal Admin Profile (Display Name)
-  const [personalAdminName, setPersonalAdminName] = useState("");
-  
-  // Refs for change detection (Config Only)
-  const initialConfigRef = useRef(JSON.stringify(localConfig));
-  
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  
-  // Error Modal State (No Browser Alerts)
-  const [errorModal, setErrorModal] = useState<{show: boolean, message: string}>({show: false, message: ''});
+    // Define Base Tabs
+    const tabs = [
+        { id: 'config', label: 'Contingut Web', icon: 'edit_document' },
+        { id: 'menu', label: 'Gestor Cartes', icon: 'restaurant_menu' },
+        { id: 'inbox', label: 'Missatges', icon: 'mail' },
+        { id: 'reservations', label: 'Reserves', icon: 'book_online' },
+        { id: 'profile', label: 'El Meu Perfil', icon: 'person' },
+    ];
 
-  // CHECK IF CURRENT USER IS SUPER ADMIN
-  const currentUserEmail = auth.currentUser?.email || "";
-  const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(currentUserEmail);
-  
-  // Fetch Personal Profile - REAL TIME LISTENER
-  useEffect(() => {
-      if (auth.currentUser) {
-          const uid = auth.currentUser.uid;
-          const profileRef = ref(db, `adminProfiles/${uid}/displayName`);
-          
-          // Listen to changes (onValue) instead of fetching once (get)
-          const unsubscribe = onValue(profileRef, (snapshot) => {
-              if (snapshot.exists()) {
-                  setPersonalAdminName(snapshot.val());
-              } else {
-                  setPersonalAdminName("");
-              }
-          });
+    // Only add Security tab if Super Admin
+    if (isSuperAdmin) {
+        tabs.push({ id: 'security', label: 'Seguretat', icon: 'security' });
+    }
 
-          return () => unsubscribe();
-      }
-  }, []);
-
-  // Update changes detection (GLOBAL CONFIG ONLY)
-  useEffect(() => {
-    const configChanged = JSON.stringify(localConfig) !== initialConfigRef.current;
-    setHasChanges(configChanged);
-  }, [localConfig]);
-
-  // Navigation State
-  const [activeTab, setActiveTab] = useState<'config' | 'inbox' | 'menu' | 'reservations' | 'security' | 'profile'>(
-      initialTab === 'inbox' ? 'inbox' : initialTab === 'reservations' ? 'reservations' : 'config'
-  );
-
-  // Counters for badges
-  const [counts, setCounts] = useState({ messages: 0, reservations: 0 });
-
-  useEffect(() => {
-      const msgRef = ref(db, 'contactMessages');
-      const resRef = ref(db, 'reservations');
-      
-      const unsubMsg = onValue(msgRef, (snap) => {
-          const c = snap.exists() ? Object.values(snap.val()).filter((m:any) => !m.read).length : 0;
-          setCounts(prev => ({...prev, messages: c}));
-      });
-      const unsubRes = onValue(resRef, (snap) => {
-          const c = snap.exists() ? Object.values(snap.val()).filter((r:any) => r.status === 'pending').length : 0;
-          setCounts(prev => ({...prev, reservations: c}));
-      });
-      return () => { unsubMsg(); unsubRes(); };
-  }, []);
-
-  // Menu Manager State
-  const [menuViewState, setMenuViewState] = useState<'dashboard' | 'type_selection' | 'editor'>('dashboard');
-  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
-
-  // --- SAVE FLOW (WEBSITE CONFIG ONLY) ---
-  const handleSaveClick = () => {
-      if (!hasChanges) return;
-      setShowSaveConfirmation(true);
-  };
-
-  const confirmSave = async () => {
-      setIsSaving(true);
-      try {
-          if (JSON.stringify(localConfig) !== initialConfigRef.current) {
-              // --- DATA SANITIZATION ---
-              const configToSave = JSON.parse(JSON.stringify(localConfig));
-
-              if (configToSave.hero && Array.isArray(configToSave.hero.backgroundImages)) {
-                  configToSave.hero.backgroundImages = await filterValidImages(configToSave.hero.backgroundImages);
-              }
-
-              if (configToSave.philosophy) {
-                  if (Array.isArray(configToSave.philosophy.productImages)) {
-                      configToSave.philosophy.productImages = await filterValidImages(configToSave.philosophy.productImages);
-                  }
-                  if (Array.isArray(configToSave.philosophy.historicImages)) {
-                      configToSave.philosophy.historicImages = await filterValidImages(configToSave.philosophy.historicImages);
-                  }
-              }
-
-              await updateConfig(configToSave);
-              
-              setLocalConfig(configToSave);
-              initialConfigRef.current = JSON.stringify(configToSave);
-          }
-          
-          setHasChanges(false);
-          setShowSaveConfirmation(false);
-          onSaveSuccess();
-      } catch (e) {
-          console.error(e);
-          setErrorModal({ show: true, message: "Error guardant els canvis. Si us plau, revisa la connexió a internet." });
-          setIsSaving(false);
-          setShowSaveConfirmation(false);
-      }
-  };
-
-  const handleMenuDelete = (targetId?: string) => {
-      const idToDelete = targetId || editingMenuId;
-      if (!idToDelete?.startsWith('extra_')) return;
-      
-      const index = parseInt(idToDelete.replace('extra_', ''));
-      setLocalConfig((prev:any) => {
-          const newExtras = [...(prev.extraMenus || [])];
-          newExtras.splice(index, 1);
-          return { ...prev, extraMenus: newExtras };
-      });
-      
-      if (menuViewState === 'editor') {
-          setMenuViewState('dashboard');
-          setEditingMenuId(null);
-      }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4">
-      
-      {/* Main Container */}
-      <div className="bg-beige text-secondary rounded-lg shadow-2xl max-w-7xl w-full h-[90vh] flex flex-col relative border border-primary/20 overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-white border-b border-primary/20 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
-          
-          {/* LEFT SIDE: Title + User Info + PROFILE BUTTON (Separated) */}
-          <div className="flex flex-col">
-            <h2 className="font-serif text-2xl font-bold text-secondary flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">settings_suggest</span>
-              Panell d'Administrador
-            </h2>
-            <div className="flex items-center gap-4 ml-9 mt-1">
-                <span className="text-xs text-gray-400 font-mono">{auth.currentUser?.email}</span>
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 animate-[fadeIn_0.2s_ease-out]">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
+            
+            <div className="bg-[#fdfbf7] w-full max-w-[98vw] h-[95vh] rounded-xl shadow-2xl flex flex-col overflow-hidden relative z-10 border border-white/20">
                 
-                {/* --- INDIVIDUAL PROFILE BUTTON --- */}
-                <button 
-                    onClick={() => setActiveTab('profile')} 
-                    className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 px-3 py-1 rounded transition-all border shadow-sm
-                        ${activeTab === 'profile' 
-                            ? 'bg-green-600 text-white border-green-700 ring-2 ring-green-100' 
-                            : 'bg-white text-green-600 border-green-200 hover:bg-green-50 hover:border-green-300'
-                        }`}
-                >
-                    <span className="material-symbols-outlined text-sm">person</span>
-                    El meu Perfil
-                </button>
-            </div>
-          </div>
-          
-          {/* RIGHT SIDE: Content Navigation Tabs (Clean) */}
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
-             <button onClick={() => setActiveTab('config')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all whitespace-nowrap ${activeTab === 'config' ? 'bg-white shadow text-primary' : 'text-gray-500'}`}>General</button>
-             <button onClick={() => { setActiveTab('menu'); setMenuViewState('dashboard'); }} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all whitespace-nowrap ${activeTab === 'menu' ? 'bg-white shadow text-primary' : 'text-gray-500'}`}>Menús</button>
-             <button onClick={() => setActiveTab('reservations')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all relative whitespace-nowrap ${activeTab === 'reservations' ? 'bg-white shadow text-red-600' : 'text-gray-500'}`}>
-                 Reserves {counts.reservations > 0 && <span className="ml-1 bg-red-500 text-white text-[9px] px-1.5 rounded-full">{counts.reservations}</span>}
-             </button>
-             <button onClick={() => setActiveTab('inbox')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all relative whitespace-nowrap ${activeTab === 'inbox' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>
-                 Missatges {counts.messages > 0 && <span className="ml-1 bg-blue-500 text-white text-[9px] px-1.5 rounded-full">{counts.messages}</span>}
-             </button>
-             
-             {/* PROTECTED SECURITY TAB - ONLY FOR SUPER ADMINS */}
-             {isSuperAdmin && (
-                <button onClick={() => setActiveTab('security')} className={`px-4 py-2 rounded text-xs font-bold uppercase transition-all whitespace-nowrap flex items-center gap-1 ${activeTab === 'security' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>
-                    <span className="material-symbols-outlined text-sm">lock</span> Seguretat
-                </button>
-             )}
-          </div>
-        </div>
-
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-beige/50 pb-24 relative">
-            {activeTab === 'config' && (
-                <ConfigTab 
-                    localConfig={localConfig} 
-                    setLocalConfig={setLocalConfig} 
-                    userEmail={auth.currentUser?.email || ''} 
-                />
-            )}
-            
-            {activeTab === 'menu' && (
-                <MenuManager 
-                    localConfig={localConfig} 
-                    setLocalConfig={setLocalConfig}
-                    menuViewState={menuViewState}
-                    setMenuViewState={setMenuViewState}
-                    editingMenuId={editingMenuId}
-                    setEditingMenuId={setEditingMenuId}
-                    onDeleteCard={handleMenuDelete}
-                />
-            )}
-
-            {/* PROFILE TAB RENDER */}
-            {activeTab === 'profile' && (
-                <ProfileTab 
-                    currentName={personalAdminName}
-                    setCurrentName={setPersonalAdminName}
-                />
-            )}
-
-            {(activeTab === 'reservations' || activeTab === 'inbox') && (
-                <Operations 
-                    activeTab={activeTab} 
-                    config={config} 
-                    updateConfig={updateConfig} 
-                    setLocalConfig={setLocalConfig} 
-                />
-            )}
-
-            {/* PROTECTED SECURITY CONTENT */}
-            {activeTab === 'security' && isSuperAdmin && (
-                <Operations 
-                    activeTab='security' 
-                    config={config} 
-                    updateConfig={updateConfig} 
-                    setLocalConfig={setLocalConfig} 
-                />
-            )}
-        </div>
-
-        {/* Footer - HIDE IF IN PROFILE TAB */}
-        {activeTab !== 'profile' && (
-            <div className="p-4 border-t border-gray-200 bg-white shrink-0 flex justify-end gap-3 items-center z-10 relative">
-            <button onClick={onClose} className="px-6 py-2 border border-gray-300 rounded text-sm font-bold uppercase hover:bg-gray-50">Tancar</button>
-            
-            <button 
-                    onClick={handleSaveClick} 
-                    disabled={!hasChanges} 
-                    className={`px-8 py-2 rounded shadow text-sm font-bold uppercase transition-all flex items-center gap-2
-                        ${hasChanges ? 'bg-primary text-white hover:bg-accent cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-70'}`}
-                >
-                    Guardar Canvis
-                    {hasChanges && <span className="material-symbols-outlined text-lg">save</span>}
-            </button>
-            </div>
-        )}
-        
-        {/* Footer for Profile Tab - Just Close Button */}
-        {activeTab === 'profile' && (
-            <div className="p-4 border-t border-gray-200 bg-white shrink-0 flex justify-end gap-3 items-center z-10 relative">
-                <div className="mr-auto text-xs text-green-700 italic flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">security</span>
-                    La configuració del perfil es guarda automàticament al teu compte privat.
-                </div>
-                <button onClick={onClose} className="px-6 py-2 border border-gray-300 rounded text-sm font-bold uppercase hover:bg-gray-50">Tancar</button>
-            </div>
-        )}
-
-        {/* --- CONFIRMATION MODAL --- */}
-        {showSaveConfirmation && (
-            <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full text-center border-t-4 border-primary">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="material-symbols-outlined text-3xl text-primary">save</span>
+                {/* Header */}
+                <div className="bg-[#1a1816] text-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-black shadow-lg shadow-primary/20">
+                            <span className="material-symbols-outlined text-2xl">settings</span>
+                        </div>
+                        <div>
+                            <h2 className="font-serif text-xl font-bold tracking-wide">Panell d'Administració</h2>
+                            <p className="text-xs text-gray-400">Gestiona el contingut i les operacions</p>
+                        </div>
                     </div>
-                    <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">S'han realitzat canvis</h3>
-                    <p className="text-gray-500 mb-8 leading-relaxed">
-                        Estàs segur que desitges guardar-los i aplicar-los a la web pública?
-                    </p>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
                         <button 
-                            onClick={() => setShowSaveConfirmation(false)}
-                            className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors"
+                            onClick={handleSave}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-wider flex items-center gap-2 transition-all shadow-lg hover:shadow-green-900/20"
                         >
-                            Rebutjar
+                            <span className="material-symbols-outlined text-lg">save</span>
+                            Guardar Canvis
                         </button>
                         <button 
-                            onClick={confirmSave}
-                            disabled={isSaving}
-                            className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent shadow-md transition-colors flex items-center justify-center gap-2"
+                            onClick={onClose}
+                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
                         >
-                            {isSaving ? 'Validant...' : 'Acceptar'}
+                            <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
                 </div>
-            </div>
-        )}
 
-        {/* --- ERROR MODAL --- */}
-        {errorModal.show && (
-            <div className="absolute inset-0 bg-black/60 z-[150] flex items-center justify-center p-4 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full text-center border-t-4 border-red-500">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                        <span className="material-symbols-outlined text-3xl">error</span>
+                <div className="flex flex-1 overflow-hidden">
+                    {/* Sidebar */}
+                    <div className="w-20 md:w-64 bg-[#2c241b] flex-shrink-0 flex flex-col border-r border-white/5">
+                        
+                        {/* User Profile - Top Position - Minimalist Green Email */}
+                        <div className="p-5 border-b border-white/5 mb-2 hidden md:block">
+                            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">LOGEJAT COM:</p>
+                            <p className="text-xs font-bold text-green-400 truncate" title={auth.currentUser?.email || ''}>
+                                {auth.currentUser?.email}
+                            </p>
+                            {isSuperAdmin && (
+                                <span className="inline-block mt-2 text-[9px] bg-purple-900 text-purple-200 px-2 py-0.5 rounded border border-purple-700 uppercase tracking-widest">
+                                    Super Admin
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto py-2 space-y-2 px-3">
+                            {tabs.map(tab => {
+                                // Calculate badges
+                                let badgeCount = 0;
+                                let badgeColor = "";
+                                
+                                if (tab.id === 'inbox') {
+                                    badgeCount = counts.inbox;
+                                    badgeColor = "bg-blue-500";
+                                } else if (tab.id === 'reservations') {
+                                    badgeCount = counts.reservations;
+                                    badgeColor = "bg-red-500";
+                                }
+
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative
+                                            ${activeTab === tab.id 
+                                                ? 'bg-primary text-black font-bold shadow-md' 
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                    >
+                                        <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? 'text-black' : 'text-gray-500 group-hover:text-white'}`}>{tab.icon}</span>
+                                        <span className="text-sm uppercase tracking-wider hidden md:block flex-1 text-left">{tab.label}</span>
+                                        
+                                        {/* Notification Badge */}
+                                        {badgeCount > 0 && (
+                                            <span className={`${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ml-2 hidden md:flex items-center justify-center min-w-[20px]`}>
+                                                {badgeCount}
+                                            </span>
+                                        )}
+                                        
+                                        {/* Mobile Dot Notification (only visible if sidebar is collapsed/small) */}
+                                        {badgeCount > 0 && (
+                                            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${badgeColor} md:hidden`}></div>
+                                        )}
+
+                                        {activeTab === tab.id && (
+                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full hidden md:block"></div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">Error Guardant</h3>
-                    <p className="text-gray-500 mb-8 leading-relaxed text-sm">
-                        {errorModal.message}
-                    </p>
-                    <button 
-                        onClick={() => setErrorModal({ show: false, message: '' })}
-                        className="w-full py-3 bg-red-500 text-white rounded font-bold uppercase text-xs hover:bg-red-600 shadow-md transition-colors"
-                    >
-                        Entesos, Tancar
-                    </button>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto bg-[#fdfbf7] relative scroll-smooth">
+                        <div className="max-w-[1600px] w-full mx-auto p-6 md:p-8 pb-24">
+                            {activeTab === 'config' && (
+                                <ConfigTab 
+                                    localConfig={localConfig} 
+                                    setLocalConfig={setLocalConfig} 
+                                    userEmail={auth.currentUser?.email || ''} 
+                                />
+                            )}
+                            
+                            {activeTab === 'menu' && (
+                                <MenuManager 
+                                    localConfig={localConfig} 
+                                    setLocalConfig={setLocalConfig}
+                                    menuViewState={menuViewState}
+                                    setMenuViewState={setMenuViewState}
+                                    editingMenuId={editingMenuId}
+                                    setEditingMenuId={setEditingMenuId}
+                                    onDeleteCard={handleMenuDelete}
+                                />
+                            )}
+
+                            {activeTab === 'profile' && (
+                                <ProfileTab 
+                                    currentName={personalAdminName}
+                                    setCurrentName={setPersonalAdminName}
+                                />
+                            )}
+
+                            {(activeTab === 'reservations' || activeTab === 'inbox') && (
+                                <Operations 
+                                    activeTab={activeTab} 
+                                    config={config} 
+                                    updateConfig={updateConfig} 
+                                    setLocalConfig={setLocalConfig} 
+                                />
+                            )}
+
+                            {activeTab === 'security' && isSuperAdmin && (
+                                <Operations 
+                                    activeTab='security' 
+                                    config={config} 
+                                    updateConfig={updateConfig} 
+                                    setLocalConfig={setLocalConfig} 
+                                />
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
-        )}
-
-      </div>
-    </div>
-  );
+        </div>
+    );
 };

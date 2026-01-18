@@ -13,7 +13,7 @@ const Intro: React.FC = () => {
             <span className="font-serif italic text-[#8b5a2b] text-lg md:text-xl tracking-wider font-medium">
             {config.intro.smallTitle}
             </span>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-secondary mt-1 leading-none">
+            <h2 className="font-serif text-5xl md:text-7xl font-bold text-secondary mt-1 leading-none">
             {config.intro.mainTitle}
             </h2>
         </div>

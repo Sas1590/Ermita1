@@ -1,248 +1,156 @@
 import React, { useState } from 'react';
 import { LogoEditor, ImageArrayEditor, IconPicker } from './AdminShared';
+import { AppConfig } from '../../context/ConfigContext';
 
 interface ConfigTabProps {
-    localConfig: any;
-    setLocalConfig: (config: any) => void;
+    localConfig: AppConfig;
+    setLocalConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
     userEmail: string;
 }
 
-// --- HELPER COMPONENT: IMAGE UPLOAD GUIDE ---
-const ImageUploadGuide = () => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50 overflow-hidden shadow-sm transition-all">
-            <button 
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between px-6 py-4 bg-blue-100/50 hover:bg-blue-100 transition-colors text-left"
-            >
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-500 text-white rounded-full p-1.5 shadow-sm">
-                        <span className="material-symbols-outlined text-lg block">help</span>
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide">AJUDA: Com pujar imatges correctament?</h4>
-                        <p className="text-xs text-blue-700 mt-0.5">Guia ràpida per obtenir enllaços vàlids (Postimages)</p>
-                    </div>
-                </div>
-                <span className={`material-symbols-outlined text-blue-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
-            </button>
-
-            {isOpen && (
-                <div className="px-6 py-6 border-t border-blue-200 bg-white/50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* LEFT COLUMN: EXPLANATION + PRIVACY NOTE */}
-                        <div className="flex flex-col h-full">
-                            <div className="mb-6">
-                                <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-base">info</span>
-                                    Important: No pugem fitxers
-                                </h5>
-                                <p className="text-xs text-gray-600 leading-relaxed mb-4">
-                                    Aquest web funciona amb <strong>enllaços externs (URL)</strong> per mantenir-la ràpida i lleugera. 
-                                    No pots pujar l'arxiu directament des del teu ordinador al panell; primer l'has de pujar a internet.
-                                </p>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    L'enllaç correcte <strong>sempre ha d'acabar</strong> en una extensió d'imatge:<br/>
-                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono">.jpg</code> 
-                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.png</code> 
-                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-red-500 font-mono ml-1">.webp</code>
-                                </p>
-                            </div>
-
-                            {/* PRIVACY NOTICE BOX (New) */}
-                            <div className="mt-auto bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
-                                <h5 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-sm">public</span>
-                                    Nota sobre Privacitat
-                                </h5>
-                                <p className="text-[10px] text-yellow-900/80 leading-relaxed">
-                                    Recorda que Postimages és un servei públic. Les imatges que hi pugis seran accessibles per a qualsevol persona que tingui l'enllaç.
-                                    <br/><br/>
-                                    Això és <strong>perfecte i segur per a fotos del restaurant</strong> (plats, local, equip...), però evita utilitzar-ho per pujar documents privats o dades sensibles.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* RIGHT COLUMN: STEPS */}
-                        <div className="bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
-                            <h5 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-base">rocket_launch</span>
-                                Pas a pas (Recomanat: Postimages)
-                            </h5>
-                            <ol className="space-y-3">
-                                <li className="flex gap-3 text-xs text-gray-700">
-                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">1</span>
-                                    <span>
-                                        Entra a <a href="https://postimages.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-bold hover:text-blue-800">postimages.org</a> (no cal registre).
-                                    </span>
-                                </li>
-                                <li className="flex gap-3 text-xs text-gray-700">
-                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">2</span>
-                                    <div className="bg-blue-50 p-3 rounded border border-blue-100 w-full">
-                                        <span className="block font-bold text-blue-800 mb-1 uppercase text-[10px] tracking-wider flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-sm">settings</span> Configuració Obligatòria
-                                        </span>
-                                        <span className="block mb-1">Abans de prémer el botó de pujar, selecciona:</span>
-                                        <ul className="list-disc pl-4 mt-1 space-y-1 text-gray-600 font-medium">
-                                            <li><strong>"No cambiar el tamaño de mi imagen"</strong> (per evitar que es vegi borrosa).</li>
-                                            <li><strong>"Sin caducidad"</strong> (perquè no s'esborri mai de la web).</li>
-                                        </ul>
-                                    </div>
-                                </li>
-                                <li className="flex gap-3 text-xs text-gray-700">
-                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">3</span>
-                                    <span>
-                                        Prem el botó blau <strong>"Tria les imatges"</strong> i puja la teva foto.
-                                    </span>
-                                </li>
-                                <li className="flex gap-3 text-xs text-gray-700">
-                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">4</span>
-                                    <span>
-                                        Un cop carregada, apareixerà una llista de codis.<br/>
-                                        Busca la fila que diu: <strong>Enllaç directe (Direct Link)</strong>.
-                                    </span>
-                                </li>
-                                <li className="flex gap-3 text-xs text-gray-700">
-                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0">5</span>
-                                    <span>
-                                        Copia aquell enllaç i enganxa'l a la casella del panell.
-                                        <span className="block mt-2 text-gray-500 italic font-medium bg-gray-50 p-2 rounded border border-gray-100">
-                                            * Aquest sistema és el mateix per a qualsevol foto que vulguis canviar a tota la web.
-                                        </span>
-                                    </span>
-                                </li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
 export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfig, userEmail }) => {
-    // --- STATE FOR SUB-TABS NAVIGATION ---
-    const [subTab, setSubTab] = useState<'general' | 'intro' | 'reserves' | 'gastronomy' | 'history' | 'specialties' | 'contact'>('general');
+    const [activeSubTab, setActiveSubTab] = useState('global');
+    const [showImageHelp, setShowImageHelp] = useState(false);
 
-    // Helper to handle simple key-value changes
-    const handleChange = (section: string, key: string, value: string) => {
-        if (section === 'contact' && key === 'phoneNumbers') {
-            setLocalConfig((prev: any) => ({
-                ...prev,
-                [section]: {
-                    ...prev[section],
-                    [key]: value.split(',').map(s => s.trim()), 
-                },
-            }));
-        } else {
-            setLocalConfig((prev: any) => ({
-                ...prev,
-                [section]: {
-                    ...prev[section],
-                    [key]: value,
-                },
-            }));
-        }
-    };
-
-    // Helper to handle nested changes
-    const handleNestedChange = (section: string, objectName: string, field: string, value: any) => {
-         setLocalConfig((prev: any) => ({
+    // Helper to update specific nested parts of config
+    const updateConfig = (section: keyof AppConfig, key: string, value: any) => {
+        setLocalConfig(prev => ({
             ...prev,
             [section]: {
-                ...prev[section],
-                [objectName]: {
-                    ...(prev[section]?.[objectName] || {}),
-                    [field]: value
-                }
+                ...(prev[section] as any),
+                [key]: value
             }
         }));
     };
 
-    // Helper for Section Visibility Toggle (Compact Style)
-    const renderVisibilityToggle = (isVisible: boolean, onToggle: () => void, labelOn = "Visible", labelOff = "Ocult", activeColorClass = "bg-[#8b5a2b] border-[#6b4521]") => (
+    // Helper for nested objects inside a section (e.g. gastronomy.card1)
+    const updateNestedConfig = (section: keyof AppConfig, objectKey: string, key: string, value: any) => {
+         setLocalConfig(prev => {
+             const sectionData = prev[section] as any;
+             return {
+                ...prev,
+                [section]: {
+                    ...sectionData,
+                    [objectKey]: {
+                        ...sectionData[objectKey],
+                        [key]: value
+                    }
+                }
+             };
+         });
+    };
+
+    // Helper to update items in an array (e.g. specialties.items)
+    const updateItemInArray = (section: keyof AppConfig, arrayKey: string, index: number, field: string, value: any) => {
+        setLocalConfig(prev => {
+            const sectionData = prev[section] as any;
+            const newArray = [...(sectionData[arrayKey] || [])];
+            newArray[index] = {
+                ...newArray[index],
+                [field]: value
+            };
+            return {
+                ...prev,
+                [section]: {
+                    ...sectionData,
+                    [arrayKey]: newArray
+                }
+            };
+        });
+    };
+
+    // Helper to auto-update label/icon when footer link target changes
+    const handleFooterLinkChange = (index: number, targetTab: string) => {
+        let label = '';
+        let icon = 'link'; // Default
+
+        // Logic to extract title/icon based on targetTab
+        if (targetTab === 'daily') {
+            label = localConfig.dailyMenu?.title || 'Menú Diari';
+            icon = localConfig.dailyMenu?.icon || 'lunch_dining';
+        } else if (targetTab === 'food') {
+            const title = !Array.isArray(localConfig.foodMenu) ? localConfig.foodMenu?.title : 'Carta de Menjar';
+            const ico = !Array.isArray(localConfig.foodMenu) ? localConfig.foodMenu?.icon : 'restaurant_menu';
+            label = title || 'Carta de Menjar';
+            icon = ico || 'restaurant_menu';
+        } else if (targetTab === 'wine') {
+            const title = !Array.isArray(localConfig.wineMenu) ? localConfig.wineMenu?.title : 'Carta de Vins';
+            const ico = !Array.isArray(localConfig.wineMenu) ? localConfig.wineMenu?.icon : 'wine_bar';
+            label = title || 'Carta de Vins';
+            icon = ico || 'wine_bar';
+        } else if (targetTab === 'group') {
+            label = localConfig.groupMenu?.title || 'Menú de Grup';
+            icon = localConfig.groupMenu?.icon || 'diversity_3';
+        } else if (targetTab.startsWith('extra_')) {
+            const i = parseInt(targetTab.replace('extra_', ''));
+            const extra = (localConfig.extraMenus || [])[i];
+            if (extra) {
+                label = extra.title;
+                icon = extra.icon || 'restaurant';
+            }
+        }
+
+        const newLinks = [...(localConfig.gastronomy.footerLinks || [])];
+        // Ensure array has size if needed (though it should be initialized)
+        while (newLinks.length <= index) {
+            newLinks.push({ label: '', icon: 'link', targetTab: '' });
+        }
+        
+        newLinks[index] = { targetTab, label, icon };
+        updateConfig('gastronomy', 'footerLinks', newLinks);
+    };
+
+    // Helper component for Visibility Toggles (Standardized)
+    const VisibilityToggle = ({ 
+        isVisible, 
+        onToggle, 
+        labelVisible = "VISIBLE",
+        labelHidden = "OCULT",
+        colorClass = "bg-green-600 border-green-600",
+        offColorClass = "bg-gray-400 border-gray-400"
+    }: { 
+        isVisible: boolean, 
+        onToggle: () => void, 
+        labelVisible?: string, 
+        labelHidden?: string, 
+        colorClass?: string, 
+        offColorClass?: string 
+    }) => (
         <button 
-            onClick={onToggle}
-            className={`absolute top-0 left-0 px-4 py-2 flex items-center gap-2 rounded-br-2xl shadow-sm transition-all z-10 cursor-pointer border-b border-r
-                ${!isVisible
-                    ? 'bg-gray-200 text-gray-500 border-gray-300 hover:bg-gray-300' 
-                    : `${activeColorClass} text-white hover:brightness-110`
-                }`} 
-            title={!isVisible ? "Mostrar Secció" : "Ocultar Secció"}
+            onClick={onToggle} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm mb-6
+            ${isVisible ? colorClass : offColorClass} hover:opacity-90 hover:shadow-md`}
         >
-            <span className="material-symbols-outlined text-lg">{!isVisible ? 'visibility_off' : 'visibility'}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">{!isVisible ? labelOff : labelOn}</span>
+            <span className="material-symbols-outlined text-sm">
+                {isVisible ? 'visibility' : 'visibility_off'}
+            </span>
+            {isVisible ? labelVisible : labelHidden}
         </button>
     );
 
-    // DYNAMIC MENU OPTIONS FOR SELECTORS (Includes ICON now)
-    const menuOptions = [
-        { 
-            id: 'daily', 
-            label: 'Menú Diari (Fix)', 
-            icon: localConfig.dailyMenu?.icon || 'lunch_dining' 
-        },
-        { 
-            id: 'food', 
-            label: 'Carta de Menjar (Fix)', 
-            icon: (!Array.isArray(localConfig.foodMenu) && localConfig.foodMenu?.icon) ? localConfig.foodMenu.icon : 'restaurant_menu' 
-        },
-        { 
-            id: 'wine', 
-            label: 'Carta de Vins (Fix)', 
-            icon: (!Array.isArray(localConfig.wineMenu) && localConfig.wineMenu?.icon) ? localConfig.wineMenu.icon : 'wine_bar' 
-        },
-        { 
-            id: 'group', 
-            label: 'Menú de Grup (Fix)', 
-            icon: localConfig.groupMenu?.icon || 'diversity_3' 
-        },
-        ...(Array.isArray(localConfig.extraMenus) ? localConfig.extraMenus : []).map((menu: any, idx: number) => ({
-            id: `extra_${idx}`,
-            label: `${menu.title || 'Sense Títol'} (Extra)`,
-            icon: menu.icon || 'restaurant'
-        }))
+    const subTabs = [
+        { id: 'global', label: 'Marca i Portada', icon: 'verified' },
+        { id: 'reservations', label: 'Botó Reserva', icon: 'calendar_month' },
+        { id: 'intro', label: 'Intro', icon: 'edit_note' },
+        { id: 'gastronomy', label: 'Gastronomia', icon: 'restaurant_menu' },
+        { id: 'specialties', label: 'Especialitats', icon: 'stars' },
+        { id: 'philosophy', label: 'Filosofia / Història', icon: 'spa' },
+        { id: 'contact', label: 'Contacte', icon: 'contact_mail' },
     ];
 
-    // Get max hero images from config, default to 5 if undefined
-    const maxHeroImages = localConfig.adminSettings?.maxHeroImages || 5;
-    const currentHeroImagesCount = (localConfig.hero?.backgroundImages || []).length;
-    const isHeroFull = currentHeroImagesCount >= maxHeroImages;
-
-    // Dynamic limits for Philosophy (Default 5)
-    const maxProductImages = localConfig.adminSettings?.maxProductImages || 5;
-    const maxHistoricImages = localConfig.adminSettings?.maxHistoricImages || 5;
-    
-    const currentProductCount = (localConfig.philosophy?.productImages || []).length;
-    const currentHistoricCount = (localConfig.philosophy?.historicImages || []).length;
-    
-    const isProductFull = currentProductCount >= maxProductImages;
-    const isHistoricFull = currentHistoricCount >= maxHistoricImages;
-
     return (
-        <div className="animate-[fadeIn_0.3s_ease-out]">
+        <div className="animate-[fadeIn_0.3s_ease-out] pb-32">
             
-            {/* --- SUB-NAVIGATION BAR --- */}
-            {/* Added thicker border (border-2) and darker color (border-gray-300) with more shadow (shadow-md) */}
-            <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl border-2 border-gray-300 shadow-md sticky top-0 z-20 overflow-x-auto">
-                {[
-                    { id: 'general', label: 'General i Portada', icon: 'branding_watermark' },
-                    { id: 'intro', label: 'Intro', icon: 'description' },
-                    { id: 'reserves', label: 'Botó Reserva', icon: 'calendar_month' },
-                    { id: 'gastronomy', label: 'Gastronomia', icon: 'restaurant' },
-                    { id: 'specialties', label: 'Especialitats', icon: 'stars' },
-                    { id: 'history', label: 'Història', icon: 'history_edu' },
-                    { id: 'contact', label: 'Contacte', icon: 'contact_mail' },
-                ].map((tab) => (
-                     <button
+            {/* SUB-NAVIGATION BAR */}
+            <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-gray-200 sticky top-0 z-20">
+                {subTabs.map(tab => (
+                    <button
                         key={tab.id}
-                        onClick={() => setSubTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold uppercase transition-all whitespace-nowrap
-                            ${subTab === tab.id 
-                                ? 'bg-[#2c241b] text-white shadow-md' 
-                                : 'text-gray-500 hover:bg-gray-100'
+                        onClick={() => setActiveSubTab(tab.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
+                            ${activeSubTab === tab.id 
+                                ? 'bg-[#2c241b] text-white shadow-md transform scale-105' 
+                                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                             }`}
                     >
                         <span className="material-symbols-outlined text-lg">{tab.icon}</span>
@@ -251,562 +159,841 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ localConfig, setLocalConfi
                 ))}
             </div>
 
-            {/* --- CONTENT AREA --- */}
-            
-            {/* 1. GENERAL & BRAND */}
-            {subTab === 'general' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-orange-50 p-6 rounded-xl shadow-sm border border-orange-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-500"></div>
-                        <h3 className="font-serif text-xl font-bold text-orange-800 mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-orange-200 flex items-center justify-center text-orange-700">
-                                <span className="material-symbols-outlined">branding_watermark</span>
-                            </div>
-                            Identitat (Logo)
-                        </h3>
-                        <div className="bg-white p-4 rounded-lg border border-orange-100 shadow-sm space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Logo Principal</label>
-                                <LogoEditor 
-                                    value={localConfig.brand?.logoUrl || ''} 
-                                    onChange={(val) => handleChange('brand', 'logoUrl', val)} 
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-orange-100">
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Descripció (Sota el logo)</label>
-                                    <textarea
-                                        rows={2}
-                                        value={localConfig.hero?.heroDescription || ''}
-                                        onChange={(e) => handleChange('hero', 'heroDescription', e.target.value)}
-                                        placeholder="Una experiència gastronòmica..."
-                                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none bg-white resize-y"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Text Horari (Portada)</label>
-                                    <input
-                                        type="text"
-                                        value={localConfig.hero?.heroSchedule || ''}
-                                        onChange={(e) => handleChange('hero', 'heroSchedule', e.target.value)}
-                                        placeholder="De dimarts a diumenge de 11:00 a 17:00 h."
-                                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-orange-500 outline-none bg-white font-serif italic text-gray-600"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* HERO IMAGES */}
-                    <div className="bg-amber-50 p-6 rounded-xl shadow-sm border border-amber-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
-                        
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <h3 className="font-serif text-xl font-bold text-amber-800 flex items-center gap-2">
-                                <div className="w-8 h-8 rounded bg-amber-200 flex items-center justify-center text-amber-700">
-                                    <span className="material-symbols-outlined">image</span>
-                                </div>
-                                Imatges de Fons (Portada)
-                            </h3>
+            <div className="space-y-8">
+                
+                {/* --- GLOBAL (MARCA I PORTADA) TAB --- */}
+                {activeSubTab === 'global' && (
+                    <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-orange-50/50 p-6 rounded-xl shadow-sm border-l-4 border-orange-400 border-t border-r border-b border-orange-100">
+                            <h4 className="font-serif text-xl font-bold text-orange-900 mb-6 flex items-center gap-2">
+                                <span className="material-symbols-outlined bg-orange-200 p-1 rounded text-orange-800">branding_watermark</span> 
+                                Identitat (Logo) i Textos Portada
+                            </h4>
                             
-                            {/* VISUAL COUNTER (Badge) */}
-                            <div className={`px-3 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-2 ${
-                                isHeroFull
-                                ? 'bg-red-50 text-red-600 border-red-200' 
-                                : 'bg-green-50 text-green-700 border-green-200'
-                            }`}>
-                                <span className="material-symbols-outlined text-sm">{isHeroFull ? 'block' : 'add_photo_alternate'}</span>
-                                <span>Imatges: {currentHeroImagesCount} / {maxHeroImages}</span>
-                            </div>
-                        </div>
-
-                        {/* HELP MESSAGE MOVED HERE */}
-                        <ImageUploadGuide />
-
-                        <div className="bg-white p-4 rounded-lg border border-amber-100 shadow-sm">
-                            <ImageArrayEditor 
-                                images={localConfig.hero?.backgroundImages || []}
-                                onChange={(newImages) => setLocalConfig((prev:any) => ({
-                                    ...prev,
-                                    hero: { ...prev.hero, backgroundImages: newImages }
-                                }))}
-                                labelPrefix="Slide"
-                                maxLimit={maxHeroImages} 
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 2. INTRO */}
-            {subTab === 'intro' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className={`bg-lime-50 p-6 pt-16 rounded-xl shadow-sm border border-lime-200 relative overflow-hidden transition-all ${localConfig.intro?.visible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.intro?.visible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, intro: { ...prev.intro, visible: !prev.intro?.visible } })),
-                            "Visible", "Ocult", "bg-lime-600 border-lime-700"
-                        )}
-
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-olive"></div>
-                        <h3 className="font-serif text-xl font-bold text-olive mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-lime-200 flex items-center justify-center text-olive">
-                                <span className="material-symbols-outlined">description</span>
-                            </div>
-                            Intro (Frase Inicial)
-                        </h3>
-                        <div className="bg-white p-6 rounded-lg border border-lime-100 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="bg-white p-6 rounded-lg border border-orange-100 shadow-sm space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label>
-                                    <input 
-                                        type="text" 
-                                        value={localConfig.intro?.mainTitle || ''} 
-                                        onChange={(e) => handleChange('intro', 'mainTitle', e.target.value)} 
-                                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-olive focus:border-olive outline-none bg-white" 
+                                    <label className="block text-[10px] font-bold uppercase text-gray-400 mb-2">Logo Principal</label>
+                                    <LogoEditor 
+                                        value={localConfig.brand?.logoUrl || ''} 
+                                        onChange={(val) => setLocalConfig(prev => ({...prev, brand: {...prev.brand, logoUrl: val}}))} 
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Petit</label>
-                                    <input type="text" value={localConfig.intro?.smallTitle || ''} onChange={(e) => handleChange('intro', 'smallTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white" />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-xs font-bold uppercase text-gray-500">Descripció (Cita)</label>
-                                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
-                                        (localConfig.intro?.description?.length || 0) >= 350 
-                                        ? 'bg-red-50 border-red-200 text-red-600 font-bold' 
-                                        : 'bg-gray-50 border-gray-200 text-gray-400'
-                                    }`}>
-                                        {localConfig.intro?.description?.length || 0}/350
-                                    </span>
-                                </div>
-                                <textarea 
-                                    value={localConfig.intro?.description || ''} 
-                                    onChange={(e) => handleChange('intro', 'description', e.target.value)} 
-                                    rows={3} 
-                                    maxLength={350} 
-                                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-olive outline-none bg-white"
-                                ></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* 3. RESERVES (Previously Hero) */}
-            {subTab === 'reserves' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className={`bg-[#fffcf5] p-8 pt-16 rounded-xl shadow-md border border-[#8b5a2b]/20 relative overflow-hidden transition-all ${localConfig.hero?.reservationVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.hero?.reservationVisible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, hero: { ...prev.hero, reservationVisible: !prev.hero?.reservationVisible } })),
-                            "Reserves Visibles",
-                            "Reserves Ocultes"
-                        )}
-
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-[#8b5a2b]/5 rounded-bl-full"></div>
-                        <div className="flex items-center gap-4 mb-8 border-b-2 border-[#8b5a2b]/10 pb-4"><div className="w-12 h-12 bg-gradient-to-br from-[#8b5a2b] to-[#5d3a1a] text-white rounded-lg shadow-lg flex items-center justify-center transform rotate-3"><span className="material-symbols-outlined text-2xl">restaurant_menu</span></div><div><h3 className="font-serif text-2xl font-bold text-[#2c241b]">Configuració Reserves</h3><p className="text-xs text-[#8b5a2b] font-bold uppercase tracking-[0.2em]">Formulari i Horaris</p></div></div>
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                            <div className="md:col-span-7 space-y-5">
-                                <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-2">Textos i Comunicació</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.hero?.reservationFormTitle || ''} onChange={(e) => handleChange('hero', 'reservationFormTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol</label><input type="text" value={localConfig.hero?.reservationFormSubtitle || ''} onChange={(e) => handleChange('hero', 'reservationFormSubtitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" /></div></div>
-                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Telèfon (Visible al formulari)</label><div className="flex items-center"><span className="bg-gray-100 border border-r-0 border-gray-300 px-3 py-2 text-gray-500 rounded-l"><span className="material-symbols-outlined text-sm">call</span></span><input type="text" value={localConfig.hero?.reservationPhoneNumber || ''} onChange={(e) => handleChange('hero', 'reservationPhoneNumber', e.target.value)} className="block w-full border border-gray-300 rounded-r px-3 py-2 text-sm focus:border-[#8b5a2b] outline-none bg-white shadow-sm" /></div></div>
-                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Acció</label><input type="text" value={localConfig.hero?.reservationButtonText || ''} onChange={(e) => handleChange('hero', 'reservationButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-[#8b5a2b] focus:border-[#8b5a2b] outline-none bg-white shadow-sm" /></div>
-                            </div>
-                            <div className="md:col-span-5 space-y-5 bg-white p-5 rounded border border-gray-200 shadow-inner">
-                                <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><span className="material-symbols-outlined text-sm">schedule</span> Lògica de Reserva</h4>
-                                <div className="grid grid-cols-2 gap-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Inici</label><input type="time" value={localConfig.hero?.reservationTimeStart || ''} onChange={(e) => handleChange('hero', 'reservationTimeStart', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Fi</label><input type="time" value={localConfig.hero?.reservationTimeEnd || ''} onChange={(e) => handleChange('hero', 'reservationTimeEnd', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" /></div></div>
-                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Interval (minuts)</label><div className="flex items-center gap-2"><input type="number" value={localConfig.hero?.reservationTimeInterval || 15} onChange={(e) => handleChange('hero', 'reservationTimeInterval', e.target.value)} className="block w-20 border border-gray-300 rounded px-2 py-1 text-sm focus:border-[#8b5a2b] outline-none bg-gray-50 text-center" /><span className="text-xs text-gray-400">entre taules</span></div></div>
-                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Missatge Error (Text previ)</label><input type="text" value={localConfig.hero?.reservationErrorMessage || ''} onChange={(e) => handleChange('hero', 'reservationErrorMessage', e.target.value)} className="block w-full border border-red-200 rounded px-2 py-1 text-xs focus:border-red-500 outline-none bg-red-50 text-red-600 mb-2" /><div className="bg-red-100 border border-red-300 border-dashed rounded px-3 py-2 flex items-center justify-between shadow-sm"><div className="flex flex-col"><span className="text-[9px] uppercase font-bold text-red-400 tracking-wider">Així es veurà el missatge:</span><div className="text-xs text-red-700 font-medium mt-0.5">{localConfig.hero?.reservationErrorMessage} <span className="font-bold">{localConfig.hero?.reservationTimeStart}</span> a <span className="font-bold">{localConfig.hero?.reservationTimeEnd}</span></div></div><span className="material-symbols-outlined text-red-400 text-lg">confirmation_number</span></div></div>
-                            </div>
-                        </div>
-                        <div className="mt-6 pt-6 border-t border-dashed border-[#8b5a2b]/20"><h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider mb-3">Etiquetes dels Camps (Personalització)</h4><div className="grid grid-cols-2 md:grid-cols-4 gap-4"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Nom</label><input type="text" value={localConfig.hero?.formNameLabel || ''} onChange={(e) => handleChange('hero', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Telèfon</label><input type="text" value={localConfig.hero?.formPhoneLabel || ''} onChange={(e) => handleChange('hero', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Data/Hora</label><input type="text" value={localConfig.hero?.formDateLabel || ''} onChange={(e) => handleChange('hero', 'formDateLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Persones</label><input type="text" value={localConfig.hero?.formPaxLabel || ''} onChange={(e) => handleChange('hero', 'formPaxLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Camp Notes</label><input type="text" value={localConfig.hero?.formNotesLabel || ''} onChange={(e) => handleChange('hero', 'formNotesLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Privacitat</label><input type="text" value={localConfig.hero?.formPrivacyLabel || ''} onChange={(e) => handleChange('hero', 'formPrivacyLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text "O truca'ns"</label><input type="text" value={localConfig.hero?.formCallUsLabel || ''} onChange={(e) => handleChange('hero', 'formCallUsLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none bg-white" /></div></div></div>
-                        <div className="mt-6 pt-6 border-t border-dashed border-[#8b5a2b]/20 flex items-center justify-between"><div className="flex items-center gap-4"><div className="bg-[#fef08a] text-[#854d0e] w-12 h-12 flex items-center justify-center shadow-md transform -rotate-3 border border-yellow-400/50"><span className="material-symbols-outlined">sticky_note_2</span></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota Adhesiva (Post-it)</label><p className="text-[10px] text-gray-400 italic">Un missatge curt i informal (ex: "Obert tot l'any!")</p></div></div><div className="flex-1 max-w-sm"><div className="relative"><input type="text" maxLength={45} value={localConfig.hero?.stickyNoteText || ''} onChange={(e) => handleChange('hero', 'stickyNoteText', e.target.value)} className="block w-full border border-yellow-300 rounded-r-full rounded-l-lg px-4 py-2 text-sm focus:border-yellow-500 outline-none bg-yellow-50 text-[#854d0e] font-hand font-bold tracking-wide shadow-inner" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-yellow-600/50">{localConfig.hero?.stickyNoteText?.length || 0}/45</span></div></div></div>
-                    </div>
-                </div>
-            )}
-
-            {/* 4. GASTRONOMY */}
-            {subTab === 'gastronomy' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className={`bg-teal-50 p-6 pt-16 rounded-xl shadow-sm border border-teal-200 relative overflow-hidden transition-all ${localConfig.gastronomy?.visible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.gastronomy?.visible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, gastronomy: { ...prev.gastronomy, visible: !prev.gastronomy?.visible } })),
-                            "Visible", "Ocult", "bg-teal-600 border-teal-700 text-white"
-                        )}
-
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-teal-600"></div>
-                        <h3 className="font-serif text-xl font-bold text-teal-800 mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-teal-200 flex items-center justify-center text-teal-700">
-                                <span className="material-symbols-outlined">restaurant</span>
-                            </div>
-                            Gastronomia (La Nostra Proposta)
-                        </h3>
-                        
-                        <div className="bg-white p-6 rounded-lg border border-teal-100 shadow-sm mb-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal (Gran H2)</label>
-                                    <input 
-                                        type="text" 
-                                        value={localConfig.gastronomy?.mainTitle || ''} 
-                                        onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, mainTitle: e.target.value}}))} 
-                                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-teal-900 focus:border-teal-500 outline-none bg-white" 
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Superior (Petit)</label>
-                                    <input 
-                                        type="text" 
-                                        value={localConfig.gastronomy?.topTitle || ''} 
-                                        onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, topTitle: e.target.value}}))} 
-                                        className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:border-teal-500 outline-none bg-white" 
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-xs font-bold uppercase text-gray-500">Descripció</label>
-                                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
-                                        (localConfig.gastronomy?.description?.length || 0) >= 350 
-                                        ? 'bg-red-50 border-red-200 text-red-600 font-bold' 
-                                        : 'bg-gray-50 border-gray-200 text-gray-400'
-                                    }`}>
-                                        {localConfig.gastronomy?.description?.length || 0}/350
-                                    </span>
-                                </div>
-                                <textarea 
-                                    rows={3} 
-                                    maxLength={350} 
-                                    value={localConfig.gastronomy?.description || ''} 
-                                    onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, description: e.target.value}}))} 
-                                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:border-teal-500 outline-none resize-y bg-white" 
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                            {/* Card 1 */}
-                            <div className="bg-white/50 p-4 rounded-lg border border-teal-100 shadow-sm hover:bg-white transition-colors">
-                                <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">lunch_dining</span> Targeta 1</h4>
-                                <div className="space-y-3">
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card1?.title || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, title: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card1?.subtitle || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, subtitle: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card1?.description || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, description: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card1?.price || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                        <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card1?.footerText || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció (Sota el logo)</label>
+                                        <textarea 
+                                            value={localConfig.hero.heroDescription || ''}
+                                            onChange={(e) => updateConfig('hero', 'heroDescription', e.target.value)}
+                                            className="w-full border border-gray-300 rounded px-4 py-3 text-sm text-gray-600 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                                            rows={3}
+                                        />
                                     </div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[10px] text-gray-400 uppercase">Text Botó</label>
-                                            <input value={localConfig.gastronomy?.card1?.buttonText || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-[10px] text-gray-400 uppercase">Enllaç (Destí)</label>
-                                            <select value={localConfig.gastronomy?.card1?.targetTab || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, targetTab: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:border-teal-500">
-                                                <option value="">Selecciona menú...</option>
-                                                {menuOptions.map(opt => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
-                                            </select>
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Horari (Portada)</label>
+                                        <input 
+                                            type="text"
+                                            value={localConfig.hero.heroSchedule || ''}
+                                            onChange={(e) => updateConfig('hero', 'heroSchedule', e.target.value)}
+                                            className="w-full border border-gray-300 rounded px-4 py-3 text-sm font-serif italic text-gray-600 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* IMATGES DE FONS (MOVED FROM OLD HERO TAB) */}
+                        <div className="bg-yellow-50/50 p-6 rounded-xl shadow-sm border-l-4 border-yellow-400 border-t border-r border-b border-yellow-100">
+                            <div className="flex justify-between items-center mb-6">
+                                <h4 className="font-serif text-xl font-bold text-yellow-900 flex items-center gap-2">
+                                    <span className="material-symbols-outlined bg-yellow-200 p-1 rounded text-yellow-800">image</span> 
+                                    Imatges de Fons (Portada)
+                                </h4>
+                                <span className="text-[10px] font-bold uppercase bg-red-50 text-red-500 px-3 py-1 rounded-full border border-red-100">
+                                    Imatges: {localConfig.hero.backgroundImages?.length || 0} / {localConfig.adminSettings?.maxHeroImages || 5}
+                                </span>
+                            </div>
+
+                            {/* --- HELP DROPDOWN --- */}
+                            <div className="mb-6 border border-blue-200 rounded-lg overflow-hidden transition-all duration-300">
+                                {/* Header Toggle */}
+                                <button 
+                                    onClick={() => setShowImageHelp(!showImageHelp)}
+                                    className="w-full flex items-center justify-between p-4 bg-blue-100/50 hover:bg-blue-100 text-blue-800 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-blue-500 text-white rounded-full p-1"><span className="material-symbols-outlined text-lg block">help</span></div>
+                                        <div className="text-left">
+                                            <p className="font-bold text-xs uppercase text-blue-900">AJUDA: COM PUJAR IMATGES CORRECTAMENT?</p>
+                                            <p className="text-xs opacity-70">Guia ràpida per obtenir enllaços vàlids (Postimages)</p>
                                         </div>
                                     </div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card1?.image || ''} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card1: {...prev.gastronomy.card1, image: val}}}))} /></div>
-                                </div>
-                            </div>
-                            {/* Card 2 */}
-                            <div className="bg-white/50 p-4 rounded-lg border border-teal-100 shadow-sm hover:bg-white transition-colors">
-                                <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-sm">restaurant_menu</span> Targeta 2</h4>
-                                <div className="space-y-3">
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Títol</label><input value={localConfig.gastronomy?.card2?.title || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, title: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Subtítol</label><input value={localConfig.gastronomy?.card2?.subtitle || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, subtitle: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Descripció</label><textarea rows={2} value={localConfig.gastronomy?.card2?.description || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, description: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1"><label className="block text-[10px] text-gray-400 uppercase">Preu</label><input value={localConfig.gastronomy?.card2?.price || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, price: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                        <div className="flex-[2]"><label className="block text-[10px] text-gray-400 uppercase">Nota al Peu</label><input value={localConfig.gastronomy?.card2?.footerText || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, footerText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" /></div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[10px] text-gray-400 uppercase">Text Botó</label>
-                                            <input value={localConfig.gastronomy?.card2?.buttonText || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, buttonText: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-[10px] text-gray-400 uppercase">Enllaç (Destí)</label>
-                                            <select value={localConfig.gastronomy?.card2?.targetTab || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, targetTab: e.target.value}}}))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:border-teal-500">
-                                                <option value="">Selecciona menú...</option>
-                                                {menuOptions.map(opt => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div><label className="block text-[10px] text-gray-400 uppercase">Imatge</label><LogoEditor value={localConfig.gastronomy?.card2?.image || ''} onChange={(val) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, card2: {...prev.gastronomy.card2, image: val}}}))} /></div>
-                                </div>
-                            </div>
-                        </div>
+                                    <span className={`material-symbols-outlined text-blue-400 transition-transform duration-300 ${showImageHelp ? 'rotate-180' : ''}`}>expand_more</span>
+                                </button>
 
-                        <div className={`mt-6 pt-16 p-4 rounded-xl border border-teal-100 bg-teal-100/30 relative overflow-hidden transition-all ${localConfig.gastronomy?.footerVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                            {renderVisibilityToggle(
-                                localConfig.gastronomy?.footerVisible !== false, 
-                                () => setLocalConfig((prev:any) => ({ ...prev, gastronomy: { ...prev.gastronomy, footerVisible: !prev.gastronomy?.footerVisible } })),
-                                "Enllaços Visibles", "Enllaços Ocults", "bg-teal-600 border-teal-700 text-white"
-                            )}
-                            <h4 className="font-bold text-teal-700 mb-3 text-sm uppercase">Enllaços Peu de Pàgina</h4>
-                            <div className="mb-2"><label className="block text-[10px] text-gray-400 uppercase">Títol Peu</label><input value={localConfig.gastronomy?.footerTitle || ''} onChange={(e) => setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerTitle: e.target.value}}))} className="border border-gray-300 rounded px-2 py-1 text-sm w-full md:w-1/3 bg-white" /></div>
-                            <div className="space-y-2">
-                                {(localConfig.gastronomy?.footerLinks || []).map((link:any, idx:number) => {
-                                    const activeOption = menuOptions.find(opt => opt.id === link.targetTab);
-                                    const displayIcon = activeOption ? activeOption.icon : (link.icon || 'link');
-                                    const hasSelection = link.targetTab && link.targetTab !== "";
-                                    return (
-                                        <div key={idx} className="flex items-center gap-3 bg-white/50 p-3 rounded border border-gray-200">
-                                            {hasSelection ? (<div className="w-10 h-10 flex items-center justify-center bg-teal-50 border border-teal-100 rounded text-teal-700 shrink-0 shadow-sm transition-all animate-[fadeIn_0.2s_ease-out]"><span className="material-symbols-outlined text-xl">{displayIcon}</span></div>) : (<div className="w-10 h-10 flex items-center justify-center bg-gray-50 border border-gray-200 border-dashed rounded text-gray-300 shrink-0 transition-all"><span className="material-symbols-outlined text-xl">add_link</span></div>)}
-                                            <div className="flex-1 min-w-0">
-                                                <label className="block text-[9px] font-bold uppercase text-gray-400 mb-0.5">Enllaça a:</label>
-                                                <select value={link.targetTab || ''} onChange={(e) => { const selectedId = e.target.value; const selectedOption = menuOptions.find(opt => opt.id === selectedId); const cleanLabel = selectedOption ? selectedOption.label.replace(/ \((Fix|Extra)\)$/, '') : ''; const newIcon = selectedOption ? selectedOption.icon : 'link'; const newLinks = [...(localConfig.gastronomy?.footerLinks || [])]; newLinks[idx] = {...newLinks[idx], targetTab: selectedId, label: cleanLabel, icon: newIcon}; setLocalConfig((prev:any) => ({...prev, gastronomy: {...prev.gastronomy, footerLinks: newLinks}})) }} className="bg-transparent border-b border-gray-300 text-gray-800 text-sm w-full outline-none py-1 font-medium cursor-pointer hover:border-teal-500 focus:border-teal-500 transition-colors" >
-                                                    <option value="">Selecciona destí...</option>
-                                                    {menuOptions.map(opt => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                                {/* Content Body */}
+                                {showImageHelp && (
+                                    <div className="bg-blue-50/30 p-6 animate-[fadeIn_0.2s_ease-out]">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                            {/* LEFT COLUMN */}
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <h5 className="font-bold text-sm text-blue-900 flex items-center gap-2">
+                                                        <span className="material-symbols-outlined text-blue-500 text-lg">info</span> 
+                                                        Important: No pugem fitxers
+                                                    </h5>
+                                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                                        Aquest web funciona amb <strong>enllaços externs (URL)</strong> per mantenir-la ràpida i lleugera. No pots pujar l'arxiu directament des del teu ordinador al panell; primer l'has de pujar a internet.
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-2">L'enllaç correcte <strong>sempre ha d'acabar</strong> en una extensió d'imatge:</p>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <span className="bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded text-[10px] font-mono">.jpg</span>
+                                                        <span className="bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded text-[10px] font-mono">.png</span>
+                                                        <span className="bg-red-50 text-red-500 border border-red-100 px-2 py-0.5 rounded text-[10px] font-mono">.webp</span>
+                                                    </div>
+                                                </div>
 
-            {/* 5. SPECIALTIES */}
-            {subTab === 'specialties' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className={`bg-yellow-50 p-6 pt-16 rounded-xl shadow-sm border border-yellow-200 relative overflow-hidden transition-all ${localConfig.specialties?.visible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.specialties?.visible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, visible: !prev.specialties?.visible } })),
-                            "Visible", "Ocult", "bg-yellow-600 border-yellow-700"
-                        )}
-
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-600"></div>
-                        <h3 className="font-serif text-xl font-bold text-yellow-800 mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-yellow-200 flex items-center justify-center text-yellow-700">
-                                <span className="material-symbols-outlined">stars</span>
-                            </div>
-                            Especialitats
-                        </h3>
-                        <div className="bg-white p-6 rounded-lg border border-yellow-100 shadow-sm mb-6">
-                            <div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label><input type="text" value={localConfig.specialties?.sectionTitle || ''} onChange={(e) => handleChange('specialties', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white" /></div>
-                            <div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Principal</label><input type="text" value={localConfig.specialties?.mainTitle || ''} onChange={(e) => handleChange('specialties', 'mainTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-bold" /></div>
-                            <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció</label><textarea value={localConfig.specialties?.description || ''} onChange={(e) => handleChange('specialties', 'description', e.target.value)} rows={2} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white"></textarea></div>
-                        </div>
-                        
-                        <div className="mt-6 pt-4">
-                            <label className="block text-xs font-bold uppercase text-yellow-800 mb-3 ml-1">Targetes destacades (Fixes)</label>
-                            <div className="space-y-6">
-                                {(localConfig.specialties?.items || []).map((item: any, idx: number) => (
-                                    <div key={idx} className={`p-6 pt-12 rounded-lg border transition-colors relative group bg-white border-yellow-100 shadow-sm overflow-hidden ${item.visible === false ? 'opacity-60 grayscale' : ''}`}>
-                                        <button 
-                                            onClick={() => { const newItems = [...localConfig.specialties.items]; const currentVisibility = newItems[idx].visible !== false; newItems[idx] = { ...newItems[idx], visible: !currentVisibility }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} 
-                                            className={`absolute top-0 left-0 px-4 py-2 flex items-center gap-2 rounded-br-2xl shadow-sm transition-all z-10 cursor-pointer border-b border-r ${item.visible === false ? 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200' : 'bg-yellow-600 text-white border-yellow-700 hover:bg-yellow-700'}`} 
-                                            title={item.visible === false ? "Activar Targeta" : "Ocultar Targeta"}
-                                        >
-                                            <span className="material-symbols-outlined text-lg">{item.visible === false ? 'visibility_off' : 'visibility'}</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">{item.visible === false ? 'Ocult' : 'Visible'}</span>
-                                        </button>
-
-                                        <div className="flex gap-4 mb-4">
-                                            <div className="flex-1">
-                                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol</label>
-                                                <input value={item.title} onChange={(e) => { const newItems = [...localConfig.specialties.items]; newItems[idx] = { ...newItems[idx], title: e.target.value }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-yellow-600 font-bold" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol</label>
-                                                <input value={item.subtitle} onChange={(e) => { const newItems = [...localConfig.specialties.items]; newItems[idx] = { ...newItems[idx], subtitle: e.target.value }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-yellow-600 font-hand text-gray-600" />
-                                            </div>
-                                        </div>
-
-                                        <div className="mb-4">
-                                            <div className="flex justify-between items-end mb-1">
-                                                <label className="block text-[10px] font-bold uppercase text-gray-400">Imatge Targeta</label>
-                                                <div className="relative w-36">
-                                                    <input maxLength={15} value={item.badge || ''} onChange={(e) => { const newItems = [...localConfig.specialties.items]; newItems[idx] = { ...newItems[idx], badge: e.target.value }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} placeholder="ETIQUETA..." className="w-full bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-t px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-center outline-none focus:border-yellow-500 focus:bg-white transition-colors placeholder-yellow-800/30 border-b-0 shadow-sm relative z-10" />
-                                                    {item.badge && <div className="absolute top-1/2 -translate-y-1/2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse z-20" title="Visible"></div>}
+                                                <div className="bg-[#fffde7] border border-[#fbc02d] rounded-lg p-4">
+                                                    <h6 className="font-bold text-xs uppercase text-[#854d0e] flex items-center gap-2 mb-2">
+                                                        <span className="material-symbols-outlined text-base">public</span> 
+                                                        Nota sobre Privacitat
+                                                    </h6>
+                                                    <p className="text-[11px] text-[#a16207] leading-relaxed mb-2">
+                                                        Recorda que Postimages és un servei públic. Les imatges que hi pugis seran accessibles per a qualsevol persona que tingui l'enllaç.
+                                                    </p>
+                                                    <p className="text-[11px] text-[#a16207] leading-relaxed">
+                                                        Això és <strong>perfecte i segur per a fotos del restaurant</strong> (plats, local, equip...), però evita utilitzar-ho per pujar documents privats o dades sensibles.
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className="relative z-0">
-                                                <LogoEditor value={item.image} onChange={(val) => { const newItems = [...localConfig.specialties.items]; newItems[idx] = { ...newItems[idx], image: val }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} />
+
+                                            {/* RIGHT COLUMN */}
+                                            <div className="bg-white border border-blue-100 rounded-lg p-5 shadow-sm">
+                                                <h5 className="font-bold text-sm text-blue-900 flex items-center gap-2 mb-4">
+                                                    <span className="material-symbols-outlined text-blue-500 text-lg">rocket_launch</span> 
+                                                    Pas a pas (Recomanat: Postimages)
+                                                </h5>
+                                                
+                                                <ol className="space-y-4 text-xs text-gray-600">
+                                                    <li className="flex gap-3">
+                                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 font-bold">1</span>
+                                                        <div className="mt-0.5">Entra a <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-bold">postimages.org</a> (no cal registre).</div>
+                                                    </li>
+                                                    
+                                                    <li className="flex gap-3">
+                                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 font-bold">2</span>
+                                                        <div className="w-full mt-0.5">
+                                                            <div className="bg-blue-50 border border-blue-100 rounded p-2 mb-1">
+                                                                <p className="text-[10px] font-bold text-blue-800 uppercase mb-1 flex items-center gap-1"><span className="material-symbols-outlined text-xs">settings</span> CONFIGURACIÓ OBLIGATÒRIA</p>
+                                                                <p>Abans de prémer el botó de pujar, selecciona:</p>
+                                                                <ul className="list-disc pl-4 mt-1 text-gray-500">
+                                                                    <li>"No cambiar el tamaño de mi imagen" (per evitar que es vegi borrosa).</li>
+                                                                    <li>"Sin caducidad" (perquè no s'esborri mai de la web).</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+
+                                                    <li className="flex gap-3">
+                                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 font-bold">3</span>
+                                                        <div className="mt-0.5">Prem el botó blau "<strong>Tria les imatges</strong>" i puja la teva foto.</div>
+                                                    </li>
+
+                                                    <li className="flex gap-3">
+                                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 font-bold">4</span>
+                                                        <div className="mt-0.5">Un cop carregada, apareixerà una llista de codis. <br/> Busca la fila que diu: <strong>Enllaç directe (Direct Link)</strong>.</div>
+                                                    </li>
+
+                                                    <li className="flex gap-3">
+                                                        <span className="bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 font-bold">5</span>
+                                                        <div className="mt-0.5">Copia aquell enllaç i enganxa'l a la casella del panell.</div>
+                                                    </li>
+                                                </ol>
+
+                                                <p className="text-[10px] text-gray-400 italic mt-4 border-t pt-2">
+                                                    * Aquest sistema és el mateix per a qualsevol foto que vulguis canviar a tota la web.
+                                                </p>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+                            </div>
 
+                            <div className="bg-white p-6 rounded-lg border border-yellow-100 shadow-sm">
+                                <ImageArrayEditor 
+                                    images={localConfig.hero.backgroundImages || []} 
+                                    onChange={(newImages) => updateConfig('hero', 'backgroundImages', newImages)}
+                                    labelPrefix="Slide"
+                                    maxLimit={localConfig.adminSettings?.maxHeroImages || 5}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- RESERVATION BUTTON TAB (BROWN) --- */}
+                {activeSubTab === 'reservations' && (
+                    <div className="animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-[#fffcf5] p-8 rounded-b-xl rounded-tr-xl shadow-sm border-l-4 border-[#8D6E63] border-t border-r border-b border-[#eecfc3]">
+                            
+                            {/* VISIBILITY BUTTON INSIDE CONTAINER */}
+                            <VisibilityToggle 
+                                isVisible={localConfig.hero.reservationVisible !== false} 
+                                onToggle={() => updateConfig('hero', 'reservationVisible', !(localConfig.hero.reservationVisible !== false))}
+                                labelVisible="RESERVES VISIBLES"
+                                labelHidden="RESERVES OCULTES"
+                                colorClass="bg-[#8D6E63] border-[#8D6E63]"
+                            />
+
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-12 h-12 bg-[#5D4037] rounded-lg flex items-center justify-center text-white shadow-md">
+                                    <span className="material-symbols-outlined text-2xl">restaurant</span>
+                                </div>
+                                <div>
+                                    <h4 className="font-serif text-3xl font-bold text-[#2c241b]">Configuració Reserves</h4>
+                                    <p className="text-[#8D6E63] text-xs font-bold uppercase tracking-widest mt-1">FORMULARI I HORARIS</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                {/* Left Column: Texts */}
+                                <div className="space-y-6">
+                                    <h5 className="font-bold text-xs uppercase text-gray-400 tracking-wider">Textos i Comunicació</h5>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció Targeta</label>
-                                            <textarea value={item.description || ''} onChange={(e) => { const newItems = [...localConfig.specialties.items]; newItems[idx] = { ...newItems[idx], description: e.target.value }; setLocalConfig((prev:any) => ({ ...prev, specialties: { ...prev.specialties, items: newItems } })); }} rows={2} className="block w-full border border-gray-300 rounded px-3 py-2 text-xs outline-none focus:border-yellow-600 resize-none" />
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
+                                            <input value={localConfig.hero.reservationFormTitle} onChange={(e) => updateConfig('hero', 'reservationFormTitle', e.target.value)} className="w-full border border-gray-300 rounded px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#8D6E63]" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Subtítol</label>
+                                            <input value={localConfig.hero.reservationFormSubtitle} onChange={(e) => updateConfig('hero', 'reservationFormSubtitle', e.target.value)} className="w-full border border-gray-300 rounded px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#8D6E63]" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Telèfon (Visible al formulari)</label>
+                                        <div className="flex items-center gap-2 relative">
+                                            <div className="absolute left-3 text-gray-400"><span className="material-symbols-outlined text-lg">call</span></div>
+                                            <input value={localConfig.hero.reservationPhoneNumber} onChange={(e) => updateConfig('hero', 'reservationPhoneNumber', e.target.value)} className="w-full border border-gray-300 rounded pl-10 pr-4 py-3 text-sm text-gray-700 outline-none focus:border-[#8D6E63]" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Acció</label>
+                                        <input value={localConfig.hero.reservationButtonText} onChange={(e) => updateConfig('hero', 'reservationButtonText', e.target.value)} className="w-full border border-gray-300 rounded px-4 py-3 text-sm font-bold text-[#8D6E63] outline-none focus:border-[#8D6E63]" />
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Logic */}
+                                <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6 shadow-sm">
+                                    <h5 className="font-bold text-xs uppercase text-gray-400 flex items-center gap-2"><span className="material-symbols-outlined text-base">schedule</span> Lògica de Reserva</h5>
+                                    
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Inici</label>
+                                            <div className="relative">
+                                                <input type="time" value={localConfig.hero.reservationTimeStart} onChange={(e) => updateConfig('hero', 'reservationTimeStart', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-center outline-none focus:border-[#8D6E63]" />
+                                                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none text-gray-400">schedule</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Hora Fi</label>
+                                            <div className="relative">
+                                                <input type="time" value={localConfig.hero.reservationTimeEnd} onChange={(e) => updateConfig('hero', 'reservationTimeEnd', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-center outline-none focus:border-[#8D6E63]" />
+                                                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none text-gray-400">schedule</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Interval (Minuts)</label>
+                                        <div className="flex items-center gap-3">
+                                            <input type="number" value={localConfig.hero.reservationTimeInterval} onChange={(e) => updateConfig('hero', 'reservationTimeInterval', parseInt(e.target.value))} className="w-20 border border-gray-300 rounded px-3 py-2 text-sm text-center outline-none focus:border-[#8D6E63]" />
+                                            <span className="text-xs text-gray-500">entre taules</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Missatge Error (Text previ)</label>
+                                        <input value={localConfig.hero.reservationErrorMessage} onChange={(e) => updateConfig('hero', 'reservationErrorMessage', e.target.value)} className="w-full border border-red-200 bg-red-50 text-red-600 rounded px-3 py-2 text-xs outline-none focus:border-red-400" />
+                                    </div>
+                                    
+                                    <div className="bg-red-100/50 border border-red-200 border-dashed rounded p-3 text-red-800">
+                                        <p className="text-[9px] font-bold uppercase mb-1 text-red-400">Així es veurà el missatge:</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-medium">{localConfig.hero.reservationErrorMessage} {localConfig.hero.reservationTimeStart} a {localConfig.hero.reservationTimeEnd}</p>
+                                            <span className="material-symbols-outlined text-red-300">confirmation_number</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-dashed border-[#d7ccc8] my-8"></div>
+
+                            {/* Field Labels */}
+                            <h5 className="font-bold text-xs uppercase text-gray-400 mb-6 tracking-wider">Etiquetes dels camps (Personalització)</h5>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Camp Nom</label><input value={localConfig.hero.formNameLabel} onChange={(e) => updateConfig('hero', 'formNameLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Camp Telèfon</label><input value={localConfig.hero.formPhoneLabel} onChange={(e) => updateConfig('hero', 'formPhoneLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Camp Data/Hora</label><input value={localConfig.hero.formDateLabel} onChange={(e) => updateConfig('hero', 'formDateLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Camp Persones</label><input value={localConfig.hero.formPaxLabel} onChange={(e) => updateConfig('hero', 'formPaxLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Camp Notes</label><input value={localConfig.hero.formNotesLabel} onChange={(e) => updateConfig('hero', 'formNotesLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Text Privacitat</label><input value={localConfig.hero.formPrivacyLabel} onChange={(e) => updateConfig('hero', 'formPrivacyLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Text "O truca'ns"</label><input value={localConfig.hero.formCallUsLabel} onChange={(e) => updateConfig('hero', 'formCallUsLabel', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-[#8D6E63]" /></div>
+                            </div>
+
+                            {/* Sticky Note Redesign */}
+                            <div className="bg-[#fff9c4] border border-[#fbc02d] p-6 rounded-xl shadow-sm flex flex-col md:flex-row items-center gap-6 mt-8">
+                                <div className="flex items-center gap-4 shrink-0">
+                                    <div className="w-14 h-14 bg-[#fdd835] rounded-lg shadow-md border border-[#fbc02d] flex items-center justify-center transform -rotate-2">
+                                        <span className="material-symbols-outlined text-[#854d0e] text-3xl">sticky_note_2</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm uppercase text-[#854d0e] tracking-wider">Nota Adhesiva (Post-it)</p>
+                                        <p className="text-[11px] text-[#a16207] italic mt-1 max-w-[200px] leading-tight">Un missatge curt i informal per als clients (ex: "Obert tot l'any!")</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 w-full relative group">
+                                    <input 
+                                        value={localConfig.hero.stickyNoteText} 
+                                        onChange={(e) => updateConfig('hero', 'stickyNoteText', e.target.value)} 
+                                        maxLength={45}
+                                        className="w-full bg-[#fefce8] border-2 border-[#fbc02d]/50 rounded-lg px-5 py-4 pr-16 text-lg font-hand font-bold text-[#854d0e] outline-none focus:border-[#fbc02d] focus:bg-white focus:ring-4 focus:ring-[#fbc02d]/20 transition-all placeholder-[#854d0e]/30 shadow-inner"
+                                        placeholder="Escriu el missatge aquí..."
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#a16207] bg-[#fdd835]/20 px-2 py-1 rounded-md border border-[#fbc02d]/30">
+                                        {localConfig.hero.stickyNoteText.length}/45
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- INTRO TAB (LIME GREEN) --- */}
+                {activeSubTab === 'intro' && (
+                    <div className="animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-[#f7fee7] p-8 rounded-b-xl rounded-tr-xl shadow-sm border-l-4 border-[#65a30d] border-t border-r border-b border-[#d9f99d]">
+                            
+                            {/* VISIBILITY BUTTON INSIDE CONTAINER */}
+                            <VisibilityToggle 
+                                isVisible={localConfig.intro.visible !== false} 
+                                onToggle={() => updateConfig('intro', 'visible', !(localConfig.intro.visible !== false))}
+                                colorClass="bg-[#65a30d] border-[#65a30d]"
+                            />
+
+                            {/* Header */}
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-12 h-12 bg-[#d9f99d] rounded-lg flex items-center justify-center text-[#365314] shadow-sm border border-[#bef264]">
+                                    <span className="material-symbols-outlined text-2xl">description</span>
+                                </div>
+                                <div>
+                                    <h4 className="font-serif text-3xl font-bold text-[#365314]">Intro (Frase Inicial)</h4>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/50 p-6 rounded-xl border border-[#d9f99d] shadow-sm space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">TÍTOL PRINCIPAL (GRAN H2)</label>
+                                        <input 
+                                            value={localConfig.intro.mainTitle} 
+                                            onChange={(e) => updateConfig('intro', 'mainTitle', e.target.value)} 
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#65a30d] focus:ring-1 focus:ring-[#bef264] transition-all" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">TÍTOL PETIT</label>
+                                        <input 
+                                            value={localConfig.intro.smallTitle} 
+                                            onChange={(e) => updateConfig('intro', 'smallTitle', e.target.value)} 
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#65a30d] focus:ring-1 focus:ring-[#bef264] transition-all" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative">
+                                    <div className="flex justify-between items-end mb-1">
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400">DESCRIPCIÓ (CITA)</label>
+                                        <span className={`text-[10px] font-bold ${localConfig.intro.description.length > 350 ? 'text-red-500' : 'text-gray-300'}`}>
+                                            {localConfig.intro.description.length}/350
+                                        </span>
+                                    </div>
+                                    <textarea 
+                                        value={localConfig.intro.description} 
+                                        onChange={(e) => updateConfig('intro', 'description', e.target.value)} 
+                                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-[#65a30d] focus:ring-1 focus:ring-[#bef264] transition-all" 
+                                        rows={4}
+                                    />
+                                    <span className="material-symbols-outlined absolute bottom-2 right-2 text-gray-300 text-xs pointer-events-none">
+                                        format_quote
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- GASTRONOMY TAB (TEAL) --- */}
+                {activeSubTab === 'gastronomy' && (
+                    <div className="bg-[#f0fdf9] p-6 rounded-xl shadow-sm border-l-4 border-teal-500 border-t border-r border-b border-teal-100 animate-[fadeIn_0.2s_ease-out]">
+                        
+                        {/* VISIBILITY BUTTON INSIDE CONTAINER */}
+                        <VisibilityToggle 
+                            isVisible={localConfig.gastronomy.visible !== false} 
+                            onToggle={() => updateConfig('gastronomy', 'visible', !(localConfig.gastronomy.visible !== false))}
+                            colorClass="bg-teal-600 border-teal-600"
+                        />
+
+                        <div className="flex justify-between items-center mb-6">
+                            <h4 className="font-serif text-xl font-bold text-teal-900 flex items-center gap-2">
+                                <span className="material-symbols-outlined bg-teal-200 p-1 rounded text-teal-800">restaurant_menu</span> 
+                                Gastronomia
+                            </h4>
+                        </div>
+                        
+                        <div className="bg-white border border-teal-100 p-6 rounded-lg mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Principal (Gran H2)</label><input value={localConfig.gastronomy.mainTitle} onChange={(e) => updateConfig('gastronomy', 'mainTitle', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold" /></div>
+                                {/* Removed 'Top Title' input as requested */}
+                            </div>
+                            <div className="mt-4"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció</label><textarea value={localConfig.gastronomy.description} onChange={(e) => updateConfig('gastronomy', 'description', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" rows={2} /></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                            {['card1', 'card2'].map((cardKey, idx) => {
+                                const cardData = (localConfig.gastronomy as any)[cardKey];
+                                return (
+                                    <div key={cardKey} className="bg-white p-6 rounded-xl border border-teal-100 shadow-sm relative">
+                                        <h5 className="font-bold text-sm uppercase text-teal-700 flex items-center gap-2 mb-4">
+                                            {/* Updated Icon Logic: Always 'menu_book' for both cards as requested */}
+                                            <span className="material-symbols-outlined">menu_book</span> Targeta {idx + 1}
+                                        </h5>
+                                        <div className="space-y-3">
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol</label><input value={cardData.title} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'title', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400">Subtítol</label><input value={cardData.subtitle} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'subtitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400">Descripció</label><textarea value={cardData.description} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'description', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" rows={2} /></div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Preu</label><input value={cardData.price} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'price', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Nota al peu</label><input value={cardData.footerText} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'footerText', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-2 rounded border border-gray-100">
+                                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Text Botó</label><input value={cardData.buttonText} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'buttonText', e.target.value)} className="w-full border rounded px-2 py-1 text-sm bg-white" /></div>
+                                                <div>
+                                                    <label className="block text-[9px] font-bold uppercase text-gray-400">Enllaç (Destí)</label>
+                                                    <select value={cardData.targetTab} onChange={(e) => updateNestedConfig('gastronomy', cardKey, 'targetTab', e.target.value)} className="w-full border rounded px-2 py-1 text-sm bg-white outline-none">
+                                                        <option value="daily">Menú Diari</option>
+                                                        <option value="food">Carta Menjar</option>
+                                                        <option value="wine">Carta Vins</option>
+                                                        <option value="group">Menú Grup</option>
+                                                        {(localConfig.extraMenus || []).map((m:any, i:number) => <option key={i} value={`extra_${i}`}>{m.title}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400 mb-1">Imatge</label><LogoEditor value={cardData.image} onChange={(val) => updateNestedConfig('gastronomy', cardKey, 'image', val)} /></div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* FOOTER LINKS CONFIG - UPDATED COMPACT LAYOUT */}
+                        <div className="bg-[#f0fdf9] p-4 rounded-xl border border-teal-100 mt-6">
+                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-4">
+                                {/* 1. Toggle on Left */}
+                                <button
+                                    onClick={() => updateConfig('gastronomy', 'footerVisible', !(localConfig.gastronomy.footerVisible !== false))}
+                                    className={`shrink-0 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1 
+                                    ${localConfig.gastronomy.footerVisible !== false ? 'bg-teal-600 border-teal-600 text-white' : 'bg-white text-gray-400 border-gray-200'}`}
+                                >
+                                    <span className="material-symbols-outlined text-xs">{localConfig.gastronomy.footerVisible !== false ? 'visibility' : 'visibility_off'}</span>
+                                    {localConfig.gastronomy.footerVisible !== false ? 'LINKS VISIBLES' : 'LINKS OCULTS'}
+                                </button>
+
+                                <div className="h-4 w-px bg-teal-200 hidden md:block"></div> {/* Separator */}
+
+                                <h5 className="font-bold text-xs uppercase text-teal-800 shrink-0 pt-1">
+                                    Enllaços Peu de Pàgina
+                                </h5>
+
+                                {/* 2. Title Input Inline */}
+                                <div className="flex-1 w-full md:w-auto relative group">
+                                    <span className="absolute top-1/2 -translate-y-1/2 left-3 text-teal-400 material-symbols-outlined text-sm">title</span>
+                                    <input
+                                        value={localConfig.gastronomy.footerTitle || ''}
+                                        onChange={(e) => updateConfig('gastronomy', 'footerTitle', e.target.value)}
+                                        className="w-full bg-white border border-teal-100 rounded-md py-1.5 pl-9 pr-3 text-xs font-bold text-teal-900 outline-none focus:border-teal-400 placeholder-teal-300/50"
+                                        placeholder="Títol Secció (ex: TAMBÉ DISPONIBLE)"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 3. Compact Links Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {localConfig.gastronomy.footerLinks?.map((link, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border border-teal-100 shadow-sm hover:border-teal-300 transition-colors">
+                                        <div className="w-8 h-8 bg-teal-50 rounded flex items-center justify-center text-teal-600 shrink-0">
+                                            <span className="material-symbols-outlined text-base">{link.icon || 'link'}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <select
+                                                value={link.targetTab || ''}
+                                                onChange={(e) => handleFooterLinkChange(idx, e.target.value)}
+                                                className="w-full text-xs font-bold text-gray-700 bg-transparent outline-none cursor-pointer truncate"
+                                            >
+                                                <option value="" className="text-gray-400">Selecciona...</option>
+                                                <option value="daily">Menú Diari</option>
+                                                <option value="food">Carta Menjar</option>
+                                                <option value="wine">Carta Vins</option>
+                                                <option value="group">Menú Grup</option>
+                                                {(localConfig.extraMenus || []).map((m: any, i: number) => (
+                                                    <option key={i} value={`extra_${i}`}>{m.title}</option>
+                                                ))}
+                                            </select>
+                                            {/* Display Label Preview */}
+                                            <p className="text-[9px] text-gray-400 truncate">{link.label || 'Sense destí'}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* 6. HISTORY (Philosophy) */}
-            {subTab === 'history' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className={`bg-stone-100 p-6 pt-16 rounded-xl shadow-sm border border-stone-200 relative overflow-hidden transition-all ${localConfig.philosophy?.visible === false ? 'opacity-60 grayscale' : ''}`}>
-                        {renderVisibilityToggle(
-                            localConfig.philosophy?.visible !== false, 
-                            () => setLocalConfig((prev:any) => ({ ...prev, philosophy: { ...prev.philosophy, visible: !prev.philosophy?.visible } })),
-                            "Visible", "Ocult", "bg-stone-600 border-stone-700"
-                        )}
-
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-stone-600"></div>
-                        <h3 className="font-serif text-xl font-bold text-stone-700 mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-stone-200 flex items-center justify-center text-stone-600">
-                                <span className="material-symbols-outlined">history_edu</span>
-                            </div>
-                            Filosofia i Història
-                        </h3>
+                {/* --- SPECIALTIES TAB (NEW: AMBER/ORANGE) --- */}
+                {activeSubTab === 'specialties' && (
+                    <div className="bg-[#fff8e1] p-6 rounded-xl shadow-sm border-l-4 border-orange-500 border-t border-r border-b border-orange-100 animate-[fadeIn_0.2s_ease-out]">
                         
-                        <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm mb-6">
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                <div className="md:col-span-5 space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció (Petit)</label>
-                                        <input type="text" value={localConfig.philosophy?.sectionTitle || ''} onChange={(e) => handleChange('philosophy', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" />
+                        {/* VISIBILITY BUTTON INSIDE CONTAINER */}
+                        <VisibilityToggle 
+                            isVisible={localConfig.specialties.visible !== false} 
+                            onToggle={() => updateConfig('specialties', 'visible', !(localConfig.specialties.visible !== false))}
+                            colorClass="bg-orange-600 border-orange-600"
+                        />
+
+                        <div className="flex justify-between items-center mb-6">
+                            <h4 className="font-serif text-xl font-bold text-orange-900 flex items-center gap-2">
+                                <span className="material-symbols-outlined bg-orange-200 p-1 rounded text-orange-800">stars</span> 
+                                Especialitats (Targetes Destacades)
+                            </h4>
+                        </div>
+                        
+                        {/* HEADER & TEXTS */}
+                        <div className="bg-white border border-orange-100 p-6 rounded-lg mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció (Petit)</label><input value={localConfig.specialties.sectionTitle} onChange={(e) => updateConfig('specialties', 'sectionTitle', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" /></div>
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Principal (Gran H2)</label><input value={localConfig.specialties.mainTitle} onChange={(e) => updateConfig('specialties', 'mainTitle', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold" /></div>
+                            </div>
+                            <div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció</label><textarea value={localConfig.specialties.description} onChange={(e) => updateConfig('specialties', 'description', e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" rows={2} /></div>
+                        </div>
+
+                        {/* CARDS LIST (FIXES) */}
+                        <h5 className="font-bold text-xs uppercase text-orange-800 mb-4 tracking-widest">TARGETES DESTACADES (FIXES)</h5>
+                        <div className="space-y-6">
+                            {(localConfig.specialties.items || []).map((item, idx) => (
+                                <div key={idx} className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm relative">
+                                    <div className="flex justify-between items-center mb-4 border-b border-gray-50 pb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-orange-400">star</span>
+                                            <h5 className="font-bold text-sm uppercase text-gray-700">Targeta {idx + 1}</h5>
+                                        </div>
+                                        <button 
+                                            onClick={() => updateItemInArray('specialties', 'items', idx, 'visible', !(item.visible !== false))}
+                                            className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors flex items-center gap-1 ${item.visible !== false ? 'bg-[#eab308] border-[#ca8a04] text-white' : 'bg-gray-100 text-gray-400 border-gray-200'}`}
+                                        >
+                                            <span className="material-symbols-outlined text-xs">{item.visible !== false ? 'visibility' : 'visibility_off'}</span>
+                                            {item.visible !== false ? 'VISIBLE' : 'OCULT'}
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 1 (Negreta)</label>
-                                        <input type="text" value={localConfig.philosophy?.titleLine1 || ''} onChange={(e) => handleChange('philosophy', 'titleLine1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-lg font-bold text-stone-800 focus:border-stone-600 outline-none" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Línia 2 (Cursiva)</label>
-                                        <input type="text" value={localConfig.philosophy?.titleLine2 || ''} onChange={(e) => handleChange('philosophy', 'titleLine2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-lg font-serif italic text-stone-600 focus:border-stone-600 outline-none" />
+
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol</label><input value={item.title} onChange={(e) => updateItemInArray('specialties', 'items', idx, 'title', e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm" /></div>
+                                            <div><label className="block text-[9px] font-bold uppercase text-gray-400">Subtítol</label><input value={item.subtitle} onChange={(e) => updateItemInArray('specialties', 'items', idx, 'subtitle', e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm" /></div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="block text-[9px] font-bold uppercase text-gray-400">Imatge Targeta</label>
+                                                {item.badge && <input value={item.badge} onChange={(e) => updateItemInArray('specialties', 'items', idx, 'badge', e.target.value)} className="border border-orange-200 bg-orange-50 text-orange-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase w-32 text-center placeholder-orange-300" placeholder="ETIQUETA (EX: PROXIMITAT)" />}
+                                            </div>
+                                            <LogoEditor value={item.image} onChange={(val) => updateItemInArray('specialties', 'items', idx, 'image', val)} />
+                                        </div>
+
+                                        <div><label className="block text-[9px] font-bold uppercase text-gray-400">Descripció Targeta</label><textarea value={item.description || ''} onChange={(e) => updateItemInArray('specialties', 'items', idx, 'description', e.target.value)} className="w-full border rounded px-2 py-1.5 text-sm text-gray-600" rows={2} /></div>
                                     </div>
                                 </div>
-                                <div className="md:col-span-7">
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció General</label>
-                                    <textarea 
-                                        value={localConfig.philosophy?.description || ''} 
-                                        onChange={(e) => handleChange('philosophy', 'description', e.target.value)} 
-                                        rows={8} 
-                                        className="block w-full h-full min-h-[180px] border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none resize-none leading-relaxed"
-                                    ></textarea>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* --- PHILOSOPHY TAB (GRAY) --- */}
+                {activeSubTab === 'philosophy' && (
+                    <div className="bg-[#fafafa] p-6 rounded-xl shadow-sm border-l-4 border-gray-500 border-t border-r border-b border-gray-200 animate-[fadeIn_0.2s_ease-out]">
+                        
+                        {/* VISIBILITY BUTTON INSIDE CONTAINER - UPDATED STYLE */}
+                        <VisibilityToggle 
+                            isVisible={localConfig.philosophy.visible !== false}
+                            onToggle={() => updateConfig('philosophy', 'visible', !(localConfig.philosophy.visible !== false))}
+                            colorClass="bg-[#2c241b] border-[#2c241b]"
+                        />
+
+                        <div className="flex justify-between items-center mb-6">
+                            <h4 className="font-serif text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <span className="material-symbols-outlined bg-gray-200 p-1 rounded text-gray-700">history_edu</span> 
+                                Filosofia i Història
+                            </h4>
+                        </div>
+
+                        {/* Top General Info */}
+                        <div className="bg-white border border-gray-200 p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400">Títol Secció (Petit)</label><input value={localConfig.philosophy.sectionTitle} onChange={(e) => updateConfig('philosophy', 'sectionTitle', e.target.value)} className="w-full border rounded px-3 py-2 text-sm" /></div>
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400">Títol Principal (Gran H2)</label><input value={localConfig.philosophy.titleLine1} onChange={(e) => updateConfig('philosophy', 'titleLine1', e.target.value)} className="w-full border rounded px-3 py-2 text-sm font-bold" /></div>
+                                <div><label className="block text-[10px] font-bold uppercase text-gray-400">Títol Línia 2 (Cursiva)</label><input value={localConfig.philosophy.titleLine2} onChange={(e) => updateConfig('philosophy', 'titleLine2', e.target.value)} className="w-full border rounded px-3 py-2 text-sm italic" /></div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Descripció General</label>
+                                <textarea value={localConfig.philosophy.description} onChange={(e) => updateConfig('philosophy', 'description', e.target.value)} className="w-full border rounded px-3 py-2 text-sm h-full" />
+                            </div>
+                        </div>
+
+                        {/* Two Columns: Product vs History */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Left: Product */}
+                            <div className="bg-white border border-gray-200 p-6 rounded-lg">
+                                <h5 className="font-bold text-xs uppercase text-gray-500 mb-4 border-b pb-2">Columna Producte (Esquerra)</h5>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol Producte</label><input value={localConfig.philosophy.productTitle} onChange={(e) => updateConfig('philosophy', 'productTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                        <div><label className="block text-[9px] font-bold uppercase text-gray-400">Etiqueta Nota (Post-it)</label><input value={localConfig.philosophy.cardTag} onChange={(e) => updateConfig('philosophy', 'cardTag', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    </div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Descripció Producte</label><textarea value={localConfig.philosophy.productDescription} onChange={(e) => updateConfig('philosophy', 'productDescription', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" rows={3} /></div>
+                                    
+                                    {/* UPDATED IMAGE SECTION */}
+                                    <div className="pt-4 border-t border-dashed mt-2">
+                                         <div className="flex justify-between items-center mb-3">
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400">IMATGES PRODUCTE (SLIDES)</label>
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded border ${
+                                                (localConfig.philosophy.productImages?.length || 0) >= (localConfig.adminSettings?.maxProductImages || 5) 
+                                                ? 'bg-red-50 text-red-500 border-red-100' 
+                                                : 'bg-green-50 text-green-600 border-green-100'
+                                            }`}>
+                                                Imatges: {(localConfig.philosophy.productImages || []).length} / {localConfig.adminSettings?.maxProductImages || 5}
+                                            </span>
+                                        </div>
+                                        <ImageArrayEditor 
+                                            images={localConfig.philosophy.productImages || []} 
+                                            onChange={(imgs) => updateConfig('philosophy', 'productImages', imgs)} 
+                                            labelPrefix="Producte" 
+                                            maxLimit={localConfig.adminSettings?.maxProductImages || 5} 
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Right: History */}
+                            <div className="bg-white border border-gray-200 p-6 rounded-lg">
+                                <h5 className="font-bold text-xs uppercase text-gray-500 mb-4 border-b pb-2">Columna Història (Dreta)</h5>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol Història</label><input value={localConfig.philosophy.historicTitle} onChange={(e) => updateConfig('philosophy', 'historicTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                        <div><label className="block text-[9px] font-bold uppercase text-gray-400">Enllaç Botó</label><input value={localConfig.philosophy.historicLinkUrl} onChange={(e) => updateConfig('philosophy', 'historicLinkUrl', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    </div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Descripció Història</label><textarea value={localConfig.philosophy.historicDescription} onChange={(e) => updateConfig('philosophy', 'historicDescription', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" rows={3} /></div>
+                                    
+                                    {/* UPDATED IMAGE SECTION */}
+                                    <div className="pt-4 border-t border-dashed mt-2">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400">IMATGES HISTÒRIA (SLIDES)</label>
+                                            <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded border ${
+                                                (localConfig.philosophy.historicImages?.length || 0) >= (localConfig.adminSettings?.maxHistoricImages || 5) 
+                                                ? 'bg-red-50 text-red-500 border-red-100' 
+                                                : 'bg-green-50 text-green-600 border-green-100'
+                                            }`}>
+                                                Imatges: {(localConfig.philosophy.historicImages || []).length} / {localConfig.adminSettings?.maxHistoricImages || 5}
+                                            </span>
+                                        </div>
+                                        <ImageArrayEditor 
+                                            images={localConfig.philosophy.historicImages || []} 
+                                            onChange={(imgs) => updateConfig('philosophy', 'historicImages', imgs)} 
+                                            labelPrefix="Història" 
+                                            maxLimit={localConfig.adminSettings?.maxHistoricImages || 5} 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- CONTACT TAB (MIXED) --- */}
+                {activeSubTab === 'contact' && (
+                    <div className="space-y-6 animate-[fadeIn_0.2s_ease-out]">
+                        
+                        {/* 1. STICKY NOTE (YELLOW) */}
+                        <div className="bg-[#fffde7] p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 border-t border-r border-b border-yellow-100">
+                            
+                            <VisibilityToggle 
+                                isVisible={localConfig.contact.importantNoteVisible !== false}
+                                onToggle={() => updateConfig('contact', 'importantNoteVisible', !(localConfig.contact.importantNoteVisible !== false))}
+                                colorClass="bg-yellow-600 border-yellow-600"
+                            />
+
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-bold text-yellow-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">sticky_note_2</span> Nota Adhesiva (Post-it)</h4>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol Nota</label><input value={localConfig.contact.importantNoteTitle} onChange={(e) => updateConfig('contact', 'importantNoteTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm font-hand text-red-800" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Missatge 1 (Gran)</label><input value={localConfig.contact.importantNoteMessage1} onChange={(e) => updateConfig('contact', 'importantNoteMessage1', e.target.value)} className="w-full border rounded px-2 py-1 text-sm font-hand" /></div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Missatge 2 (Petit)</label><input value={localConfig.contact.importantNoteMessage2} onChange={(e) => updateConfig('contact', 'importantNoteMessage2', e.target.value)} className="w-full border rounded px-2 py-1 text-sm font-hand" /></div>
+                            </div>
+                        </div>
+
+                        {/* 2. GENERAL INFO (RED) */}
+                        <div className="bg-[#fef2f2] p-6 rounded-xl shadow-sm border-l-4 border-red-600 border-t border-r border-b border-red-100">
+                            
+                            <VisibilityToggle 
+                                isVisible={localConfig.contact.infoVisible !== false}
+                                onToggle={() => updateConfig('contact', 'infoVisible', !(localConfig.contact.infoVisible !== false))}
+                                colorClass="bg-red-700 border-red-700"
+                            />
+
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Informació General</h4>
+                            </div>
+                            <div className="bg-white p-4 rounded border border-red-100 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">TÍTOL PRINCIPAL (GRAN H2)</label><input value={localConfig.contact.sectionTitle} onChange={(e) => updateConfig('contact', 'sectionTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm font-bold" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Títol Localització</label><input value={localConfig.contact.locationTitle} onChange={(e) => updateConfig('contact', 'locationTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Adreça Línia 1</label><input value={localConfig.contact.addressLine1} onChange={(e) => updateConfig('contact', 'addressLine1', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Adreça Línia 2</label><input value={localConfig.contact.addressLine2} onChange={(e) => updateConfig('contact', 'addressLine2', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Horari</label><input value={localConfig.contact.schedule} onChange={(e) => updateConfig('contact', 'schedule', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-gray-400">Telèfons (Separats per coma)</label><input value={localConfig.contact.phoneNumbers.join(', ')} onChange={(e) => updateConfig('contact', 'phoneNumbers', e.target.value.split(',').map(s=>s.trim()))} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                </div>
+                                <div><label className="block text-[9px] font-bold uppercase text-gray-400">Enllaç Google Maps</label><input value={localConfig.contact.mapUrl} onChange={(e) => updateConfig('contact', 'mapUrl', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
-                                <h4 className="font-bold text-stone-600 mb-3 border-b pb-2 border-stone-100 uppercase text-xs">Columna Producte (Esquerra)</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Producte</label><input type="text" value={localConfig.philosophy?.productTitle || ''} onChange={(e) => handleChange('philosophy', 'productTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" /></div>
-                                    <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Etiqueta Nota (Post-it)</label><input type="text" value={localConfig.philosophy?.cardTag || ''} onChange={(e) => handleChange('philosophy', 'cardTag', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" /></div>
+                            {/* 3. SOCIAL (PURPLE) */}
+                            <div className="bg-[#f3e8ff] p-6 rounded-xl shadow-sm border-l-4 border-purple-500 border-t border-r border-b border-purple-100">
+                                
+                                <VisibilityToggle 
+                                    isVisible={localConfig.contact.socialVisible !== false}
+                                    onToggle={() => updateConfig('contact', 'socialVisible', !(localConfig.contact.socialVisible !== false))}
+                                    colorClass="bg-purple-600 border-purple-600"
+                                />
+
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="font-bold text-purple-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">share</span> Xarxes Socials (Instagram)</h4>
                                 </div>
-                                <div className="mb-4">
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Producte</label><textarea value={localConfig.philosophy?.productDescription || ''} onChange={(e) => handleChange('philosophy', 'productDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <label className="block text-[10px] font-bold uppercase text-gray-400">Imatges Producte (Slides)</label>
-                                        <div className={`px-2 py-1 rounded-full font-bold text-[9px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-1 ${isProductFull ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                                            <span className="material-symbols-outlined text-[10px]">{isProductFull ? 'block' : 'add_photo_alternate'}</span>
-                                            <span>Imatges: {currentProductCount} / {maxProductImages}</span>
-                                        </div>
-                                    </div>
-                                    <ImageArrayEditor 
-                                        images={localConfig.philosophy?.productImages || []}
-                                        onChange={(newImages) => setLocalConfig((prev:any) => ({
-                                            ...prev,
-                                            philosophy: { ...prev.philosophy, productImages: newImages }
-                                        }))}
-                                        labelPrefix="Producte"
-                                        maxLimit={maxProductImages}
-                                    />
+                                <div className="space-y-2">
+                                    <div><label className="block text-[9px] font-bold uppercase text-purple-400">Títol Xarxes</label><input value={localConfig.contact.socialTitle} onChange={(e) => updateConfig('contact', 'socialTitle', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-purple-400">Descripció</label><input value={localConfig.contact.socialDescription} onChange={(e) => updateConfig('contact', 'socialDescription', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-purple-400">Text Botó</label><input value={localConfig.contact.socialButtonText} onChange={(e) => updateConfig('contact', 'socialButtonText', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
+                                    <div><label className="block text-[9px] font-bold uppercase text-purple-400">URL Instagram</label><input value={localConfig.contact.instagramUrl} onChange={(e) => updateConfig('contact', 'instagramUrl', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" /></div>
                                 </div>
                             </div>
 
-                            <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
-                                <h4 className="font-bold text-stone-600 mb-3 border-b pb-2 border-stone-100 uppercase text-xs">Columna Història (Dreta)</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Història</label><input type="text" value={localConfig.philosophy?.historicTitle || ''} onChange={(e) => handleChange('philosophy', 'historicTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" /></div>
-                                    <div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Botó</label><input type="text" value={localConfig.philosophy?.historicLinkUrl || ''} onChange={(e) => handleChange('philosophy', 'historicLinkUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none" /></div>
+                            {/* 4. FORM (GRAY -> UPDATED TO WHITE/CLEAN) */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                
+                                <div className="flex justify-between items-start mb-6">
+                                    <VisibilityToggle 
+                                        isVisible={localConfig.contact.formVisible !== false}
+                                        onToggle={() => updateConfig('contact', 'formVisible', !(localConfig.contact.formVisible !== false))}
+                                        colorClass="bg-gray-700 border-gray-700" // Dark grey as in screenshot
+                                    />
                                 </div>
-                                <div className="mb-4">
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Descripció Història</label><textarea value={localConfig.philosophy?.historicDescription || ''} onChange={(e) => handleChange('philosophy', 'historicDescription', e.target.value)} rows={3} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-stone-600 outline-none"></textarea>
+
+                                <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-2">
+                                    <span className="material-symbols-outlined text-gray-500">edit_note</span>
+                                    <h4 className="font-bold text-gray-600 text-sm uppercase">Formulari de Contacte</h4>
                                 </div>
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <label className="block text-[10px] font-bold uppercase text-gray-400">Imatges Història (Slides)</label>
-                                        <div className={`px-2 py-1 rounded-full font-bold text-[9px] uppercase tracking-widest border transition-colors shadow-sm flex items-center gap-1 ${isHistoricFull ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                                            <span className="material-symbols-outlined text-[10px]">{isHistoricFull ? 'block' : 'add_photo_alternate'}</span>
-                                            <span>Imatges: {currentHistoricCount} / {maxHistoricImages}</span>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label>
+                                        <input 
+                                            value={localConfig.contact.formTitle} 
+                                            onChange={(e) => updateConfig('contact', 'formTitle', e.target.value)} 
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Nom</label>
+                                            <input 
+                                                value={localConfig.contact.formNameLabel} 
+                                                onChange={(e) => updateConfig('contact', 'formNameLabel', e.target.value)} 
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Email</label>
+                                            <input 
+                                                value={localConfig.contact.formEmailLabel} 
+                                                onChange={(e) => updateConfig('contact', 'formEmailLabel', e.target.value)} 
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                            />
                                         </div>
                                     </div>
-                                    <ImageArrayEditor 
-                                        images={localConfig.philosophy?.historicImages || []}
-                                        onChange={(newImages) => setLocalConfig((prev:any) => ({
-                                            ...prev,
-                                            philosophy: { ...prev.philosophy, historicImages: newImages }
-                                        }))}
-                                        labelPrefix="Història"
-                                        maxLimit={maxHistoricImages}
-                                    />
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Telèfon</label>
+                                            <input 
+                                                value={localConfig.contact.formPhoneLabel} 
+                                                onChange={(e) => updateConfig('contact', 'formPhoneLabel', e.target.value)} 
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Assumpte</label>
+                                            <input 
+                                                value={localConfig.contact.formSubjectLabel} 
+                                                onChange={(e) => updateConfig('contact', 'formSubjectLabel', e.target.value)} 
+                                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Missatge</label>
+                                        <input 
+                                            value={localConfig.contact.formMessageLabel} 
+                                            onChange={(e) => updateConfig('contact', 'formMessageLabel', e.target.value)} 
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Enviar</label>
+                                        <input 
+                                            value={localConfig.contact.formButtonText} 
+                                            onChange={(e) => updateConfig('contact', 'formButtonText', e.target.value)} 
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-gray-700 outline-none focus:border-gray-400 transition-colors" 
+                                        />
+                                    </div>
+
+                                    <p className="text-[10px] text-gray-400 italic mt-4 pt-2 border-t border-gray-100">
+                                        * L'estructura dels camps és fixa per motius de programació, però pots editar els textos que veu l'usuari.
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* 7. CONTACT */}
-            {subTab === 'contact' && (
-                <div className="space-y-8 animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-red-50 p-6 rounded-xl shadow-sm border border-red-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-red-800"></div>
-                        <h3 className="font-serif text-xl font-bold text-red-800 mb-6 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-red-200 flex items-center justify-center text-red-700">
-                                <span className="material-symbols-outlined">call</span>
-                            </div>
-                            Contacte
-                        </h3>
-                        
-                        <div className={`bg-[#fefce8] p-6 pt-16 mb-6 rounded-lg border border-yellow-200 shadow-sm relative transition-all ${localConfig.contact?.importantNoteVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                            {renderVisibilityToggle(
-                                localConfig.contact?.importantNoteVisible !== false, 
-                                () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, importantNoteVisible: !prev.contact?.importantNoteVisible } })),
-                                "Visible", "Ocult", "bg-yellow-600 border-yellow-700"
-                            )}
-                            <div className="flex items-center gap-3 mb-4 border-b border-yellow-200 pb-3">
-                                <div className="bg-[#fef08a] text-[#854d0e] w-10 h-10 flex items-center justify-center shadow-sm transform -rotate-3 border border-yellow-400/50 rounded-sm">
-                                    <span className="material-symbols-outlined">sticky_note_2</span>
-                                </div>
-                                <h4 className="font-bold text-[#854d0e] text-sm uppercase tracking-wide">Nota Adhesiva (Post-it)</h4>
-                            </div>
-                            <div className="mb-3"><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Títol Nota</label><input type="text" value={localConfig.contact?.importantNoteTitle || ''} onChange={(e) => handleChange('contact', 'importantNoteTitle', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white text-yellow-900 font-bold font-hand" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 1 (Gran)</label><input type="text" value={localConfig.contact?.importantNoteMessage1 || ''} onChange={(e) => handleChange('contact', 'importantNoteMessage1', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" /></div><div><label className="block text-[10px] font-bold uppercase text-yellow-800/60 mb-1">Missatge 2 (Petit)</label><input type="text" value={localConfig.contact?.importantNoteMessage2 || ''} onChange={(e) => handleChange('contact', 'importantNoteMessage2', e.target.value)} className="block w-full border border-yellow-300 rounded px-3 py-2 text-sm focus:border-yellow-600 outline-none bg-white font-hand text-gray-700" /></div></div>
-                        </div>
-                        
-                        <div className={`bg-white p-6 pt-16 mb-6 rounded-lg border border-red-100 shadow-sm relative transition-all ${localConfig.contact?.infoVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                            {renderVisibilityToggle(localConfig.contact?.infoVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, infoVisible: !prev.contact?.infoVisible } })), "Visible", "Ocult", "bg-red-700 border-red-800")}
-                            <h4 className="font-bold text-red-800 mb-3 text-xs uppercase">Informació General</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Secció</label><input type="text" value={localConfig.contact?.sectionTitle || ''} onChange={(e) => handleChange('contact', 'sectionTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Títol Localització</label><input type="text" value={localConfig.contact?.locationTitle || ''} onChange={(e) => handleChange('contact', 'locationTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 1</label><input type="text" value={localConfig.contact?.addressLine1 || ''} onChange={(e) => handleChange('contact', 'addressLine1', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Adreça Línia 2</label><input type="text" value={localConfig.contact?.addressLine2 || ''} onChange={(e) => handleChange('contact', 'addressLine2', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Horari</label><input type="text" value={localConfig.contact?.schedule || ''} onChange={(e) => handleChange('contact', 'schedule', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div><div><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Telèfons (separats per coma)</label><input type="text" value={(localConfig.contact?.phoneNumbers || []).join(', ')} onChange={(e) => handleChange('contact', 'phoneNumbers', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div></div><div className="mb-4"><label className="block text-xs font-bold uppercase text-gray-500 mb-1">Enllaç Google Maps</label><input type="text" value={localConfig.contact?.mapUrl || ''} onChange={(e) => handleChange('contact', 'mapUrl', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-red-800 outline-none" /></div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                            <div className={`p-4 pt-16 rounded-xl border border-pink-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-orange-50 relative overflow-hidden transition-all ${localConfig.contact?.socialVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                                {renderVisibilityToggle(localConfig.contact?.socialVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, socialVisible: !prev.contact?.socialVisible } })), "Visible", "Ocult", "bg-purple-600 border-purple-700")}
-                                <div className="absolute top-0 right-0 p-2 opacity-10"><span className="material-symbols-outlined text-6xl text-purple-800">photo_camera</span></div><h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-orange-600 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined text-purple-600">group_work</span> Xarxes Socials (Instagram)</h4><div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Títol Xarxes</label><input type="text" value={localConfig.contact?.socialTitle || ''} onChange={(e) => handleChange('contact', 'socialTitle', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Descripció</label><input type="text" value={localConfig.contact?.socialDescription || ''} onChange={(e) => handleChange('contact', 'socialDescription', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">Text Botó</label><input type="text" value={localConfig.contact?.socialButtonText || ''} onChange={(e) => handleChange('contact', 'socialButtonText', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none bg-white/80" /></div><div><label className="block text-[10px] font-bold uppercase text-purple-400 mb-1">URL Instagram</label><input type="text" value={localConfig.contact?.instagramUrl || ''} onChange={(e) => handleChange('contact', 'instagramUrl', e.target.value)} className="block w-full border border-purple-200 rounded px-3 py-1.5 text-xs focus:border-purple-500 outline-none bg-white/80 text-purple-700" /></div></div>
-                            </div>
-                            <div className={`p-4 pt-16 rounded-xl border border-gray-100 bg-gray-50 relative transition-all ${localConfig.contact?.formVisible === false ? 'opacity-60 grayscale' : ''}`}>
-                                {renderVisibilityToggle(localConfig.contact?.formVisible !== false, () => setLocalConfig((prev:any) => ({ ...prev, contact: { ...prev.contact, formVisible: !prev.contact?.formVisible } })), "Visible", "Ocult", "bg-gray-600 border-gray-700")}
-                                <h4 className="font-bold text-gray-500 mb-3 text-sm uppercase flex items-center gap-2"><span className="material-symbols-outlined">edit_note</span> Formulari de Contacte</h4>
-                                <div className="space-y-3"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Formulari</label><input type="text" value={localConfig.contact?.formTitle || ''} onChange={(e) => handleChange('contact', 'formTitle', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-gray-500 outline-none bg-white" /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 border-t border-dashed border-gray-300 pt-4"><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Nom</label><input type="text" value={localConfig.contact?.formNameLabel || ''} onChange={(e) => handleChange('contact', 'formNameLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Email</label><input type="text" value={localConfig.contact?.formEmailLabel || ''} onChange={(e) => handleChange('contact', 'formEmailLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Telèfon</label><input type="text" value={localConfig.contact?.formPhoneLabel || ''} onChange={(e) => handleChange('contact', 'formPhoneLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Assumpte</label><input type="text" value={localConfig.contact?.formSubjectLabel || ''} onChange={(e) => handleChange('contact', 'formSubjectLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Etiqueta Missatge</label><input type="text" value={localConfig.contact?.formMessageLabel || ''} onChange={(e) => handleChange('contact', 'formMessageLabel', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white" /></div><div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Text Botó Enviar</label><input type="text" value={localConfig.contact?.formButtonText || ''} onChange={(e) => handleChange('contact', 'formButtonText', e.target.value)} className="block w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-gray-500 outline-none bg-white font-bold text-gray-600" /></div></div><p className="text-[10px] text-gray-400 italic mt-2">* L'estructura dels camps és fixa per motius de programació, però pots editar els textos que veu l'usuari.</p></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

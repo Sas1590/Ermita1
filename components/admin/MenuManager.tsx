@@ -264,7 +264,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 
             <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> Begudes incloses / Altres</h4>
+                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> Begudes / Altres</h4>
                 </div>
                 <div className="space-y-2">
                     {(currentData.drinks || []).map((drink: string, idx: number) => (
