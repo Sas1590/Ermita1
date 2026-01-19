@@ -115,15 +115,9 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Carta de Menjar" defaultIcon="restaurant_menu" />
-            
-            {/* BUTTON MOVED TO TOP-LEFT AND STYLED GREEN */}
-            <div className="flex justify-start mb-6">
-                <button onClick={addSection} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg text-xs font-bold uppercase flex items-center gap-2 shadow-md transition-colors transform hover:-translate-y-0.5">
-                    <span className="material-symbols-outlined text-lg">add_circle</span> NOVA SECCIÓ
-                </button>
-            </div>
-
-            {/* SECTIONS LOOP FIRST */}
+            <div className="flex justify-end mb-2"><button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors"><span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ</button></div>
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
             {sections.map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4"><div className="flex-1"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label><input type="text" value={section.category} onChange={(e) => handleSectionChange(sIdx, 'category', e.target.value)} className="font-serif text-lg font-bold text-[#8b5a2b] border-b border-transparent focus:border-[#8b5a2b] outline-none bg-transparent w-full" /></div><div className="w-full md:w-32"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label><IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/></div><button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button></div>
@@ -131,11 +125,6 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
                     <div className="mt-4 pt-4 border-t border-gray-100"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (opcional)</label><input type="text" value={section.footer || ''} onChange={(e) => handleSectionChange(sIdx, 'footer', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none" /></div>
                 </div>
             ))}
-
-            {/* INFO BLOCKS MOVED DOWN */}
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
-            
             <div className={`bg-red-50 p-6 rounded shadow-sm border ${showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !showDisclaimer })} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}>{showDisclaimer ? 'Visible' : 'Ocult'}</button></div>{showDisclaimer && (<div><label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label><input type="text" value={disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none" placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."/></div>)}</div>
         </div>
     );
@@ -153,25 +142,14 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Carta de Vins" defaultIcon="wine_bar" />
-            
-            {/* BUTTON MOVED TO TOP-LEFT AND STYLED GREEN */}
-            <div className="flex justify-start mb-6">
-                <button onClick={addCategory} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg text-xs font-bold uppercase flex items-center gap-2 shadow-md transition-colors transform hover:-translate-y-0.5">
-                    <span className="material-symbols-outlined text-lg">add_circle</span> NOVA CATEGORIA
-                </button>
-            </div>
-
-            {/* CATEGORIES LOOP FIRST */}
+            <div className="flex justify-end mb-2"><button onClick={addCategory} className="bg-olive hover:bg-[#455726] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors"><span className="material-symbols-outlined text-sm">add_circle</span> NOVA CATEGORIA</button></div>
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
             {categories.map((cat: any, cIdx: number) => (
                 <div key={cIdx} className="bg-white border border-gray-200 rounded p-4">
                     <div className="flex flex-col md:flex-row gap-4 mb-4 border-b pb-4"><div className="flex-1"><input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, 'category', e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" /></div><div className="w-full md:w-32"><IconPicker value={cat.icon || ""} onChange={(val) => handleCategoryChange(cIdx, 'icon', val)}/></div><button onClick={() => removeCategory(cIdx)} className="text-red-400"><span className="material-symbols-outlined">delete</span></button></div>
                     <div className="pl-4 space-y-4">{(cat.groups || []).map((grp:any,gIdx:number)=>(<div key={gIdx} className="border-l-4 border-gray-200 pl-2"><div className="flex justify-between mb-2"><input value={grp.sub} onChange={(e)=>{const n={...cat};n.groups=cat.groups.map((g:any,gi:number)=>gi===gIdx?{...g,sub:e.target.value}:g);updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} placeholder="Subgrup" className="italic w-full outline-none" /><button onClick={()=>{const n={...cat};n.groups=[...cat.groups];n.groups.splice(gIdx,1);updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-red-300"><span className="material-symbols-outlined text-sm">remove_circle</span></button></div>{(grp.items || []).map((it:any,iIdx:number)=>(<div key={iIdx} className={`flex gap-2 mb-2 items-center ${it.visible===false?'opacity-50 grayscale':''}`}><ItemStatusControls visible={it.visible} strikethrough={it.strikethrough} onToggleVisible={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],visible:it.visible===false?true:false};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} onToggleStrike={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],strikethrough:!it.strikethrough};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}}/><input value={it.name} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],name:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className={`w-1/3 border-b text-sm ${it.strikethrough?'line-through':''}`}/><input value={it.desc} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],desc:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="w-1/3 border-b text-xs text-gray-500"/><input value={it.price} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],price:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="w-1/6 border-b text-right text-sm"/><button onClick={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is.splice(iIdx,1);gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-red-200"><span className="material-symbols-outlined text-sm">close</span></button></div>))}<button onClick={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items,{name:"",desc:"",price:""}];gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-xs text-olive font-bold">+ Vi</button></div>))}<button onClick={()=>{const n={...cat};n.groups=[...cat.groups,{sub:"",items:[]}];updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-xs font-bold mt-2">+ Grup</button></div></div>
             ))}
-
-            {/* INFO BLOCKS MOVED DOWN */}
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
-
             <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className="text-[10px] font-bold uppercase px-3 py-1 rounded border bg-red-600 text-white">{currentData.showDisclaimer?'Visible':'Ocult'}</button></div>{currentData.showDisclaimer && (<input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" />)}</div>
             <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label><input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" /></div>
         </div>
@@ -234,14 +212,15 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Menú de Grup" defaultIcon="diversity_3" />
             
-            {/* BUTTON MOVED TO TOP-LEFT AND STYLED GREEN */}
-            <div className="flex justify-start mb-6">
-                <button onClick={addSection} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg text-xs font-bold uppercase flex items-center gap-2 shadow-md transition-colors transform hover:-translate-y-0.5">
-                    <span className="material-symbols-outlined text-lg">add_circle</span> NOVA SECCIÓ
+            <div className="flex justify-end mb-2">
+                <button onClick={addSection} className="bg-[#556B2F] hover:bg-[#3d4d21] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
                 </button>
             </div>
 
-            {/* SECTIONS LOOP FIRST */}
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+
             {(currentData.sections || []).map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
@@ -297,10 +276,6 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                     <button onClick={addDrink} className="text-xs font-bold text-gray-500 flex items-center gap-1 uppercase tracking-wider mt-2"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Línia</button>
                 </div>
             </div>
-
-            {/* INFO BLOCKS MOVED DOWN */}
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
 
             <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
                 <div className="flex justify-between items-center mb-4">
