@@ -156,7 +156,7 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     );
 };
 
-const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
+const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChange: (d: any) => void, variant?: 'group' | 'daily' }) => {
     const isLegacy = Array.isArray(data);
     const sections = isLegacy ? [] : (data?.sections || []);
     const currentData = {
@@ -208,12 +208,17 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
     const addDrink = () => updateData({ drinks: [...(currentData.drinks || []), ""] });
     const removeDrink = (idx: number) => { const nd = [...(currentData.drinks || [])]; nd.splice(idx, 1); updateData({ drinks: nd }); };
 
+    // --- VISUAL TEXT ADJUSTMENTS BASED ON VARIANT ---
+    const primaryColor = variant === 'daily' ? '#8b5a2b' : '#556B2F'; // Brown for Daily, Olive for Group
+    const drinksLabel = variant === 'daily' ? 'Begudes Incloses' : 'Begudes / Altres';
+    const sectionPlaceholder = variant === 'daily' ? 'Ex: Primers Plats' : 'Ex: Pica Pica Entrants';
+
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Menú de Grup" defaultIcon="diversity_3" />
+            <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle={variant === 'daily' ? "Menú Diari" : "Menú de Grup"} defaultIcon={variant === 'daily' ? "lunch_dining" : "diversity_3"} />
             
             <div className="flex justify-end mb-2">
-                <button onClick={addSection} className="bg-[#556B2F] hover:bg-[#3d4d21] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                <button onClick={addSection} className="text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors" style={{ backgroundColor: primaryColor }}>
                     <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
                 </button>
             </div>
@@ -226,7 +231,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
                         <div className="flex-1">
                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
-                            <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold text-[#556B2F] border-b border-transparent focus:border-[#556B2F] outline-none bg-transparent w-full" placeholder="Ex: Primers Plats" />
+                            <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold border-b border-transparent outline-none bg-transparent w-full" style={{ color: primaryColor, borderBottomColor: primaryColor }} placeholder={sectionPlaceholder} />
                         </div>
                         <div className="w-full md:w-32">
                              <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
@@ -257,14 +262,14 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
                                 </div>
                             </div>
                         ))}
-                        <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#556B2F] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button>
+                        <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" style={{ color: primaryColor }}><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button>
                     </div>
                 </div>
             ))}
 
             <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> Begudes / Altres</h4>
+                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> {drinksLabel}</h4>
                 </div>
                 <div className="space-y-2">
                     {(currentData.drinks || []).map((drink: string, idx: number) => (
@@ -296,7 +301,7 @@ const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void
 };
 
 const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    return <GroupEditor data={{...data, icon: data.icon || "lunch_dining", title: data.title || "Menú Diari"}} onChange={onChange} />;
+    return <GroupEditor data={{...data, icon: data.icon || "lunch_dining", title: data.title || "Menú Diari"}} onChange={onChange} variant="daily" />;
 };
 
 export const MenuManager: React.FC<any> = ({ 

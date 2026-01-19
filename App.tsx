@@ -14,14 +14,8 @@ import PrivacyModal from './components/PrivacyModal';
 import CookiesModal from './components/CookiesModal';
 import LegalModal from './components/LegalModal';
 import { auth } from './firebase';
-// Fix: Handle firebase/auth import errors by casting to any
-import * as firebaseAuth from 'firebase/auth';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { useConfig } from './context/ConfigContext';
-
-// Destructure functions from the any-casted module
-const { onAuthStateChanged, signOut } = firebaseAuth as any;
-// Define User type as any to avoid import error
-type User = any;
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -52,7 +46,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser: any) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       const params = new URLSearchParams(window.location.search);
       if (currentUser && params.get('admin') === 'true') {
@@ -76,7 +70,6 @@ const App: React.FC = () => {
     let targetId = id;
 
     // Mobile Logic: If requesting 'reserva' on mobile, try to scroll to the specific form container
-    // The breakpoint for 'lg' in Tailwind is 1024px.
     if (id === 'reserva' && window.innerWidth < 1024) {
         const formElement = document.getElementById('formulari-reserva');
         if (formElement) {

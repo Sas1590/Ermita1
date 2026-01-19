@@ -565,34 +565,64 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       if (snapshot.exists()) {
         const data = snapshot.val() as Partial<AppConfig>;
         
-        // Merge with default to ensure all fields exist even if DB is partial
+        // --- CHANGE 2: SAFETY MERGING ---
+        // Merge with default to ensure all fields exist even if DB is partial.
+        // Special Handling for boolean flags: Check !== undefined to avoid overwriting existing true/false with undefined.
+        
         setConfig(prev => ({
            ...prev,
            ...data,
-           menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, // Ensure this new field is merged
-           menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader, // NEW: Merge Menu Header
+           menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, 
+           menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader,
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
-           hero: { ...prev.hero, ...data.hero }, // Will merge heroDescription and heroSchedule automatically
-           intro: { ...prev.intro, ...data.intro },
-           specialties: { ...prev.specialties, ...data.specialties },
-           // Ensure philosophy and productButtonText exist
+           hero: { 
+               ...prev.hero, 
+               ...data.hero,
+               // SAFETY CHECK: If reservationVisible is missing in data, keep prev value.
+               reservationVisible: data.hero?.reservationVisible !== undefined ? data.hero.reservationVisible : prev.hero.reservationVisible
+           },
+           intro: { 
+               ...prev.intro, 
+               ...data.intro,
+               visible: data.intro?.visible !== undefined ? data.intro.visible : prev.intro.visible
+           },
+           specialties: { 
+               ...prev.specialties, 
+               ...data.specialties,
+               visible: data.specialties?.visible !== undefined ? data.specialties.visible : prev.specialties.visible
+           },
            philosophy: { 
                ...prev.philosophy, 
                ...data.philosophy,
+               visible: data.philosophy?.visible !== undefined ? data.philosophy.visible : prev.philosophy.visible,
                productButtonText: data.philosophy?.productButtonText || prev.philosophy.productButtonText || "VEURE LA NOSTRA CARTA"
            },
-           gastronomy: { ...prev.gastronomy, ...data.gastronomy }, 
-           // MERGE VISIBILITY PROPS SAFELY
-           dailyMenu: data.dailyMenu ? { ...prev.dailyMenu, ...data.dailyMenu, visible: data.dailyMenu.visible !== undefined ? data.dailyMenu.visible : prev.dailyMenu.visible } : prev.dailyMenu,
-           contact: { ...prev.contact, ...data.contact },
+           gastronomy: { 
+               ...prev.gastronomy, 
+               ...data.gastronomy,
+               visible: data.gastronomy?.visible !== undefined ? data.gastronomy.visible : prev.gastronomy.visible
+           }, 
+           
+           // MERGE VISIBILITY PROPS SAFELY FOR MENUS
+           dailyMenu: data.dailyMenu ? { 
+               ...prev.dailyMenu, 
+               ...data.dailyMenu, 
+               visible: data.dailyMenu.visible !== undefined ? data.dailyMenu.visible : prev.dailyMenu.visible 
+           } : prev.dailyMenu,
+           
+           contact: { 
+               ...prev.contact, 
+               ...data.contact,
+               formVisible: data.contact?.formVisible !== undefined ? data.contact.formVisible : prev.contact.formVisible
+           },
            navbar: { ...prev.navbar, ...data.navbar },
+           
            // Arrays need fallback if empty in DB
-           // For Food/Wine, check if it's new object or old array
            foodMenu: data.foodMenu || prev.foodMenu,
            wineMenu: data.wineMenu || prev.wineMenu,
-           // CRITICAL FIX: Ensure extraMenus is always an array, even if DB returns object
            extraMenus: toArray(data.extraMenus || prev.extraMenus), 
+           
            groupMenu: data.groupMenu ? {
                 ...prev.groupMenu,
                 ...data.groupMenu,
@@ -618,6 +648,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   }, []);
 
   const updateConfig = async (newConfig: Partial<AppConfig>) => {
+    // Optimistic Update
     setConfig(prev => {
         const merged = { ...prev, ...newConfig };
         return merged;
@@ -625,7 +656,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
 
     try {
       const dbRef = ref(db, 'websiteConfig');
-      const configToSave = { ...config, ...newConfig };
+      // Create a clean config object to save, ensuring no undefined values which Firebase rejects
+      const configToSave = JSON.parse(JSON.stringify({ ...config, ...newConfig }));
       await set(dbRef, configToSave);
       console.log("Config saved to Realtime Database successfully");
     } catch (error) {

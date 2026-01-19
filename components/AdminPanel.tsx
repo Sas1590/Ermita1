@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { useConfig } from '../context/ConfigContext';
 import { ConfigTab } from './admin/ConfigTab';
@@ -20,7 +20,12 @@ interface AdminPanelProps {
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', onSaveSuccess, onClose }) => {
     const { config, updateConfig } = useConfig();
-    const [localConfig, setLocalConfig] = useState(config);
+    
+    // --- CHANGE 1: DEEP COPY STATE INITIALIZATION ---
+    // Instead of referencing 'config', we create a detached deep copy immediately.
+    // This prevents external updates (Firebase re-fetches) from overwriting user input while typing.
+    const [localConfig, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(config)));
+    
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     
@@ -34,9 +39,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
     // Profile State
     const [personalAdminName, setPersonalAdminName] = useState("");
 
-    useEffect(() => {
-        setLocalConfig(config);
-    }, [config]);
+    // --- CHANGE 2: REMOVED THE AUTOMATIC OVERWRITE EFFECT ---
+    // The previous useEffect(() => setLocalConfig(config), [config]) is DELETED.
+    // We do NOT want to update localConfig automatically once the user has started editing.
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -92,6 +97,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
     }, [activeTab, isSuperAdmin]);
 
     const handleSave = async () => {
+        // Send the deep-cloned, modified object back to context
         await updateConfig(localConfig);
         onSaveSuccess();
     };

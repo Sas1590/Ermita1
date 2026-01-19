@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-// Fix: Handle firebase/auth import errors by casting to any
-import * as firebaseAuth from 'firebase/auth';
-
-const { signInWithEmailAndPassword, sendPasswordResetEmail } = firebaseAuth as any;
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 interface LoginModalProps {
   onClose: () => void;
