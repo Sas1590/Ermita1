@@ -93,6 +93,19 @@ const ItemStatusControls = ({ visible, strikethrough, onToggleVisible, onToggleS
     );
 };
 
+// ORDER CONTROLS (UP/DOWN)
+const OrderControls = ({ onMoveUp, onMoveDown, isFirst, isLast }: { onMoveUp: () => void, onMoveDown: () => void, isFirst: boolean, isLast: boolean }) => (
+    <div className="flex items-center gap-1 bg-gray-100 rounded p-0.5 border border-gray-200 mr-2">
+        <button onClick={onMoveUp} disabled={isFirst} className={`w-5 h-5 flex items-center justify-center rounded hover:bg-white hover:shadow-sm transition-all ${isFirst ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600'}`}>
+            <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+        </button>
+        <div className="w-px h-3 bg-gray-300"></div>
+        <button onClick={onMoveDown} disabled={isLast} className={`w-5 h-5 flex items-center justify-center rounded hover:bg-white hover:shadow-sm transition-all ${isLast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600'}`}>
+            <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+        </button>
+    </div>
+);
+
 const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     const isLegacy = Array.isArray(data);
     const sections = isLegacy ? data : (data?.sections || []);
@@ -102,7 +115,9 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const recommended = isLegacy ? false : (data?.recommended || false);
     const disclaimer = isLegacy ? "" : (data?.disclaimer || "");
     const showDisclaimer = isLegacy ? true : (data?.showDisclaimer !== false);
-    const currentData = isLegacy ? { title, subtitle, icon, recommended, sections, disclaimer, showDisclaimer } : data;
+    const footerText = isLegacy ? "" : (data?.footerText || "");
+
+    const currentData = isLegacy ? { title, subtitle, icon, recommended, sections, disclaimer, showDisclaimer, footerText } : data;
     const updateData = (newData: any) => onChange({ ...currentData, ...newData });
     
     const handleSectionChange = (idx: number, field: string, val: string) => { const newSections = sections.map((s:any, i:number) => i === idx ? { ...s, [field]: val } : s); updateData({ sections: newSections }); };
@@ -112,20 +127,70 @@ const FoodEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const addItem = (sIdx: number) => { const ns = sections.map((s:any, i:number) => i !== sIdx ? s : { ...s, items: [...(s.items || []), { nameCa: "", nameEs: "", price: "" }] }); updateData({ sections: ns }); };
     const removeItem = (sIdx: number, iIdx: number) => { const ns = sections.map((s:any, i:number) => i !== sIdx ? s : { ...s, items: [...(s.items || [])].filter((_,j) => j !== iIdx) }); updateData({ sections: ns }); };
 
+    // MOVE SECTION FUNCTION
+    const moveSection = (index: number, direction: -1 | 1) => {
+        if ((index === 0 && direction === -1) || (index === sections.length - 1 && direction === 1)) return;
+        const newSections = [...sections];
+        const temp = newSections[index];
+        newSections[index] = newSections[index + direction];
+        newSections[index + direction] = temp;
+        updateData({ sections: newSections });
+    };
+
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Carta de Menjar" defaultIcon="restaurant_menu" />
-            <div className="flex justify-end mb-2"><button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors"><span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ</button></div>
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
+            
+            {/* BUTTON MOVED TO LEFT AND BEFORE SECTIONS */}
+            <div className="flex justify-start mb-2">
+                <button onClick={addSection} className="bg-[#8b5a2b] hover:bg-[#6b4521] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
+                </button>
+            </div>
+
+            {/* SECTIONS LIST */}
             {sections.map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
-                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4"><div className="flex-1"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label><input type="text" value={section.category} onChange={(e) => handleSectionChange(sIdx, 'category', e.target.value)} className="font-serif text-lg font-bold text-[#8b5a2b] border-b border-transparent focus:border-[#8b5a2b] outline-none bg-transparent w-full" /></div><div className="w-full md:w-32"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label><IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/></div><button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button></div>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        {/* Drag Controls */}
+                        <div className="flex items-center">
+                            <OrderControls 
+                                onMoveUp={() => moveSection(sIdx, -1)} 
+                                onMoveDown={() => moveSection(sIdx, 1)} 
+                                isFirst={sIdx === 0} 
+                                isLast={sIdx === sections.length - 1} 
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
+                            <input type="text" value={section.category} onChange={(e) => handleSectionChange(sIdx, 'category', e.target.value)} className="font-serif text-lg font-bold text-[#8b5a2b] border-b border-transparent focus:border-[#8b5a2b] outline-none bg-transparent w-full" />
+                        </div>
+                        <div className="w-full md:w-32">
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
+                            <IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/>
+                        </div>
+                        <button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button>
+                    </div>
                     <div className="space-y-3 pl-0 md:pl-4 border-l-2 border-gray-100">{(section.items || []).map((item: any, iIdx: number) => (<div key={iIdx} className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded ${item.visible === false ? 'opacity-50 grayscale' : ''}`}><div className="md:col-span-2 flex justify-start"><ItemStatusControls visible={item.visible} strikethrough={item.strikethrough} onToggleVisible={() => handleItemChange(sIdx, iIdx, 'visible', item.visible === false ? true : false)} onToggleStrike={() => handleItemChange(sIdx, iIdx, 'strikethrough', !item.strikethrough)}/></div><div className="md:col-span-4"><input type="text" value={item.nameCa} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameCa', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm font-bold ${item.strikethrough ? 'line-through text-gray-400' : ''}`} placeholder="Nom Català" /></div><div className="md:col-span-4"><input type="text" value={item.nameEs} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameEs', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm text-gray-600 font-hand ${item.strikethrough ? 'line-through' : ''}`} placeholder="Nom Castellà" /></div><div className="md:col-span-1"><input type="text" value={item.price} onChange={(e) => handleItemChange(sIdx, iIdx, 'price', e.target.value)} className="w-full bg-transparent border-b border-gray-300 outline-none text-sm font-mono text-right" placeholder="€" /></div><div className="md:col-span-1 flex justify-center"><button onClick={() => removeItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-lg">remove_circle</span></button></div></div>))}<button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold text-[#8b5a2b] flex items-center gap-1 uppercase tracking-wider"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Plat</button></div>
                     <div className="mt-4 pt-4 border-t border-gray-100"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (opcional)</label><input type="text" value={section.footer || ''} onChange={(e) => handleSectionChange(sIdx, 'footer', e.target.value)} className="block w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:border-[#8b5a2b] outline-none" /></div>
                 </div>
             ))}
+
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+            
             <div className={`bg-red-50 p-6 rounded shadow-sm border ${showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !showDisclaimer })} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}>{showDisclaimer ? 'Visible' : 'Ocult'}</button></div>{showDisclaimer && (<div><label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label><input type="text" value={disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none" placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."/></div>)}</div>
+            
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                <input 
+                    type="text" 
+                    value={footerText} 
+                    onChange={(e) => updateData({ footerText: e.target.value })} 
+                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-gray-400" 
+                    placeholder="Ex: Ermita Paret Delgada - Cuina Tradicional"
+                />
+            </div>
         </div>
     );
 };
@@ -139,17 +204,49 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
     const addCategory = () => updateData({ categories: [...categories, {category:"NOVA", icon: "wine_bar", groups:[]}] });
     const removeCategory = (idx: number) => { const n=[...categories]; n.splice(idx,1); updateData({ categories: n }); };
 
+    // MOVE CATEGORY FUNCTION
+    const moveCategory = (index: number, direction: -1 | 1) => {
+        if ((index === 0 && direction === -1) || (index === categories.length - 1 && direction === 1)) return;
+        const newCats = [...categories];
+        const temp = newCats[index];
+        newCats[index] = newCats[index + direction];
+        newCats[index + direction] = temp;
+        updateData({ categories: newCats });
+    };
+
     return (
         <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Carta de Vins" defaultIcon="wine_bar" />
-            <div className="flex justify-end mb-2"><button onClick={addCategory} className="bg-olive hover:bg-[#455726] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors"><span className="material-symbols-outlined text-sm">add_circle</span> NOVA CATEGORIA</button></div>
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
+            
+            {/* BUTTON MOVED TO LEFT AND BEFORE SECTIONS */}
+            <div className="flex justify-start mb-2">
+                <button onClick={addCategory} className="bg-olive hover:bg-[#455726] text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors">
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA CATEGORIA
+                </button>
+            </div>
+
+            {/* CATEGORIES LIST */}
             {categories.map((cat: any, cIdx: number) => (
                 <div key={cIdx} className="bg-white border border-gray-200 rounded p-4">
-                    <div className="flex flex-col md:flex-row gap-4 mb-4 border-b pb-4"><div className="flex-1"><input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, 'category', e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" /></div><div className="w-full md:w-32"><IconPicker value={cat.icon || ""} onChange={(val) => handleCategoryChange(cIdx, 'icon', val)}/></div><button onClick={() => removeCategory(cIdx)} className="text-red-400"><span className="material-symbols-outlined">delete</span></button></div>
+                    <div className="flex flex-col md:flex-row gap-4 mb-4 border-b pb-4">
+                        <div className="flex items-center">
+                            <OrderControls 
+                                onMoveUp={() => moveCategory(cIdx, -1)} 
+                                onMoveDown={() => moveCategory(cIdx, 1)} 
+                                isFirst={cIdx === 0} 
+                                isLast={cIdx === categories.length - 1} 
+                            />
+                        </div>
+                        <div className="flex-1"><input value={cat.category} onChange={(e) => handleCategoryChange(cIdx, 'category', e.target.value)} className="font-bold text-xl outline-none w-full" placeholder="Nom Categoria" /></div>
+                        <div className="w-full md:w-32"><IconPicker value={cat.icon || ""} onChange={(val) => handleCategoryChange(cIdx, 'icon', val)}/></div>
+                        <button onClick={() => removeCategory(cIdx)} className="text-red-400"><span className="material-symbols-outlined">delete</span></button>
+                    </div>
                     <div className="pl-4 space-y-4">{(cat.groups || []).map((grp:any,gIdx:number)=>(<div key={gIdx} className="border-l-4 border-gray-200 pl-2"><div className="flex justify-between mb-2"><input value={grp.sub} onChange={(e)=>{const n={...cat};n.groups=cat.groups.map((g:any,gi:number)=>gi===gIdx?{...g,sub:e.target.value}:g);updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} placeholder="Subgrup" className="italic w-full outline-none" /><button onClick={()=>{const n={...cat};n.groups=[...cat.groups];n.groups.splice(gIdx,1);updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-red-300"><span className="material-symbols-outlined text-sm">remove_circle</span></button></div>{(grp.items || []).map((it:any,iIdx:number)=>(<div key={iIdx} className={`flex gap-2 mb-2 items-center ${it.visible===false?'opacity-50 grayscale':''}`}><ItemStatusControls visible={it.visible} strikethrough={it.strikethrough} onToggleVisible={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],visible:it.visible===false?true:false};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} onToggleStrike={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],strikethrough:!it.strikethrough};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}}/><input value={it.name} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],name:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className={`w-1/3 border-b text-sm ${it.strikethrough?'line-through':''}`}/><input value={it.desc} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],desc:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="w-1/3 border-b text-xs text-gray-500"/><input value={it.price} onChange={(e)=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is[iIdx]={...is[iIdx],price:e.target.value};gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="w-1/6 border-b text-right text-sm"/><button onClick={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items];is.splice(iIdx,1);gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-red-200"><span className="material-symbols-outlined text-sm">close</span></button></div>))}<button onClick={()=>{const n={...cat};const gs=[...n.groups];const is=[...gs[gIdx].items,{name:"",desc:"",price:""}];gs[gIdx]={...gs[gIdx],items:is};n.groups=gs;updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-xs text-olive font-bold">+ Vi</button></div>))}<button onClick={()=>{const n={...cat};n.groups=[...cat.groups,{sub:"",items:[]}];updateData({categories:categories.map((c:any,ci:number)=>ci===cIdx?n:c)});}} className="text-xs font-bold mt-2">+ Grup</button></div></div>
             ))}
+
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+            
             <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className="text-[10px] font-bold uppercase px-3 py-1 rounded border bg-red-600 text-white">{currentData.showDisclaimer?'Visible':'Ocult'}</button></div>{currentData.showDisclaimer && (<input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" />)}</div>
             <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label><input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" /></div>
         </div>
@@ -208,6 +305,16 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
     const addDrink = () => updateData({ drinks: [...(currentData.drinks || []), ""] });
     const removeDrink = (idx: number) => { const nd = [...(currentData.drinks || [])]; nd.splice(idx, 1); updateData({ drinks: nd }); };
 
+    // MOVE SECTION FUNCTION
+    const moveSection = (index: number, direction: -1 | 1) => {
+        if ((index === 0 && direction === -1) || (index === currentData.sections.length - 1 && direction === 1)) return;
+        const newSections = [...(currentData.sections || [])];
+        const temp = newSections[index];
+        newSections[index] = newSections[index + direction];
+        newSections[index + direction] = temp;
+        updateData({ sections: newSections });
+    };
+
     // --- VISUAL TEXT ADJUSTMENTS BASED ON VARIANT ---
     const primaryColor = variant === 'daily' ? '#8b5a2b' : '#556B2F'; // Brown for Daily, Olive for Group
     const drinksLabel = variant === 'daily' ? 'Begudes Incloses' : 'Begudes / Altres';
@@ -217,18 +324,25 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
             <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle={variant === 'daily' ? "Menú Diari" : "Menú de Grup"} defaultIcon={variant === 'daily' ? "lunch_dining" : "diversity_3"} />
             
-            <div className="flex justify-end mb-2">
+            {/* BUTTON MOVED TO LEFT AND BEFORE SECTIONS */}
+            <div className="flex justify-start mb-2">
                 <button onClick={addSection} className="text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors" style={{ backgroundColor: primaryColor }}>
                     <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
                 </button>
             </div>
 
-            <PriceHeaderEditor data={currentData} onChange={updateData} />
-            <InfoBlockEditor data={currentData} onChange={updateData} />
-
+            {/* SECTIONS LIST */}
             {(currentData.sections || []).map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        <div className="flex items-center">
+                            <OrderControls 
+                                onMoveUp={() => moveSection(sIdx, -1)} 
+                                onMoveDown={() => moveSection(sIdx, 1)} 
+                                isFirst={sIdx === 0} 
+                                isLast={sIdx === currentData.sections.length - 1} 
+                            />
+                        </div>
                         <div className="flex-1">
                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
                             <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold border-b border-transparent outline-none bg-transparent w-full" style={{ color: primaryColor, borderBottomColor: primaryColor }} placeholder={sectionPlaceholder} />
@@ -266,6 +380,9 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
                     </div>
                 </div>
             ))}
+
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
 
             <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
@@ -480,7 +597,8 @@ export const MenuManager: React.FC<any> = ({
                 vat: "",
                 infoIntro: "",
                 infoAllergy: "",
-                disclaimer: ""
+                disclaimer: "",
+                footerText: "" // Default empty footer text
             }
         };
         const newExtras = [...(localConfig.extraMenus || []), newExtra];
@@ -740,82 +858,6 @@ export const MenuManager: React.FC<any> = ({
                     </div>
                 </div>
 
-            </div>
-        );
-    }
-
-    // ... (Type Selection and Editor Rendering kept as is)
-    // RENDER: TYPE SELECTION
-    if (menuViewState === 'type_selection') {
-        const currentCount = (Array.isArray(localConfig.extraMenus) ? localConfig.extraMenus : []).length;
-        const maxLimit = localConfig.adminSettings?.maxExtraMenus !== undefined 
-            ? Number(localConfig.adminSettings.maxExtraMenus) 
-            : 10;
-        const isFull = currentCount >= maxLimit;
-
-        return (
-            <div className="max-w-7xl mx-auto animate-[fadeIn_0.3s_ease-out]">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-                    <button onClick={() => setMenuViewState('dashboard')} className="text-gray-500 hover:text-gray-800 flex items-center gap-1 text-sm font-bold uppercase"><span className="material-symbols-outlined text-lg">arrow_back</span> Tornar</button>
-                    {/* VISUAL COUNTER */}
-                    <div className={`px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border ${isFull ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                        Cartes creades: {currentCount} / {maxLimit}
-                    </div>
-                </div>
-                
-                <h3 className="font-serif text-2xl font-bold text-gray-800 mb-8 text-center">Quin tipus de menú vols crear?</h3>
-                
-                {/* 4 COLUMNS LAYOUT FOR SELECTION */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    
-                    {/* 1. DAILY MENU */}
-                    <button onClick={() => handleCreateMenu('daily')} className={`bg-[#DCCCA3] text-[#5c544d] p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#cbbb98] ${isFull ? 'opacity-80' : ''}`}>
-                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
-                            <span className="material-symbols-outlined text-9xl">lunch_dining</span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1 block">Menú Diari</span>
-                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Menú Diari</h4>
-                        </div>
-                        <p className="text-xs font-medium opacity-80 relative z-10 max-w-[90%]">Ideal per a menús de dia laborable, executius o setmanals.</p>
-                    </button>
-
-                    {/* 2. FOOD MENU */}
-                    <button onClick={() => handleCreateMenu('food')} className={`bg-[#2C241B] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#4a3e31] ${isFull ? 'opacity-80' : ''}`}>
-                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
-                            <span className="material-symbols-outlined text-9xl">restaurant_menu</span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Carta</span>
-                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Carta de Menjar</h4>
-                        </div>
-                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Ideal per a tapes, entrants, plats principals... Estructurat per seccions.</p>
-                    </button>
-
-                    {/* 3. WINE MENU */}
-                    <button onClick={() => handleCreateMenu('wine')} className={`bg-[#5D4037] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#7d574b] ${isFull ? 'opacity-80' : ''}`}>
-                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
-                            <span className="material-symbols-outlined text-9xl">wine_bar</span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Vins</span>
-                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Carta de Vins</h4>
-                        </div>
-                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Específic per a vins, caves i licors. Organitzat per categories i D.O.</p>
-                    </button>
-
-                    {/* 4. GROUP MENU */}
-                    <button onClick={() => handleCreateMenu('group')} className={`bg-[#556B2F] text-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all group text-left relative overflow-hidden h-64 flex flex-col justify-between border border-[#6b853e] ${isFull ? 'opacity-80' : ''}`}>
-                        <div className="absolute -bottom-8 -right-8 opacity-10 transform rotate-12 transition-transform group-hover:scale-110 duration-500">
-                            <span className="material-symbols-outlined text-9xl">diversity_3</span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1 block">Menú de Grup</span>
-                            <h4 className="font-serif text-2xl font-bold mb-2 leading-tight">Menú de Grup / Fix</h4>
-                        </div>
-                        <p className="text-xs font-medium opacity-70 relative z-10 max-w-[90%]">Per a menús tancats (Calçotada, Nadal, Diari...) amb preu fix i opcions.</p>
-                    </button>
-                </div>
             </div>
         );
     }

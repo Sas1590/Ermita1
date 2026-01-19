@@ -36,6 +36,7 @@ export interface FoodMenuConfig {
   showInfo?: boolean;
   disclaimer?: string;
   showDisclaimer?: boolean;
+  footerText?: string; // NEW: Global footer note for the menu
   sections: MenuSection[];
 }
 
@@ -88,6 +89,7 @@ export interface WineMenuConfig {
   showInfo?: boolean;
   disclaimer?: string;
   showDisclaimer?: boolean;
+  footerText?: string;
   categories: WineCategory[];
 }
 
@@ -448,6 +450,7 @@ export const defaultAppConfig: AppConfig = {
     icon: "restaurant_menu",
     visible: true, // Default Visible
     recommended: false,
+    footerText: "", // Default empty
     sections: [
       {
         id: "sec_tapas",
