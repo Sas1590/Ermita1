@@ -4,10 +4,11 @@ import { ref, onValue, update, remove, push, set, get } from 'firebase/database'
 import { AppConfig, defaultAppConfig } from '../../context/ConfigContext';
 
 interface OperationsProps {
-    activeTab: 'inbox' | 'reservations' | 'security';
+    activeTab: 'inbox' | 'reservations' | 'security' | 'superadmin';
     config?: AppConfig;
     updateConfig?: (newConfig: any) => Promise<void>;
     setLocalConfig?: (config: any) => void;
+    isSuperAdmin?: boolean; 
 }
 
 interface ContactMessage {
@@ -213,7 +214,7 @@ const MessageCard: React.FC<{
     );
 };
 
-export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updateConfig, setLocalConfig }) => {
+export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updateConfig, setLocalConfig, isSuperAdmin = false }) => {
     // --- RESERVATIONS STATE ---
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [reservationFilter, setReservationFilter] = useState<'pending' | 'confirmed' | 'cancelled'>('pending');
@@ -252,6 +253,10 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     const [tempMaxProduct, setTempMaxProduct] = useState<string>("5"); // New
     const [tempMaxHistoric, setTempMaxHistoric] = useState<string>("5"); // New
 
+    // --- LOCAL STATE FOR SUPPORT BUTTON ---
+    const [tempSupportText, setTempSupportText] = useState("");
+    const [tempSupportUrl, setTempSupportUrl] = useState("");
+
     // Sync temp state when config loads
     useEffect(() => {
         if (config?.adminSettings?.maxExtraMenus !== undefined) {
@@ -266,7 +271,11 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         if (config?.adminSettings?.maxHistoricImages !== undefined) {
             setTempMaxHistoric(config.adminSettings.maxHistoricImages.toString());
         }
-    }, [config?.adminSettings]);
+        if (config?.supportSettings) {
+            setTempSupportText(config.supportSettings.text || "");
+            setTempSupportUrl(config.supportSettings.url || "");
+        }
+    }, [config?.adminSettings, config?.supportSettings]);
 
     // --- FETCH DATA LOGIC ---
     useEffect(() => {
@@ -290,6 +299,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 } else setMessages([]);
             });
         }
+        // BACKUPS ARE NOW FETCHED IN 'security' TAB FOR EVERYONE
         if (activeTab === 'security') {
             const backupsRef = ref(db, 'backups');
             return onValue(backupsRef, (snapshot) => {
@@ -368,7 +378,7 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
             console.error("Error detallat al crear còpia:", e);
             let errorMsg = "Error desconegut creant la còpia.";
             if (e.code === 'PERMISSION_DENIED') {
-                errorMsg = "Permís denegat. Comprova que tens la sessió iniciada a Firebase.";
+                errorMsg = "Permís denegat. Comprova que tens permís d'escriptura a 'backups' a Firebase Rules.";
             } else if (e.message && e.message.includes('undefined')) {
                 errorMsg = "Error de dades: La configuració conté camps invàlids.";
             }
@@ -491,6 +501,20 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         }
     };
 
+    // --- SUPPORT SAVING ---
+    const handleSaveSupport = async () => {
+        const newSupportSettings = {
+            text: tempSupportText,
+            url: tempSupportUrl
+        };
+
+        if (setLocalConfig) setLocalConfig((prev: any) => ({ ...prev, supportSettings: newSupportSettings }));
+        if (updateConfig) {
+            try { await updateConfig({ supportSettings: newSupportSettings }); showFeedback('success', "Dades de suport actualitzades."); } 
+            catch(e) { showFeedback('error', "Error guardant les dades de suport."); }
+        }
+    };
+
     // --- GRANULAR BETA INJECTION ---
     const performBetaInjection = async () => {
         const type = showInjectConfirm.type;
@@ -576,30 +600,12 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         );
     }
 
+    // --- SECURITY TAB (Backups & Beta Restore - Public to all admins) ---
     if (activeTab === 'security') {
         return (
             <div className="space-y-8 animate-[fadeIn_0.3s_ease-out] max-w-4xl mx-auto relative">
                 
                 {feedback && (<div className={`fixed top-4 right-4 z-[200] px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${feedback.type === 'success' ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}`}><span className="material-symbols-outlined text-2xl">{feedback.type === 'success' ? 'check_circle' : 'error'}</span><span className="font-bold">{feedback.msg}</span></div>)}
-
-                {/* --- ADVANCED LIMITS SECTION (WITH BOTH FIELDS) --- */}
-                <div className="bg-white p-6 rounded shadow-sm border border-purple-200">
-                    <div className="flex items-center gap-3 mb-6 border-b border-purple-100 pb-4">
-                        <span className="material-symbols-outlined text-3xl text-purple-600">tune</span>
-                        <div>
-                            <h3 className="font-serif text-xl font-bold text-gray-800">Configuració Avançada (Límits)</h3>
-                            <p className="text-gray-500 text-sm">Controla els límits del sistema per a futures actualitzacions Premium.</p>
-                        </div>
-                    </div>
-                    {/* ... (Existing Limits Inputs) ... */}
-                    <div className="bg-purple-50 p-6 rounded border border-purple-100 flex flex-col gap-6">
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Menús Addicionals</label><p className="text-xs text-purple-700">Defineix quants menús extra es poden crear com a màxim.</p></div><input type="number" min="0" max="50" value={tempMaxMenus} onChange={(e) => setTempMaxMenus(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Portada</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel de la pàgina principal.</p></div><input type="number" min="1" max="20" value={tempMaxHeroImages} onChange={(e) => setTempMaxHeroImages(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
-                        <div className="flex items-center justify-between pb-4 border-b border-purple-200/50"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Producte</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel de Filosofia (Columna esquerra).</p></div><input type="number" min="1" max="20" value={tempMaxProduct} onChange={(e) => setTempMaxProduct(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
-                        <div className="flex items-center justify-between"><div><label className="block text-sm font-bold text-purple-900 mb-1">Màxim Imatges Història</label><p className="text-xs text-purple-700">Límit d'imatges al carrusel d'Història (Columna dreta).</p></div><input type="number" min="1" max="20" value={tempMaxHistoric} onChange={(e) => setTempMaxHistoric(e.target.value)} className="w-20 border border-purple-300 rounded px-3 py-2 text-center font-bold text-purple-900 focus:border-purple-500 outline-none" /></div>
-                        <div className="flex justify-end pt-4 border-t border-purple-200"><button onClick={handleSaveLimits} className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase px-6 py-3 rounded shadow-sm transition-colors flex items-center gap-2"><span className="material-symbols-outlined text-lg">save</span> Guardar Límits</button></div>
-                    </div>
-                </div>
 
                 {/* --- BACKUPS SECTION --- */}
                 <div className="bg-white p-6 rounded shadow-sm border border-gray-200">
@@ -635,42 +641,143 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                     </div>
                 </div>
 
-                {/* --- NEW: DELIVERY MANAGEMENT (DEVELOPER ZONE) --- */}
-                <div className="bg-indigo-50 p-6 rounded shadow-sm border border-indigo-200">
-                    <h4 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
-                        <span className="material-symbols-outlined">verified</span> Gestió de l'Entrega (Zona Desenvolupador)
-                    </h4>
-                    <p className="text-xs text-indigo-800 mb-4">
-                        Utilitza aquest botó quan hagis acabat la web. Això guardarà l'estat actual com a "Versió Inicial" perquè el client pugui restaurar-la si comet errors greus.
-                    </p>
-                    <button 
-                        onClick={() => setShowSetMasterConfirm(true)} 
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded text-xs font-bold uppercase shadow flex items-center gap-2 transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-lg">save_as</span> Definir estat actual com a Versió d'Entrega
-                    </button>
-                </div>
+                {renderConfirmModal()}
+                
+                {/* BACKUP INPUT MODAL */}
+                {showBackupInput && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-primary text-center">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                                <span className="material-symbols-outlined text-3xl">save</span>
+                            </div>
+                            <h3 className="font-serif text-xl font-bold text-gray-800 mb-2">Nom de la Còpia</h3>
+                            <p className="text-gray-500 mb-4 text-xs">Tria un nom per identificar aquest punt de restauració.</p>
+                            
+                            <input 
+                                type="text" 
+                                value={newBackupName} 
+                                onChange={(e) => setNewBackupName(e.target.value)}
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-primary mb-6 text-center font-bold"
+                                placeholder="Ex: Còpia Dimarts"
+                                autoFocus
+                            />
 
-                {/* --- DANGER ZONE (MASTER RESTORE) --- */}
-                <div className="bg-red-50 p-6 rounded shadow-sm border border-red-200">
-                    <h4 className="font-bold text-red-800 mb-2 flex items-center gap-2">
-                        <span className="material-symbols-outlined">warning</span> Zona de Perill
-                    </h4>
-                    <p className="text-xs text-red-700 mb-4">
-                        Aquesta acció esborrarà tots els canvis fets pel client i retornarà la web a l'estat exacte del dia de l'entrega.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <button 
-                            onClick={() => setShowFactoryResetConfirm(true)} 
-                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded text-xs font-bold uppercase shadow flex items-center gap-2 w-full justify-center sm:w-auto transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-lg">restart_alt</span> Restaurar Versió Inicial (Entrega)
-                        </button>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowBackupInput(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
+                                <button onClick={handleConfirmCreateBackup} className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent shadow-md transition-colors">
+                                    Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* CONFIRM BETA RESTORE MODAL */}
+                {showInjectConfirm.show && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-green-600 text-center"><div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><span className="material-symbols-outlined text-3xl">{showInjectConfirm.type === 'food' ? 'restaurant_menu' : showInjectConfirm.type === 'wine' ? 'wine_bar' : showInjectConfirm.type === 'group' ? 'diversity_3' : 'lunch_dining'}</span></div><h3 className="font-serif text-xl font-bold text-gray-800 mb-2">{showInjectConfirm.type === 'food' ? 'Carregar CARTA_BETA?' : showInjectConfirm.type === 'wine' ? 'Carregar CARTAVINS_BETA?' : showInjectConfirm.type === 'group' ? 'Carregar MENUGRUP_BETA?' : 'Carregar MENUDIARI_BETA?'}</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed">Això <strong className="text-gray-800">sobrescriurà només aquesta secció</strong> amb la versió original/beta. Els altres menús no es tocaran.</p><div className="flex gap-3"><button onClick={() => setShowInjectConfirm({ show: false, type: null })} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performBetaInjection} className="flex-1 py-3 bg-green-600 text-white rounded font-bold uppercase text-xs hover:bg-green-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
+            </div>
+        );
+    }
+
+    // --- SUPER ADMIN TAB (Exclusive Features) ---
+    if (activeTab === 'superadmin' && isSuperAdmin) {
+        return (
+            <div className="space-y-8 animate-[fadeIn_0.3s_ease-out] max-w-4xl mx-auto relative">
+                
+                {feedback && (<div className={`fixed top-4 right-4 z-[200] px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${feedback.type === 'success' ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}`}><span className="material-symbols-outlined text-2xl">{feedback.type === 'success' ? 'check_circle' : 'error'}</span><span className="font-bold">{feedback.msg}</span></div>)}
+
+                <div className="bg-purple-50 p-8 rounded-xl shadow-lg border-l-8 border-purple-600 border-t border-r border-b border-purple-200 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <span className="material-symbols-outlined text-9xl">admin_panel_settings</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-8 border-b-2 border-purple-200 pb-4">
+                        <span className="material-symbols-outlined text-4xl text-purple-700">admin_panel_settings</span>
+                        <div>
+                            <h3 className="font-serif text-2xl font-bold text-purple-900">Zona Super Admin & Desenvolupament</h3>
+                            <p className="text-purple-700 text-sm">Configuració tècnica, límits i gestió de versions mestres.</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-12 relative z-10">
+                        
+                        {/* 1. LIMITS */}
+                        <div>
+                            <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">tune</span> Límits del Sistema
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/60 p-4 rounded-lg border border-purple-100">
+                                <div className="flex items-center justify-between pb-2 border-b border-purple-100"><div><label className="block text-xs font-bold text-purple-800">Max Menús Extra</label></div><input type="number" min="0" max="50" value={tempMaxMenus} onChange={(e) => setTempMaxMenus(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div>
+                                <div className="flex items-center justify-between pb-2 border-b border-purple-100"><div><label className="block text-xs font-bold text-purple-800">Max Slide Portada</label></div><input type="number" min="1" max="20" value={tempMaxHeroImages} onChange={(e) => setTempMaxHeroImages(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div>
+                                <div className="flex items-center justify-between"><div><label className="block text-xs font-bold text-purple-800">Max Slide Producte</label></div><input type="number" min="1" max="20" value={tempMaxProduct} onChange={(e) => setTempMaxProduct(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div>
+                                <div className="flex items-center justify-between"><div><label className="block text-xs font-bold text-purple-800">Max Slide Història</label></div><input type="number" min="1" max="20" value={tempMaxHistoric} onChange={(e) => setTempMaxHistoric(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div>
+                            </div>
+                            <div className="mt-2 text-right">
+                                <button onClick={handleSaveLimits} className="text-[10px] font-bold text-purple-700 hover:text-purple-900 uppercase underline">Guardar Límits</button>
+                            </div>
+                        </div>
+
+                        {/* 2. SUPPORT CONFIG */}
+                        <div>
+                            <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">contact_support</span> Configuració Suport Tècnic
+                            </h4>
+                            <div className="bg-white/60 p-4 rounded-lg border border-purple-100 flex flex-col md:flex-row gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-purple-800 mb-1">Text Botó</label>
+                                    <input type="text" value={tempSupportText} onChange={(e) => setTempSupportText(e.target.value)} className="w-full border border-purple-200 rounded px-3 py-1.5 text-xs text-gray-800 outline-none focus:border-purple-500" placeholder="Ex: Contactar..." />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-purple-800 mb-1">URL / Mailto</label>
+                                    <input type="text" value={tempSupportUrl} onChange={(e) => setTempSupportUrl(e.target.value)} className="w-full border border-purple-200 rounded px-3 py-1.5 text-xs text-gray-800 outline-none focus:border-purple-500 font-mono" placeholder="mailto:..." />
+                                </div>
+                                <div className="flex items-end">
+                                    <button onClick={handleSaveSupport} className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase px-4 py-2 rounded shadow-sm transition-colors">Guardar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. DELIVERY MANAGEMENT (COMBINED) */}
+                        <div>
+                            <h4 className="font-bold text-indigo-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">verified</span> Gestió de l'Entrega (Master Version)
+                            </h4>
+                            <div className="bg-indigo-50 border border-indigo-200 p-6 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-8">
+                                
+                                {/* SET MASTER */}
+                                <div>
+                                    <h5 className="font-bold text-indigo-800 text-xs mb-2">OPCIÓ A: DEFINIR MASTER (GUARDAR)</h5>
+                                    <p className="text-[11px] text-indigo-700 mb-4 leading-relaxed">
+                                        Guarda l'estat actual de la web com a "Versió d'Entrega". Utilitza això quan acabis el desenvolupament o facis una actualització major.
+                                    </p>
+                                    <button 
+                                        onClick={() => setShowSetMasterConfirm(true)} 
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-xs font-bold uppercase shadow-sm flex items-center gap-2 transition-colors w-full justify-center"
+                                    >
+                                        <span className="material-symbols-outlined text-base">save_as</span> Definir estat actual com a Master
+                                    </button>
+                                </div>
+
+                                {/* RESTORE MASTER */}
+                                <div className="border-t md:border-t-0 md:border-l border-indigo-200 pt-6 md:pt-0 md:pl-8">
+                                    <h5 className="font-bold text-red-800 text-xs mb-2">OPCIÓ B: RESTAURAR MASTER (CARREGAR)</h5>
+                                    <p className="text-[11px] text-red-700 mb-4 leading-relaxed">
+                                        Esborra tots els canvis fets pel client i retorna la web a l'últim punt "Master" guardat. <strong className="underline">Acció destructiva.</strong>
+                                    </p>
+                                    <button 
+                                        onClick={() => setShowFactoryResetConfirm(true)} 
+                                        className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded text-xs font-bold uppercase shadow-sm flex items-center gap-2 transition-colors w-full justify-center"
+                                    >
+                                        <span className="material-symbols-outlined text-base">history</span> Restaurar Versió Master
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                {/* MODALS */}
-                {showInjectConfirm.show && (<div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-green-600 text-center"><div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600"><span className="material-symbols-outlined text-3xl">{showInjectConfirm.type === 'food' ? 'restaurant_menu' : showInjectConfirm.type === 'wine' ? 'wine_bar' : showInjectConfirm.type === 'group' ? 'diversity_3' : 'lunch_dining'}</span></div><h3 className="font-serif text-xl font-bold text-gray-800 mb-2">{showInjectConfirm.type === 'food' ? 'Carregar CARTA_BETA?' : showInjectConfirm.type === 'wine' ? 'Carregar CARTAVINS_BETA?' : showInjectConfirm.type === 'group' ? 'Carregar MENUGRUP_BETA?' : 'Carregar MENUDIARI_BETA?'}</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed">Això <strong className="text-gray-800">sobrescriurà només aquesta secció</strong> amb la versió original/beta. Els altres menús no es tocaran.</p><div className="flex gap-3"><button onClick={() => setShowInjectConfirm({ show: false, type: null })} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button><button onClick={performBetaInjection} className="flex-1 py-3 bg-green-600 text-white rounded font-bold uppercase text-xs hover:bg-green-700 shadow-md transition-colors">Sí, Restaurar</button></div></div></div>)}
+                {renderConfirmModal()}
                 
                 {/* FACTORY RESET CONFIRM */}
                 {showFactoryResetConfirm && (
@@ -708,37 +815,6 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                             <div className="flex gap-3">
                                 <button onClick={() => setShowSetMasterConfirm(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
                                 <button onClick={handleSetMasterVersion} className="flex-1 py-3 bg-indigo-600 text-white rounded font-bold uppercase text-xs hover:bg-indigo-700 shadow-md transition-colors">Confirmar i Guardar</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {renderConfirmModal()}
-
-                {/* --- NEW BACKUP INPUT MODAL --- */}
-                {showBackupInput && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 border-primary text-center">
-                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                                <span className="material-symbols-outlined text-3xl">save</span>
-                            </div>
-                            <h3 className="font-serif text-xl font-bold text-gray-800 mb-2">Nom de la Còpia</h3>
-                            <p className="text-gray-500 mb-4 text-xs">Tria un nom per identificar aquest punt de restauració.</p>
-                            
-                            <input 
-                                type="text" 
-                                value={newBackupName} 
-                                onChange={(e) => setNewBackupName(e.target.value)}
-                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-primary mb-6 text-center font-bold"
-                                placeholder="Ex: Còpia Dimarts"
-                                autoFocus
-                            />
-
-                            <div className="flex gap-3">
-                                <button onClick={() => setShowBackupInput(false)} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>
-                                <button onClick={handleConfirmCreateBackup} className="flex-1 py-3 bg-primary text-white rounded font-bold uppercase text-xs hover:bg-accent shadow-md transition-colors">
-                                    Guardar
-                                </button>
                             </div>
                         </div>
                     </div>

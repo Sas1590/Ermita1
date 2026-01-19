@@ -117,6 +117,11 @@ export interface AppConfig {
     maxProductImages: number; // NEW: Cap for product slider images
     maxHistoricImages: number; // NEW: Cap for historic slider images
   };
+  // NEW: Support Button Settings
+  supportSettings: {
+    text: string;
+    url: string;
+  };
   menuHeader: {
     title: string;
     subtitle: string;
@@ -293,6 +298,10 @@ export const defaultAppConfig: AppConfig = {
     maxHeroImages: 5, // Default limit hero images
     maxProductImages: 5, // Default limit product images
     maxHistoricImages: 5 // Default limit historic images
+  },
+  supportSettings: {
+    text: "Contactar amb UMC Ideas",
+    url: "mailto:support@umcideas.com"
   },
   menuHeader: {
     title: "La Carta",
@@ -579,6 +588,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader,
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
+           // MERGE SUPPORT SETTINGS
+           supportSettings: data.supportSettings ? { ...prev.supportSettings, ...data.supportSettings } : prev.supportSettings,
            hero: { 
                ...prev.hero, 
                ...data.hero,

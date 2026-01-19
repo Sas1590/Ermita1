@@ -7,7 +7,7 @@ import { ProfileTab } from './admin/ProfileTab';
 import { Operations } from './admin/Operations';
 import { ref, get, onValue } from 'firebase/database';
 
-// AFEGEIX AQUÍ ELS EMAILS QUE PODEN VEURE LA PESTANYA "SEGURETAT" (Còpies, Restaurar, Límits)
+// AFEGEIX AQUÍ ELS EMAILS QUE PODEN VEURE LA ZONA "SUPER ADMIN"
 const SUPER_ADMIN_EMAILS = [
     'umc_admin@proton.me'
 ];
@@ -21,11 +21,7 @@ interface AdminPanelProps {
 export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', onSaveSuccess, onClose }) => {
     const { config, updateConfig } = useConfig();
     
-    // --- CHANGE 1: DEEP COPY STATE INITIALIZATION ---
-    // Instead of referencing 'config', we create a detached deep copy immediately.
-    // This prevents external updates (Firebase re-fetches) from overwriting user input while typing.
     const [localConfig, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(config)));
-    
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     
@@ -38,10 +34,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
 
     // Profile State
     const [personalAdminName, setPersonalAdminName] = useState("");
-
-    // --- CHANGE 2: REMOVED THE AUTOMATIC OVERWRITE EFFECT ---
-    // The previous useEffect(() => setLocalConfig(config), [config]) is DELETED.
-    // We do NOT want to update localConfig automatically once the user has started editing.
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -66,7 +58,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                 let count = 0;
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    // Count unread messages
                     count = Object.values(data).filter((m: any) => !m.read).length;
                 }
                 setCounts(prev => ({ ...prev, inbox: count }));
@@ -76,7 +67,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                 let count = 0;
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    // Count pending reservations
                     count = Object.values(data).filter((r: any) => r.status === 'pending').length;
                 }
                 setCounts(prev => ({ ...prev, reservations: count }));
@@ -89,15 +79,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
         }
     }, []);
 
-    // Redirect if active tab is security but user is not superadmin
-    useEffect(() => {
-        if (activeTab === 'security' && !isSuperAdmin && auth.currentUser) {
-            setActiveTab('config');
-        }
-    }, [activeTab, isSuperAdmin]);
-
     const handleSave = async () => {
-        // Send the deep-cloned, modified object back to context
         await updateConfig(localConfig);
         onSaveSuccess();
     };
@@ -120,11 +102,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
         { id: 'inbox', label: 'Missatges', icon: 'mail' },
         { id: 'reservations', label: 'Reserves', icon: 'book_online' },
         { id: 'profile', label: 'El Meu Perfil', icon: 'person' },
+        { id: 'security', label: 'Seguretat', icon: 'security' },
     ];
 
-    // Only add Security tab if Super Admin
+    // Add Super Admin Tab if authorized
     if (isSuperAdmin) {
-        tabs.push({ id: 'security', label: 'Seguretat', icon: 'security' });
+        tabs.push({ id: 'superadmin', label: 'Zona Super Admin', icon: 'admin_panel_settings' });
     }
 
     return (
@@ -165,22 +148,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                     {/* Sidebar */}
                     <div className="w-20 md:w-64 bg-[#2c241b] flex-shrink-0 flex flex-col border-r border-white/5">
                         
-                        {/* User Profile - Top Position - Minimalist Green Email */}
+                        {/* User Profile */}
                         <div className="p-5 border-b border-white/5 mb-2 hidden md:block">
                             <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">LOGEJAT COM:</p>
                             <p className="text-xs font-bold text-green-400 truncate" title={auth.currentUser?.email || ''}>
                                 {auth.currentUser?.email}
                             </p>
-                            {isSuperAdmin && (
-                                <span className="inline-block mt-2 text-[9px] bg-purple-900 text-purple-200 px-2 py-0.5 rounded border border-purple-700 uppercase tracking-widest">
-                                    Super Admin
-                                </span>
-                            )}
                         </div>
 
                         <div className="flex-1 overflow-y-auto py-2 space-y-2 px-3">
                             {tabs.map(tab => {
-                                // Calculate badges
                                 let badgeCount = 0;
                                 let badgeColor = "";
                                 
@@ -192,17 +169,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                                     badgeColor = "bg-red-500";
                                 }
 
+                                // Special styling for Super Admin Tab
+                                const isSuperAdminTab = tab.id === 'superadmin';
+                                
                                 return (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative
                                             ${activeTab === tab.id 
-                                                ? 'bg-primary text-black font-bold shadow-md' 
-                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                                ? (isSuperAdminTab ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-900/30' : 'bg-primary text-black font-bold shadow-md') 
+                                                : (isSuperAdminTab ? 'text-purple-300 hover:bg-purple-900/20 hover:text-white border border-purple-500/20 mt-4' : 'text-gray-400 hover:bg-white/5 hover:text-white')
                                             }`}
                                     >
-                                        <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? 'text-black' : 'text-gray-500 group-hover:text-white'}`}>{tab.icon}</span>
+                                        <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? (isSuperAdminTab ? 'text-white' : 'text-black') : (isSuperAdminTab ? 'text-purple-400 group-hover:text-purple-200' : 'text-gray-500 group-hover:text-white')}`}>{tab.icon}</span>
                                         <span className="text-sm uppercase tracking-wider hidden md:block flex-1 text-left">{tab.label}</span>
                                         
                                         {/* Notification Badge */}
@@ -212,7 +192,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                                             </span>
                                         )}
                                         
-                                        {/* Mobile Dot Notification (only visible if sidebar is collapsed/small) */}
+                                        {/* Mobile Dot */}
                                         {badgeCount > 0 && (
                                             <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${badgeColor} md:hidden`}></div>
                                         )}
@@ -223,6 +203,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                                     </button>
                                 );
                             })}
+                        </div>
+
+                        {/* Support Footer */}
+                        <div className="p-4 border-t border-white/5 mt-auto hidden md:block">
+                            <a 
+                                href={localConfig.supportSettings?.url || "mailto:support@umcideas.com"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide group"
+                            >
+                                <span className="material-symbols-outlined text-sm group-hover:text-primary transition-colors">help</span>
+                                <span className="truncate">{localConfig.supportSettings?.text || "Contactar Suport"}</span>
+                            </a>
                         </div>
                     </div>
 
@@ -265,12 +258,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                                 />
                             )}
 
-                            {activeTab === 'security' && isSuperAdmin && (
+                            {/* Public Security Tab (Backups for everyone) */}
+                            {activeTab === 'security' && (
                                 <Operations 
                                     activeTab='security' 
                                     config={config} 
                                     updateConfig={updateConfig} 
-                                    setLocalConfig={setLocalConfig} 
+                                    setLocalConfig={setLocalConfig}
+                                    isSuperAdmin={isSuperAdmin}
+                                />
+                            )}
+
+                            {/* Super Admin Tab (Exclusive Features) */}
+                            {activeTab === 'superadmin' && isSuperAdmin && (
+                                <Operations 
+                                    activeTab='superadmin' 
+                                    config={config} 
+                                    updateConfig={updateConfig} 
+                                    setLocalConfig={setLocalConfig}
+                                    isSuperAdmin={isSuperAdmin}
                                 />
                             )}
                         </div>

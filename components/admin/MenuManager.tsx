@@ -335,6 +335,7 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
             {(currentData.sections || []).map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        {/* Drag Controls */}
                         <div className="flex items-center">
                             <OrderControls 
                                 onMoveUp={() => moveSection(sIdx, -1)} 
@@ -650,7 +651,7 @@ export const MenuManager: React.FC<any> = ({
         ];
 
         return (
-            <div className="space-y-12 animate-[fadeIn_0.3s_ease-out]">
+            <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
                 
                 {/* Main Header Block */}
                 <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -669,19 +670,7 @@ export const MenuManager: React.FC<any> = ({
                     </button>
                 </div>
 
-                {/* LEGEND BLOCK */}
-                <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-lg flex flex-wrap gap-6 text-xs text-blue-800/80">
-                    <div className="flex items-center gap-2">
-                        <span className="bg-white p-1 rounded border border-blue-200 text-green-600 shadow-sm"><span className="material-symbols-outlined text-base block">visibility</span></span>
-                        <span><strong>Ull (Visibilitat):</strong> Si està apagat, el menú no apareixerà a la web.</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="bg-white p-1 rounded border border-blue-200 text-yellow-500 shadow-sm"><span className="material-symbols-outlined text-base block">star</span></span>
-                        <span><strong>Estrella (Destacat):</strong> Pinta el botó de la barra de navegació en daurat per cridar l'atenció.</span>
-                    </div>
-                </div>
-
-                {/* --- MENU HEADER CONFIGURATION (NEW) --- */}
+                {/* --- MENU HEADER CONFIGURATION (MOVED UP) --- */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                     <h3 className="font-serif text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">branding_watermark</span> Capçalera Principal
@@ -708,6 +697,18 @@ export const MenuManager: React.FC<any> = ({
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* LEGEND BLOCK (BLUE INFO BOX) - RESTORED & POSITIONED BELOW HEADER CONFIG */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800 flex flex-col md:flex-row gap-4 md:gap-8 items-start md:items-center mt-2">
+                     <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-green-600 text-lg">visibility</span>
+                        <span><strong className="font-bold">Ull (Visibilitat):</strong> Si està apagat, el menú no apareixerà a la web.</span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-yellow-500 text-lg">star</span>
+                        <span><strong className="font-bold">Estrella (Destacat):</strong> Pinta el botó de la barra de navegació en daurat per cridar l'atenció.</span>
+                     </div>
                 </div>
 
                 {/* Core Menus Grid - REDUCED GAP TO 4 TO HELP FIT COLUMNS */}

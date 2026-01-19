@@ -24,13 +24,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
       onLoginSuccess();
       onClose();
     } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/invalid-credential') {
-        setError('Correu o contrasenya incorrectes.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Massa intents fallits. Prova-ho més tard.');
+      console.error("Login error:", err);
+      
+      const errorCode = err.code;
+
+      // Handle specific Firebase Auth errors
+      if (
+          errorCode === 'auth/invalid-credential' || 
+          errorCode === 'auth/invalid-login-credentials' ||
+          errorCode === 'auth/user-not-found' || 
+          errorCode === 'auth/wrong-password'
+      ) {
+        setError('Credencials incorrectes. Revisa el correu i la contrasenya.');
+      } else if (errorCode === 'auth/invalid-email') {
+        setError('El format del correu electrònic no és vàlid.');
+      } else if (errorCode === 'auth/too-many-requests') {
+        setError('Massa intents fallits. El compte s\'ha bloquejat temporalment. Torna-ho a provar més tard.');
+      } else if (errorCode === 'auth/network-request-failed') {
+        setError('Error de connexió. Comprova la teva xarxa.');
       } else {
-        setError('Error al iniciar sessió. Comprova la connexió.');
+        setError('Error al iniciar sessió. Si el problema persisteix, contacta amb el suport.');
       }
     } finally {
       setIsLoading(false);
@@ -49,7 +62,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
       setError('');
     } catch (err: any) {
       console.error(err);
-      setError('No s\'ha pogut enviar el correu. Comprova que l\'adreça sigui correcta.');
+      if (err.code === 'auth/user-not-found') {
+          setError('No hi ha cap usuari registrat amb aquest correu.');
+      } else if (err.code === 'auth/invalid-email') {
+          setError('El format del correu no és vàlid.');
+      } else {
+          setError('No s\'ha pogut enviar el correu. Torna-ho a provar.');
+      }
     }
   };
 
@@ -97,16 +116,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded flex items-center gap-2">
+            <div className="bg-red-50 text-red-600 text-sm p-3 rounded flex items-center gap-2 border border-red-100 animate-[fadeIn_0.2s_ease-out]">
                <span className="material-symbols-outlined text-lg">error</span>
-               {error}
+               <span className="flex-1">{error}</span>
             </div>
           )}
 
           {info && (
-            <div className="bg-green-50 text-green-600 text-sm p-3 rounded flex items-center gap-2">
+            <div className="bg-green-50 text-green-600 text-sm p-3 rounded flex items-center gap-2 border border-green-100 animate-[fadeIn_0.2s_ease-out]">
                <span className="material-symbols-outlined text-lg">check_circle</span>
-               {info}
+               <span className="flex-1">{info}</span>
             </div>
           )}
 
