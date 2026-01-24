@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { IconPicker } from './AdminShared';
+import { AppConfig } from '../../context/ConfigContext';
 
 // --- SHARED COMPONENTS ---
 
@@ -247,13 +248,23 @@ const WineEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void 
             <PriceHeaderEditor data={currentData} onChange={updateData} />
             <InfoBlockEditor data={currentData} onChange={updateData} />
             
-            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className="text-[10px] font-bold uppercase px-3 py-1 rounded border bg-red-600 text-white">{currentData.showDisclaimer?'Visible':'Ocult'}</button></div>{currentData.showDisclaimer && (<input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" />)}</div>
-            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200"><label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label><input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" /></div>
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}><div className="flex justify-between items-center mb-4"><h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4><button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${currentData.showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}>{currentData.showDisclaimer ? 'Visible' : 'Ocult'}</button></div>{currentData.showDisclaimer && (<div><label className="block text-[10px] font-bold uppercase text-red-400 mb-1">Text informatiu al final de la carta</label><input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 focus:border-red-400 outline-none" placeholder="Ex: Qualsevol beguda no inclosa es cobrarà a part."/></div>)}</div>
+            
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                <input 
+                    type="text" 
+                    value={currentData.footerText || ''} 
+                    onChange={(e) => updateData({ footerText: e.target.value })} 
+                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-gray-400" 
+                    placeholder="Ex: Ermita Paret Delgada - Cuina Tradicional"
+                />
+            </div>
         </div>
     );
 };
 
-const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChange: (d: any) => void, variant?: 'group' | 'daily' }) => {
+const GroupEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
     const isLegacy = Array.isArray(data);
     const sections = isLegacy ? [] : (data?.sections || []);
     const currentData = {
@@ -305,7 +316,6 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
     const addDrink = () => updateData({ drinks: [...(currentData.drinks || []), ""] });
     const removeDrink = (idx: number) => { const nd = [...(currentData.drinks || [])]; nd.splice(idx, 1); updateData({ drinks: nd }); };
 
-    // MOVE SECTION FUNCTION
     const moveSection = (index: number, direction: -1 | 1) => {
         if ((index === 0 && direction === -1) || (index === currentData.sections.length - 1 && direction === 1)) return;
         const newSections = [...(currentData.sections || [])];
@@ -315,27 +325,24 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
         updateData({ sections: newSections });
     };
 
-    // --- VISUAL TEXT ADJUSTMENTS BASED ON VARIANT ---
-    const primaryColor = variant === 'daily' ? '#8b5a2b' : '#556B2F'; // Brown for Daily, Olive for Group
-    const drinksLabel = variant === 'daily' ? 'Begudes Incloses' : 'Begudes / Altres';
-    const sectionPlaceholder = variant === 'daily' ? 'Ex: Primers Plats' : 'Ex: Pica Pica Entrants';
+    // Olive Theme for Groups
+    const primaryColor = '#556B2F'; 
+    const drinksLabel = 'Begudes / Altres';
+    const sectionPlaceholder = 'Ex: Pica Pica Entrants';
 
     return (
-        <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle={variant === 'daily' ? "Menú Diari" : "Menú de Grup"} defaultIcon={variant === 'daily' ? "lunch_dining" : "diversity_3"} />
+         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Menú de Grup" defaultIcon="diversity_3" />
             
-            {/* BUTTON MOVED TO LEFT AND BEFORE SECTIONS */}
             <div className="flex justify-start mb-2">
                 <button onClick={addSection} className="text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors" style={{ backgroundColor: primaryColor }}>
                     <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
                 </button>
             </div>
 
-            {/* SECTIONS LIST */}
             {(currentData.sections || []).map((section: any, sIdx: number) => (
                 <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
                     <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
-                        {/* Drag Controls */}
                         <div className="flex items-center">
                             <OrderControls 
                                 onMoveUp={() => moveSection(sIdx, -1)} 
@@ -418,18 +425,184 @@ const GroupEditor = ({ data, onChange, variant = 'group' }: { data: any, onChang
     );
 };
 
-const DailyEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
-    return <GroupEditor data={{...data, icon: data.icon || "lunch_dining", title: data.title || "Menú Diari"}} onChange={onChange} variant="daily" />;
+// --- DAILY MENU EDITOR (SEPARATED FROM GROUP EDITOR) ---
+const DailyMenuEditor = ({ data, onChange }: { data: any, onChange: (d: any) => void }) => {
+    // Logic similar to GroupEditor but specific for Daily Menu structure and Brown Theme
+    const sections = (data?.sections || []);
+    const currentData = {
+        title: "Menú Diari",
+        subtitle: "",
+        icon: "lunch_dining",
+        price: "",
+        vat: "",
+        disclaimer: "",
+        showDisclaimer: true,
+        infoIntro: "",
+        infoAllergy: "",
+        footerText: "",
+        drinks: [],
+        sections: [],
+        ...data
+    };
+
+    const updateData = (newData: any) => onChange({ ...currentData, ...newData });
+
+    const handleSectionChange = (idx: number, field: string, val: string) => {
+        const newSections = (currentData.sections || []).map((s: any, i: number) => i === idx ? { ...s, [field]: val } : s);
+        updateData({ sections: newSections });
+    };
+
+    const addSection = () => updateData({ sections: [...(currentData.sections || []), { title: "NOVA SECCIÓ", icon: "restaurant", items: [] }] });
+    const removeSection = (idx: number) => { const ns = [...(currentData.sections || [])]; ns.splice(idx, 1); updateData({ sections: ns }); };
+
+    const addItem = (sIdx: number) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || []), { nameCa: "", nameEs: "" }] });
+        updateData({ sections: ns });
+    };
+    
+    const removeItem = (sIdx: number, iIdx: number) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: [...(s.items || [])].filter((_: any, j: number) => j !== iIdx) });
+        updateData({ sections: ns });
+    };
+
+    const handleItemChange = (sIdx: number, iIdx: number, field: string, val: any) => {
+        const ns = (currentData.sections || []).map((s: any, i: number) => i !== sIdx ? s : { ...s, items: (s.items || []).map((it: any, j: number) => j === iIdx ? { ...it, [field]: val } : it) });
+        updateData({ sections: ns });
+    };
+
+    const handleDrinkChange = (idx: number, val: string) => {
+        const newDrinks = [...(currentData.drinks || [])];
+        newDrinks[idx] = val;
+        updateData({ drinks: newDrinks });
+    };
+    const addDrink = () => updateData({ drinks: [...(currentData.drinks || []), ""] });
+    const removeDrink = (idx: number) => { const nd = [...(currentData.drinks || [])]; nd.splice(idx, 1); updateData({ drinks: nd }); };
+
+    const moveSection = (index: number, direction: -1 | 1) => {
+        if ((index === 0 && direction === -1) || (index === currentData.sections.length - 1 && direction === 1)) return;
+        const newSections = [...(currentData.sections || [])];
+        const temp = newSections[index];
+        newSections[index] = newSections[index + direction];
+        newSections[index + direction] = temp;
+        updateData({ sections: newSections });
+    };
+
+    // Brown Theme for Daily Menu
+    const primaryColor = '#8b5a2b'; 
+    const drinksLabel = 'Begudes Incloses';
+    const sectionPlaceholder = 'Ex: Primers Plats';
+
+    return (
+         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <GeneralInfoEditor data={currentData} onChange={updateData} defaultTitle="Menú Diari" defaultIcon="lunch_dining" />
+            
+            <div className="flex justify-start mb-2">
+                <button onClick={addSection} className="text-white px-4 py-2 rounded text-xs font-bold uppercase flex items-center gap-2 shadow-sm transition-colors" style={{ backgroundColor: primaryColor }}>
+                    <span className="material-symbols-outlined text-sm">add_circle</span> NOVA SECCIÓ
+                </button>
+            </div>
+
+            {(currentData.sections || []).map((section: any, sIdx: number) => (
+                <div key={sIdx} className="bg-white p-6 rounded shadow-sm border border-gray-200">
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 border-b border-gray-100 pb-4">
+                        <div className="flex items-center">
+                            <OrderControls 
+                                onMoveUp={() => moveSection(sIdx, -1)} 
+                                onMoveDown={() => moveSection(sIdx, 1)} 
+                                isFirst={sIdx === 0} 
+                                isLast={sIdx === currentData.sections.length - 1} 
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Títol Secció</label>
+                            <input type="text" value={section.title} onChange={(e) => handleSectionChange(sIdx, 'title', e.target.value)} className="font-serif text-lg font-bold border-b border-transparent outline-none bg-transparent w-full" style={{ color: primaryColor, borderBottomColor: primaryColor }} placeholder={sectionPlaceholder} />
+                        </div>
+                        <div className="w-full md:w-32">
+                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Icona</label>
+                             <IconPicker value={section.icon || ""} onChange={(val) => handleSectionChange(sIdx, 'icon', val)}/>
+                        </div>
+                        <button onClick={() => removeSection(sIdx)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined">delete</span></button>
+                    </div>
+
+                    <div className="space-y-3 pl-0 md:pl-4 border-l-2 border-gray-100">
+                        {(section.items || []).map((item: any, iIdx: number) => (
+                            <div key={iIdx} className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded ${item.visible === false ? 'opacity-50 grayscale' : ''}`}>
+                                <div className="md:col-span-2 flex justify-start">
+                                    <ItemStatusControls 
+                                        visible={item.visible} 
+                                        strikethrough={item.strikethrough} 
+                                        onToggleVisible={() => handleItemChange(sIdx, iIdx, 'visible', item.visible === false ? true : false)} 
+                                        onToggleStrike={() => handleItemChange(sIdx, iIdx, 'strikethrough', !item.strikethrough)}
+                                    />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="text" value={item.nameCa} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameCa', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm font-bold ${item.strikethrough ? 'line-through text-gray-400' : ''}`} placeholder="Nom Plat" />
+                                </div>
+                                <div className="md:col-span-5">
+                                    <input type="text" value={item.nameEs} onChange={(e) => handleItemChange(sIdx, iIdx, 'nameEs', e.target.value)} className={`w-full bg-transparent border-b border-gray-300 outline-none text-sm text-gray-600 font-hand ${item.strikethrough ? 'line-through' : ''}`} placeholder="Descripció / Traducció" />
+                                </div>
+                                <div className="md:col-span-1 flex justify-center">
+                                    <button onClick={() => removeItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined text-lg">remove_circle</span></button>
+                                </div>
+                            </div>
+                        ))}
+                        <button onClick={() => addItem(sIdx)} className="mt-2 text-xs font-bold flex items-center gap-1 uppercase tracking-wider" style={{ color: primaryColor }}><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Item</button>
+                    </div>
+                </div>
+            ))}
+
+            <PriceHeaderEditor data={currentData} onChange={updateData} />
+            <InfoBlockEditor data={currentData} onChange={updateData} />
+
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">local_bar</span> {drinksLabel}</h4>
+                </div>
+                <div className="space-y-2">
+                    {(currentData.drinks || []).map((drink: string, idx: number) => (
+                        <div key={idx} className="flex gap-2">
+                            <input value={drink} onChange={(e) => handleDrinkChange(idx, e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" placeholder="Ex: Aigua, Vi..." />
+                            <button onClick={() => removeDrink(idx)} className="text-red-300 hover:text-red-500"><span className="material-symbols-outlined">remove_circle</span></button>
+                        </div>
+                    ))}
+                    <button onClick={addDrink} className="text-xs font-bold text-gray-500 flex items-center gap-1 uppercase tracking-wider mt-2"><span className="material-symbols-outlined text-sm">add_circle</span> Afegir Línia</button>
+                </div>
+            </div>
+
+            <div className={`bg-red-50 p-6 rounded shadow-sm border ${currentData.showDisclaimer ? 'border-red-200' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 text-sm uppercase"><span className="material-symbols-outlined">info</span> Info Final / Disclaimer</h4>
+                    <button onClick={() => updateData({ showDisclaimer: !currentData.showDisclaimer })} className={`text-[10px] font-bold uppercase px-3 py-1 rounded border transition-colors ${currentData.showDisclaimer ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-400 border-gray-300'}`}>{currentData.showDisclaimer ? 'Visible' : 'Ocult'}</button>
+                </div>
+                {currentData.showDisclaimer && (
+                    <input type="text" value={currentData.disclaimer} onChange={(e) => updateData({ disclaimer: e.target.value })} className="block w-full border border-red-200 bg-white rounded px-3 py-2 text-sm text-red-600 outline-none" placeholder="Ex: Mínim 10 persones." />
+                )}
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Nota al peu (Global)</label>
+                <input type="text" value={currentData.footerText || ''} onChange={(e) => updateData({ footerText: e.target.value })} className="block w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none" placeholder="Ex: Cuina de mercat"/>
+            </div>
+        </div>
+    );
 };
 
-export const MenuManager: React.FC<any> = ({ 
+export const MenuManager = ({ 
     localConfig, 
-    setLocalConfig,
-    menuViewState,
-    setMenuViewState,
-    editingMenuId,
-    setEditingMenuId,
-    onDeleteCard
+    setLocalConfig, 
+    menuViewState, 
+    setMenuViewState, 
+    editingMenuId, 
+    setEditingMenuId, 
+    onDeleteCard 
+}: {
+    localConfig: AppConfig;
+    setLocalConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
+    menuViewState: 'dashboard' | 'type_selection' | 'editor';
+    setMenuViewState: React.Dispatch<React.SetStateAction<'dashboard' | 'type_selection' | 'editor'>>;
+    editingMenuId: string | null;
+    setEditingMenuId: React.Dispatch<React.SetStateAction<string | null>>;
+    onDeleteCard: (id: string) => void;
 }) => {
     
     // Helper to get menu data by ID
@@ -545,7 +718,6 @@ export const MenuManager: React.FC<any> = ({
             : 10;
 
         if (currentExtras.length >= maxExtras) {
-            // REMOVED ALERT as per request
             return;
         }
 
@@ -605,9 +777,117 @@ export const MenuManager: React.FC<any> = ({
         const newExtras = [...(localConfig.extraMenus || []), newExtra];
         setLocalConfig({...localConfig, extraMenus: newExtras});
         
-        setEditingMenuId(`extra_${newExtras.length - 1}`);
-        setMenuViewState('editor');
+        // FIX: Revert to dashboard instead of opening editor immediately
+        // This prevents the "Menu not found" race condition.
+        setMenuViewState('dashboard');
     };
+
+    // --- TYPE SELECTION VIEW ---
+    if (menuViewState === 'type_selection') return (
+        <div className="animate-[fadeIn_0.3s_ease-out]">
+            <div className="flex items-center gap-4 mb-8">
+                <button onClick={() => setMenuViewState('dashboard')} className="bg-white hover:bg-gray-100 text-gray-600 p-2 rounded-full transition-colors shadow-sm border border-gray-200">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div>
+                    <h3 className="text-2xl font-serif font-bold text-gray-800">Crear Nova Carta</h3>
+                    <p className="text-sm text-gray-500">Selecciona el tipus de menú que vols afegir.</p>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                {/* 1. MENÚ DIARI */}
+                <button 
+                    onClick={() => handleCreateMenu('daily')} 
+                    className="group relative flex flex-col h-full rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 text-left"
+                >
+                    <div className="bg-[#DCCCA3] text-[#5c544d] p-6 pb-12 relative overflow-hidden h-40 w-full">
+                        <div className="absolute -bottom-4 -right-4 opacity-10 transform rotate-12 transition-transform duration-500 group-hover:scale-110">
+                            <span className="material-symbols-outlined text-8xl">lunch_dining</span>
+                        </div>
+                        <h4 className="font-serif font-bold text-xl mb-2 relative z-10">Menú Diari</h4>
+                        <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">
+                            Ideal per a menús de dia laborable amb primers, segons i postres.
+                        </p>
+                    </div>
+                    <div className="bg-white p-4 flex items-center justify-between border-t border-gray-100 w-full flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Crear Menú</span>
+                        <div className="w-8 h-8 rounded-full bg-[#DCCCA3]/20 flex items-center justify-center text-[#8b5a2b] group-hover:bg-[#DCCCA3] group-hover:text-white transition-colors">
+                            <span className="material-symbols-outlined text-lg">add</span>
+                        </div>
+                    </div>
+                </button>
+
+                {/* 2. CARTA DE MENJAR */}
+                <button 
+                    onClick={() => handleCreateMenu('food')} 
+                    className="group relative flex flex-col h-full rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 text-left"
+                >
+                    <div className="bg-[#2C241B] text-white p-6 pb-12 relative overflow-hidden h-40 w-full">
+                        <div className="absolute -bottom-4 -right-4 opacity-10 transform rotate-12 transition-transform duration-500 group-hover:scale-110">
+                            <span className="material-symbols-outlined text-8xl">restaurant_menu</span>
+                        </div>
+                        <h4 className="font-serif font-bold text-xl mb-2 relative z-10">Carta de Menjar</h4>
+                        <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">
+                            Per a llistats de plats individuals, tapes i entrants amb preu per item.
+                        </p>
+                    </div>
+                    <div className="bg-white p-4 flex items-center justify-between border-t border-gray-100 w-full flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Crear Carta</span>
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-[#2C241B] group-hover:text-white transition-colors">
+                            <span className="material-symbols-outlined text-lg">add</span>
+                        </div>
+                    </div>
+                </button>
+
+                {/* 3. CARTA DE VINS */}
+                <button 
+                    onClick={() => handleCreateMenu('wine')} 
+                    className="group relative flex flex-col h-full rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 text-left"
+                >
+                    <div className="bg-[#5D4037] text-white p-6 pb-12 relative overflow-hidden h-40 w-full">
+                        <div className="absolute -bottom-4 -right-4 opacity-10 transform rotate-12 transition-transform duration-500 group-hover:scale-110">
+                            <span className="material-symbols-outlined text-8xl">wine_bar</span>
+                        </div>
+                        <h4 className="font-serif font-bold text-xl mb-2 relative z-10">Carta de Vins</h4>
+                        <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">
+                            Estructura especialitzada per a vins: categories, DOs i referències.
+                        </p>
+                    </div>
+                    <div className="bg-white p-4 flex items-center justify-between border-t border-gray-100 w-full flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Crear Carta</span>
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-[#5D4037] group-hover:text-white transition-colors">
+                            <span className="material-symbols-outlined text-lg">add</span>
+                        </div>
+                    </div>
+                </button>
+
+                {/* 4. MENÚ DE GRUP */}
+                <button 
+                    onClick={() => handleCreateMenu('group')} 
+                    className="group relative flex flex-col h-full rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 text-left"
+                >
+                    <div className="bg-[#556B2F] text-white p-6 pb-12 relative overflow-hidden h-40 w-full">
+                        <div className="absolute -bottom-4 -right-4 opacity-10 transform rotate-12 transition-transform duration-500 group-hover:scale-110">
+                            <span className="material-symbols-outlined text-8xl">diversity_3</span>
+                        </div>
+                        <h4 className="font-serif font-bold text-xl mb-2 relative z-10">Menú de Grup</h4>
+                        <p className="text-[11px] opacity-80 leading-relaxed font-sans relative z-10 pr-4">
+                            Per a menús tancats, calçotades o celebracions amb preu fix.
+                        </p>
+                    </div>
+                    <div className="bg-white p-4 flex items-center justify-between border-t border-gray-100 w-full flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Crear Menú</span>
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-[#556B2F] group-hover:text-white transition-colors">
+                            <span className="material-symbols-outlined text-lg">add</span>
+                        </div>
+                    </div>
+                </button>
+
+            </div>
+        </div>
+    );
 
     // RENDER: DASHBOARD
     if (menuViewState === 'dashboard') {
@@ -889,7 +1169,7 @@ export const MenuManager: React.FC<any> = ({
             {activeMenu.type === 'food' && <FoodEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
             {activeMenu.type === 'wine' && <WineEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
             {activeMenu.type === 'group' && <GroupEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
-            {activeMenu.type === 'daily' && <DailyEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
+            {activeMenu.type === 'daily' && <DailyMenuEditor data={activeMenu.data} onChange={(d) => handleUpdateMenu(editingMenuId!, d)} />}
         </div>
     );
 };

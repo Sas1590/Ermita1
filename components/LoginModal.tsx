@@ -28,7 +28,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
       
       const errorCode = err.code;
 
-      // Handle specific Firebase Auth errors
       if (
           errorCode === 'auth/invalid-credential' || 
           errorCode === 'auth/invalid-login-credentials' ||
@@ -74,13 +73,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
       <div className="relative bg-white w-full max-w-md rounded-lg shadow-2xl p-8 animate-[fadeIn_0.3s_ease-out]">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -93,60 +86,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Correu Electrònic</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              placeholder="admin@ermita.com"
-              required
-            />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="admin@ermita.com" required />
           </div>
-          
           <div>
             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Contrasenya</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              placeholder="••••••••"
-              required
-            />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="••••••••" required />
           </div>
-
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded flex items-center gap-2 border border-red-100 animate-[fadeIn_0.2s_ease-out]">
-               <span className="material-symbols-outlined text-lg">error</span>
-               <span className="flex-1">{error}</span>
-            </div>
-          )}
-
-          {info && (
-            <div className="bg-green-50 text-green-600 text-sm p-3 rounded flex items-center gap-2 border border-green-100 animate-[fadeIn_0.2s_ease-out]">
-               <span className="material-symbols-outlined text-lg">check_circle</span>
-               <span className="flex-1">{info}</span>
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            className={`w-full bg-primary hover:bg-accent text-white font-bold py-3 rounded shadow transition-all flex justify-center items-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {isLoading ? 'Accedint...' : 'Entrar al Panell'}
-            {!isLoading && <span className="material-symbols-outlined">login</span>}
-          </button>
+          {error && (<div className="bg-red-50 text-red-600 text-sm p-3 rounded flex items-center gap-2 border border-red-100 animate-[fadeIn_0.2s_ease-out]"><span className="material-symbols-outlined text-lg">error</span><span className="flex-1">{error}</span></div>)}
+          {info && (<div className="bg-green-50 text-green-600 text-sm p-3 rounded flex items-center gap-2 border border-green-100 animate-[fadeIn_0.2s_ease-out]"><span className="material-symbols-outlined text-lg">check_circle</span><span className="flex-1">{info}</span></div>)}
+          <button type="submit" disabled={isLoading} className={`w-full bg-primary hover:bg-accent text-white font-bold py-3 rounded shadow transition-all flex justify-center items-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}>{isLoading ? 'Accedint...' : 'Entrar al Panell'}{!isLoading && <span className="material-symbols-outlined">login</span>}</button>
         </form>
 
         <div className="mt-6 flex justify-between items-center text-sm">
            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">Cancel·lar</button>
-           <button 
-             onClick={handleResetPassword}
-             className="text-primary hover:text-accent font-medium hover:underline"
-           >
-             He oblidat la contrasenya
-           </button>
+           <button onClick={handleResetPassword} className="text-primary hover:text-accent font-medium hover:underline">He oblidat la contrasenya</button>
         </div>
       </div>
     </div>

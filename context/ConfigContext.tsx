@@ -2,15 +2,12 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { db } from '../firebase';
 import { ref, onValue, set } from 'firebase/database';
 
-// 0. Define Menu Types
-
-// --- FOOD MENU TYPES ---
 export interface FoodMenuItem {
   nameCa: string;
   nameEs: string;
   price: string;
-  visible?: boolean;      // NEW
-  strikethrough?: boolean; // NEW
+  visible?: boolean;
+  strikethrough?: boolean;
 }
 
 export interface MenuSection {
@@ -21,13 +18,12 @@ export interface MenuSection {
   footer?: string;
 }
 
-// Wrapper for Food Menu (New Structure)
 export interface FoodMenuConfig {
   title?: string;
-  subtitle?: string; // NEW: Subtitle (e.g. "De dimarts a divendres")
+  subtitle?: string;
   icon?: string;
-  visible?: boolean; // NEW: Visibility Flag
-  recommended?: boolean; // NEW: Recommended flag
+  visible?: boolean;
+  recommended?: boolean;
   price?: string;
   vat?: string;
   infoIntro?: string;
@@ -36,16 +32,15 @@ export interface FoodMenuConfig {
   showInfo?: boolean;
   disclaimer?: string;
   showDisclaimer?: boolean;
-  footerText?: string; // NEW: Global footer note for the menu
+  footerText?: string;
   sections: MenuSection[];
 }
 
-// --- GROUP MENU TYPES ---
 export interface GroupMenuItem {
   nameCa: string;
   nameEs: string;
-  visible?: boolean;      // NEW
-  strikethrough?: boolean; // NEW
+  visible?: boolean;
+  strikethrough?: boolean;
 }
 
 export interface GroupMenuSection {
@@ -54,13 +49,12 @@ export interface GroupMenuSection {
   items: GroupMenuItem[];
 }
 
-// --- WINE MENU TYPES ---
 export interface WineItem {
   name: string;
   desc: string;
   price: string;
-  visible?: boolean;      // NEW
-  strikethrough?: boolean; // NEW
+  visible?: boolean;
+  strikethrough?: boolean;
 }
 
 export interface WineGroup {
@@ -74,13 +68,12 @@ export interface WineCategory {
   groups: WineGroup[];
 }
 
-// Wrapper for Wine Menu (New Structure)
 export interface WineMenuConfig {
   title?: string;
-  subtitle?: string; // NEW
+  subtitle?: string;
   icon?: string;
-  visible?: boolean; // NEW: Visibility Flag
-  recommended?: boolean; // NEW
+  visible?: boolean;
+  recommended?: boolean;
   price?: string;
   vat?: string;
   infoIntro?: string;
@@ -93,31 +86,28 @@ export interface WineMenuConfig {
   categories: WineCategory[];
 }
 
-// --- EXTRA MENU WRAPPER ---
 export interface ExtraMenu {
   id: string;
-  type: 'food' | 'wine' | 'group' | 'daily'; // Updated type definition to include daily
+  type: 'food' | 'wine' | 'group' | 'daily';
   title: string;
-  subtitle?: string; // NEW
+  subtitle?: string;
   icon?: string; 
-  visible?: boolean; // NEW: Visibility Flag
-  recommended?: boolean; // NEW
+  visible?: boolean;
+  recommended?: boolean;
   data: FoodMenuConfig | WineMenuConfig | any; 
 }
 
-// 1. Define the AppConfig interface
 export interface AppConfig {
   brand: {
     logoUrl: string;
   };
   adminSettings: {
     customDisplayName: string;
-    maxExtraMenus: number; // Cap for extra menus
-    maxHeroImages: number; // Cap for hero slider images
-    maxProductImages: number; // NEW: Cap for product slider images
-    maxHistoricImages: number; // NEW: Cap for historic slider images
+    maxExtraMenus: number;
+    maxHeroImages: number;
+    maxProductImages: number;
+    maxHistoricImages: number;
   };
-  // NEW: Support Button Settings
   supportSettings: {
     text: string;
     url: string;
@@ -126,7 +116,7 @@ export interface AppConfig {
     title: string;
     subtitle: string;
   };
-  menuGlobalFooter: string; // NEW: Global footer text for the Menu page
+  menuGlobalFooter: string;
   hero: {
     reservationVisible?: boolean;
     reservationFormTitle: string;
@@ -146,7 +136,6 @@ export interface AppConfig {
     formNotesLabel: string;
     formPrivacyLabel: string;
     formCallUsLabel: string;
-    // NEW FIELDS FOR TEXT OVERLAY
     heroDescription: string;
     heroSchedule: string;
   };
@@ -213,15 +202,14 @@ export interface AppConfig {
     };
     footerTitle: string;
     footerLinks: Array<{ label: string; icon: string; targetTab: string }>;
-    footerVisible?: boolean; // NEW: Control visibility of the footer links section
+    footerVisible?: boolean;
   };
-  
   dailyMenu: {
     title: string;
-    subtitle?: string; // NEW
+    subtitle?: string;
     icon?: string;
-    visible?: boolean; // NEW
-    recommended?: boolean; // NEW
+    visible?: boolean;
+    recommended?: boolean;
     price: string;
     vat: string;
     disclaimer: string;
@@ -231,16 +219,14 @@ export interface AppConfig {
     infoAllergy: string;
     footerText?: string;
   };
-
   foodMenu: FoodMenuConfig | MenuSection[];
   wineMenu: WineMenuConfig | WineCategory[];
-  
   groupMenu: {
     title: string;
-    subtitle?: string; // NEW
+    subtitle?: string;
     icon?: string;
-    visible?: boolean; // NEW
-    recommended?: boolean; // NEW
+    visible?: boolean;
+    recommended?: boolean;
     price: string;
     vat: string;
     disclaimer: string;
@@ -250,15 +236,12 @@ export interface AppConfig {
     infoAllergy: string;
     footerText?: string;
   };
-
   extraMenus: ExtraMenu[];
-
   contact: {
     importantNoteVisible?: boolean;
     infoVisible?: boolean;
     socialVisible?: boolean;
     formVisible?: boolean;
-
     importantNoteTitle: string;
     importantNoteMessage1: string;
     importantNoteMessage2: string;
@@ -287,27 +270,21 @@ export interface AppConfig {
   };
 }
 
-// 2. Define default values
 export const defaultAppConfig: AppConfig = {
-  brand: {
-    logoUrl: "", 
-  },
+  brand: { logoUrl: "" },
   adminSettings: {
     customDisplayName: "",
-    maxExtraMenus: 10, // Default limit menus
-    maxHeroImages: 5, // Default limit hero images
-    maxProductImages: 5, // Default limit product images
-    maxHistoricImages: 5 // Default limit historic images
+    maxExtraMenus: 10,
+    maxHeroImages: 5,
+    maxProductImages: 5,
+    maxHistoricImages: 5
   },
   supportSettings: {
     text: "Contactar amb UMC Ideas",
     url: "mailto:support@umcideas.com"
   },
-  menuHeader: {
-    title: "La Carta",
-    subtitle: "Sabors de la nostra terra"
-  },
-  menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.", // Default Value
+  menuHeader: { title: "La Carta", subtitle: "Sabors de la nostra terra" },
+  menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.",
   hero: {
     reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
@@ -330,9 +307,7 @@ export const defaultAppConfig: AppConfig = {
     formNotesLabel: "Notes:",
     formPrivacyLabel: "Si, accepto la privacitat.",
     formCallUsLabel: "O truca'ns:",
-    // Default text for hero description
     heroDescription: "Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.",
-    // Default schedule for hero
     heroSchedule: "De dimarts a diumenge de 11:00 a 17:00 h."
   },
   intro: {
@@ -397,8 +372,8 @@ export const defaultAppConfig: AppConfig = {
   },
   gastronomy: {
     visible: true,
-    topTitle: "", // Empty as requested to remove 'La Nostra Proposta'
-    mainTitle: "Gastronomia", // Simplified title
+    topTitle: "",
+    mainTitle: "Gastronomia",
     description: "Productes de quilòmetre zero, receptes de tota la vida i el sabor autèntic de la brasa.",
     card1: {
       title: "Menú Diari",
@@ -426,14 +401,13 @@ export const defaultAppConfig: AppConfig = {
       { label: "Menú Infantil", icon: "child_care", targetTab: "food" },
       { label: "Carta de Vins", icon: "wine_bar", targetTab: "wine" }
     ],
-    footerVisible: true // Default to true
+    footerVisible: true
   },
-  
   dailyMenu: {
     title: "Menú Diari",
     subtitle: "DE DIMARTS A DIVENDRES", 
     icon: "lunch_dining",
-    visible: true, // Default Visible
+    visible: true,
     recommended: true, 
     price: "18€",
     vat: "IVA inclòs",
@@ -453,13 +427,12 @@ export const defaultAppConfig: AppConfig = {
     infoAllergy: "Si tens alguna al·lèrgia, informa el nostre personal.",
     footerText: "Cuina de mercat"
   },
-  
   foodMenu: {
     title: "Carta de Menjar",
     icon: "restaurant_menu",
-    visible: true, // Default Visible
+    visible: true,
     recommended: false,
-    footerText: "", // Default empty
+    footerText: "",
     sections: [
       {
         id: "sec_tapas",
@@ -471,11 +444,10 @@ export const defaultAppConfig: AppConfig = {
       }
     ]
   },
-  
   wineMenu: {
     title: "Carta de Vins",
     icon: "wine_bar",
-    visible: true, // Default Visible
+    visible: true,
     recommended: false,
     categories: [
       {
@@ -491,12 +463,11 @@ export const defaultAppConfig: AppConfig = {
       }
     ]
   },
-
   groupMenu: {
     title: "Menú de Grup",
     subtitle: "MÍNIM 10 PERSONES",
     icon: "diversity_3",
-    visible: true, // Default Visible
+    visible: true,
     recommended: false,
     price: "Consultar",
     vat: "IVA inclòs",
@@ -540,26 +511,21 @@ export const defaultAppConfig: AppConfig = {
   }
 };
 
-// 3. Define the context type
 interface ConfigContextType {
   config: AppConfig;
   updateConfig: (newConfig: Partial<AppConfig>) => Promise<void>;
   isLoading: boolean;
 }
 
-// 4. Create the context
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
-// 5. Create the ConfigProvider component
 interface ConfigProviderProps {
   children: ReactNode;
 }
 
-// HELPER: FORCE ARRAY (Firebase converts arrays to objects if keys are numeric but sparse)
 const toArray = (data: any) => {
     if (!data) return [];
     if (Array.isArray(data)) return data;
-    // If it's an object, convert values to array
     return Object.values(data);
 };
 
@@ -567,20 +533,11 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   const [config, setConfig] = useState<AppConfig>(defaultAppConfig);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load config from Realtime Database on mount
   useEffect(() => {
-    // Apuntamos al nodo 'websiteConfig' que se ve en tu captura
     const dbRef = ref(db, 'websiteConfig');
-
-    // Subscribe to real-time updates
     const unsubscribe = onValue(dbRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val() as Partial<AppConfig>;
-        
-        // --- CHANGE 2: SAFETY MERGING ---
-        // Merge with default to ensure all fields exist even if DB is partial.
-        // Special Handling for boolean flags: Check !== undefined to avoid overwriting existing true/false with undefined.
-        
         setConfig(prev => ({
            ...prev,
            ...data,
@@ -588,12 +545,10 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader,
            brand: { ...prev.brand, ...data.brand },
            adminSettings: { ...prev.adminSettings, ...data.adminSettings },
-           // MERGE SUPPORT SETTINGS
            supportSettings: data.supportSettings ? { ...prev.supportSettings, ...data.supportSettings } : prev.supportSettings,
            hero: { 
                ...prev.hero, 
                ...data.hero,
-               // SAFETY CHECK: If reservationVisible is missing in data, keep prev value.
                reservationVisible: data.hero?.reservationVisible !== undefined ? data.hero.reservationVisible : prev.hero.reservationVisible
            },
            intro: { 
@@ -617,26 +572,20 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
                ...data.gastronomy,
                visible: data.gastronomy?.visible !== undefined ? data.gastronomy.visible : prev.gastronomy.visible
            }, 
-           
-           // MERGE VISIBILITY PROPS SAFELY FOR MENUS
            dailyMenu: data.dailyMenu ? { 
                ...prev.dailyMenu, 
                ...data.dailyMenu, 
                visible: data.dailyMenu.visible !== undefined ? data.dailyMenu.visible : prev.dailyMenu.visible 
            } : prev.dailyMenu,
-           
            contact: { 
                ...prev.contact, 
                ...data.contact,
                formVisible: data.contact?.formVisible !== undefined ? data.contact.formVisible : prev.contact.formVisible
            },
            navbar: { ...prev.navbar, ...data.navbar },
-           
-           // Arrays need fallback if empty in DB
            foodMenu: data.foodMenu || prev.foodMenu,
            wineMenu: data.wineMenu || prev.wineMenu,
            extraMenus: toArray(data.extraMenus || prev.extraMenus), 
-           
            groupMenu: data.groupMenu ? {
                 ...prev.groupMenu,
                 ...data.groupMenu,
@@ -647,36 +596,27 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
       } else {
         try {
           set(dbRef, defaultAppConfig);
-          console.log("Created default configuration in Realtime Database");
         } catch (e) {
-          console.error("Error creating default config:", e);
+          console.error(e);
         }
       }
       setIsLoading(false);
     }, (error) => {
-      console.error("Error listening to config:", error);
+      console.error(error);
       setIsLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
   const updateConfig = async (newConfig: Partial<AppConfig>) => {
-    // Optimistic Update
-    setConfig(prev => {
-        const merged = { ...prev, ...newConfig };
-        return merged;
-    });
-
+    setConfig(prev => ({ ...prev, ...newConfig }));
     try {
       const dbRef = ref(db, 'websiteConfig');
-      // Create a clean config object to save, ensuring no undefined values which Firebase rejects
       const configToSave = JSON.parse(JSON.stringify({ ...config, ...newConfig }));
       await set(dbRef, configToSave);
-      console.log("Config saved to Realtime Database successfully");
     } catch (error) {
-      console.error("Error saving config to Database:", error);
-      alert("Error guardant a la base de dades. Comprova la connexió.");
+      console.error(error);
+      alert("Error guardant a la base de dades.");
     }
   };
 
@@ -689,8 +629,6 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
 
 export const useConfig = () => {
   const context = useContext(ConfigContext);
-  if (context === undefined) {
-    throw new Error('useConfig must be used within a ConfigProvider');
-  }
+  if (context === undefined) throw new Error('useConfig must be used within a ConfigProvider');
   return context;
 };

@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 
-// Configuración extraída directamente de tu consola de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyB2c6eCAQiAc1GuiXZCznPXH9s0CkgFuAU",
   authDomain: "restaurante-web-3648e.firebaseapp.com",
@@ -15,7 +14,5 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Exportamos la instancia de Realtime Database
 export const db = getDatabase(app);
-// Exportamos la instancia de Authentication con tipado correcto
 export const auth = getAuth(app);

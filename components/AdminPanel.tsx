@@ -7,7 +7,6 @@ import { ProfileTab } from './admin/ProfileTab';
 import { Operations } from './admin/Operations';
 import { ref, get, onValue } from 'firebase/database';
 
-// AFEGEIX AQUÍ ELS EMAILS QUE PODEN VEURE LA ZONA "SUPER ADMIN"
 const SUPER_ADMIN_EMAILS = [
     'umc_admin@proton.me'
 ];
@@ -20,29 +19,20 @@ interface AdminPanelProps {
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', onSaveSuccess, onClose }) => {
     const { config, updateConfig } = useConfig();
-    
     const [localConfig, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(config)));
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-    
-    // Notification Counts State
     const [counts, setCounts] = useState({ inbox: 0, reservations: 0 });
-    
-    // Menu Manager State
     const [menuViewState, setMenuViewState] = useState<'dashboard' | 'type_selection' | 'editor'>('dashboard');
     const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
-
-    // Profile State
     const [personalAdminName, setPersonalAdminName] = useState("");
 
     useEffect(() => {
         if (auth.currentUser) {
-            // CHECK IF USER IS SUPER ADMIN BASED ON EMAIL
             const userEmail = auth.currentUser.email || '';
             const isSuper = SUPER_ADMIN_EMAILS.includes(userEmail);
             setIsSuperAdmin(isSuper);
 
-            // Fetch profile name
             const uid = auth.currentUser.uid;
             get(ref(db, `adminProfiles/${uid}/displayName`)).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -50,7 +40,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                 }
             });
 
-            // --- REALTIME LISTENERS FOR NOTIFICATIONS ---
             const messagesRef = ref(db, 'contactMessages');
             const reservationsRef = ref(db, 'reservations');
 
@@ -95,7 +84,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
         }
     };
 
-    // Define Base Tabs
     const tabs = [
         { id: 'config', label: 'Contingut Web', icon: 'edit_document' },
         { id: 'menu', label: 'Gestor Cartes', icon: 'restaurant_menu' },
@@ -105,7 +93,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
         { id: 'security', label: 'Seguretat', icon: 'security' },
     ];
 
-    // Add Super Admin Tab if authorized
     if (isSuperAdmin) {
         tabs.push({ id: 'superadmin', label: 'Zona Super Admin', icon: 'admin_panel_settings' });
     }
@@ -113,10 +100,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 animate-[fadeIn_0.2s_ease-out]">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
-            
             <div className="bg-[#fdfbf7] w-full max-w-[98vw] h-[95vh] rounded-xl shadow-2xl flex flex-col overflow-hidden relative z-10 border border-white/20">
-                
-                {/* Header */}
                 <div className="bg-[#1a1816] text-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-white/10">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-black shadow-lg shadow-primary/20">
@@ -128,27 +112,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                         </div>
                     </div>
                     <div className="flex gap-3">
-                        <button 
-                            onClick={handleSave}
-                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-wider flex items-center gap-2 transition-all shadow-lg hover:shadow-green-900/20"
-                        >
-                            <span className="material-symbols-outlined text-lg">save</span>
-                            Guardar Canvis
+                        <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-wider flex items-center gap-2 transition-all shadow-lg hover:shadow-green-900/20">
+                            <span className="material-symbols-outlined text-lg">save</span> Guardar Canvis
                         </button>
-                        <button 
-                            onClick={onClose}
-                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
-                        >
+                        <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
                 </div>
 
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Sidebar */}
                     <div className="w-20 md:w-64 bg-[#2c241b] flex-shrink-0 flex flex-col border-r border-white/5">
-                        
-                        {/* User Profile */}
                         <div className="p-5 border-b border-white/5 mb-2 hidden md:block">
                             <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">LOGEJAT COM:</p>
                             <p className="text-xs font-bold text-green-400 truncate" title={auth.currentUser?.email || ''}>
@@ -160,125 +134,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                             {tabs.map(tab => {
                                 let badgeCount = 0;
                                 let badgeColor = "";
-                                
-                                if (tab.id === 'inbox') {
-                                    badgeCount = counts.inbox;
-                                    badgeColor = "bg-blue-500";
-                                } else if (tab.id === 'reservations') {
-                                    badgeCount = counts.reservations;
-                                    badgeColor = "bg-red-500";
-                                }
-
-                                // Special styling for Super Admin Tab
+                                if (tab.id === 'inbox') { badgeCount = counts.inbox; badgeColor = "bg-blue-500"; } 
+                                else if (tab.id === 'reservations') { badgeCount = counts.reservations; badgeColor = "bg-red-500"; }
                                 const isSuperAdminTab = tab.id === 'superadmin';
-                                
                                 return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative
-                                            ${activeTab === tab.id 
-                                                ? (isSuperAdminTab ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-900/30' : 'bg-primary text-black font-bold shadow-md') 
-                                                : (isSuperAdminTab ? 'text-purple-300 hover:bg-purple-900/20 hover:text-white border border-purple-500/20 mt-4' : 'text-gray-400 hover:bg-white/5 hover:text-white')
-                                            }`}
-                                    >
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative ${activeTab === tab.id ? (isSuperAdminTab ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-900/30' : 'bg-primary text-black font-bold shadow-md') : (isSuperAdminTab ? 'text-purple-300 hover:bg-purple-900/20 hover:text-white border border-purple-500/20 mt-4' : 'text-gray-400 hover:bg-white/5 hover:text-white')}`}>
                                         <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? (isSuperAdminTab ? 'text-white' : 'text-black') : (isSuperAdminTab ? 'text-purple-400 group-hover:text-purple-200' : 'text-gray-500 group-hover:text-white')}`}>{tab.icon}</span>
                                         <span className="text-sm uppercase tracking-wider hidden md:block flex-1 text-left">{tab.label}</span>
-                                        
-                                        {/* Notification Badge */}
-                                        {badgeCount > 0 && (
-                                            <span className={`${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ml-2 hidden md:flex items-center justify-center min-w-[20px]`}>
-                                                {badgeCount}
-                                            </span>
-                                        )}
-                                        
-                                        {/* Mobile Dot */}
-                                        {badgeCount > 0 && (
-                                            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${badgeColor} md:hidden`}></div>
-                                        )}
-
-                                        {activeTab === tab.id && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full hidden md:block"></div>
-                                        )}
+                                        {badgeCount > 0 && (<span className={`${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ml-2 hidden md:flex items-center justify-center min-w-[20px]`}>{badgeCount}</span>)}
+                                        {badgeCount > 0 && (<div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${badgeColor} md:hidden`}></div>)}
+                                        {activeTab === tab.id && (<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full hidden md:block"></div>)}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* Support Footer */}
                         <div className="p-4 border-t border-white/5 mt-auto hidden md:block">
-                            <a 
-                                href={localConfig.supportSettings?.url || "mailto:support@umcideas.com"}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide group"
-                            >
+                            <a href={localConfig.supportSettings?.url || "mailto:support@umcideas.com"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wide group">
                                 <span className="material-symbols-outlined text-sm group-hover:text-primary transition-colors">help</span>
                                 <span className="truncate">{localConfig.supportSettings?.text || "Contactar Suport"}</span>
                             </a>
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto bg-[#fdfbf7] relative scroll-smooth">
                         <div className="max-w-[1600px] w-full mx-auto p-6 md:p-8 pb-24">
-                            {activeTab === 'config' && (
-                                <ConfigTab 
-                                    localConfig={localConfig} 
-                                    setLocalConfig={setLocalConfig} 
-                                    userEmail={auth.currentUser?.email || ''} 
-                                />
-                            )}
-                            
-                            {activeTab === 'menu' && (
-                                <MenuManager 
-                                    localConfig={localConfig} 
-                                    setLocalConfig={setLocalConfig}
-                                    menuViewState={menuViewState}
-                                    setMenuViewState={setMenuViewState}
-                                    editingMenuId={editingMenuId}
-                                    setEditingMenuId={setEditingMenuId}
-                                    onDeleteCard={handleMenuDelete}
-                                />
-                            )}
-
-                            {activeTab === 'profile' && (
-                                <ProfileTab 
-                                    currentName={personalAdminName}
-                                    setCurrentName={setPersonalAdminName}
-                                />
-                            )}
-
-                            {(activeTab === 'reservations' || activeTab === 'inbox') && (
-                                <Operations 
-                                    activeTab={activeTab} 
-                                    config={config} 
-                                    updateConfig={updateConfig} 
-                                    setLocalConfig={setLocalConfig} 
-                                />
-                            )}
-
-                            {/* Public Security Tab (Backups for everyone) */}
-                            {activeTab === 'security' && (
-                                <Operations 
-                                    activeTab='security' 
-                                    config={config} 
-                                    updateConfig={updateConfig} 
-                                    setLocalConfig={setLocalConfig}
-                                    isSuperAdmin={isSuperAdmin}
-                                />
-                            )}
-
-                            {/* Super Admin Tab (Exclusive Features) */}
-                            {activeTab === 'superadmin' && isSuperAdmin && (
-                                <Operations 
-                                    activeTab='superadmin' 
-                                    config={config} 
-                                    updateConfig={updateConfig} 
-                                    setLocalConfig={setLocalConfig}
-                                    isSuperAdmin={isSuperAdmin}
-                                />
-                            )}
+                            {activeTab === 'config' && (<ConfigTab localConfig={localConfig} setLocalConfig={setLocalConfig} userEmail={auth.currentUser?.email || ''} />)}
+                            {activeTab === 'menu' && (<MenuManager localConfig={localConfig} setLocalConfig={setLocalConfig} menuViewState={menuViewState} setMenuViewState={setMenuViewState} editingMenuId={editingMenuId} setEditingMenuId={setEditingMenuId} onDeleteCard={handleMenuDelete} />)}
+                            {activeTab === 'profile' && (<ProfileTab currentName={personalAdminName} setCurrentName={setPersonalAdminName} />)}
+                            {(activeTab === 'reservations' || activeTab === 'inbox') && (<Operations activeTab={activeTab} config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} />)}
+                            {activeTab === 'security' && (<Operations activeTab='security' config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} isSuperAdmin={isSuperAdmin} />)}
+                            {activeTab === 'superadmin' && isSuperAdmin && (<Operations activeTab='superadmin' config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} isSuperAdmin={isSuperAdmin} />)}
                         </div>
                     </div>
                 </div>
