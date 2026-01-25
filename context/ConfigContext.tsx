@@ -118,24 +118,52 @@ export interface AppConfig {
   };
   menuGlobalFooter: string;
   hero: {
+    formType: 'reservation' | 'contact' | 'none';
     reservationVisible?: boolean;
+    
+    // Reservation Fields
     reservationFormTitle: string;
     reservationFormSubtitle: string;
     reservationPhoneNumber: string;
     reservationButtonText: string;
-    stickyNoteText: string;
-    backgroundImages: string[];
     reservationTimeStart: string;
     reservationTimeEnd: string;
     reservationTimeInterval: number;
     reservationErrorMessage: string;
+    
+    // Hero Contact Fields
+    heroContactTitle: string;
+    heroContactSubtitle: string;
+    heroContactBtnText: string;
+
+    stickyNoteText: string;
+    backgroundImages: string[];
+    
+    // Common Labels & Placeholders
     formNameLabel: string;
+    formNamePlaceholder: string; // NEW
+
+    formEmailLabel: string;
+    formEmailPlaceholder: string; // NEW
+
     formPhoneLabel: string;
+    formPhonePlaceholder: string; // NEW
+
+    formMessageLabel: string;
+    formMessagePlaceholder: string; // NEW
+
     formDateLabel: string;
+    // Date doesn't strictly have a placeholder in custom component, but kept for consistency if needed later
+
     formPaxLabel: string;
+    formPaxPlaceholder: string; // NEW
+
     formNotesLabel: string;
+    formNotesPlaceholder: string; // NEW
+
     formPrivacyLabel: string;
     formCallUsLabel: string;
+    
     heroDescription: string;
     heroSchedule: string;
   };
@@ -286,27 +314,50 @@ export const defaultAppConfig: AppConfig = {
   menuHeader: { title: "La Carta", subtitle: "Sabors de la nostra terra" },
   menuGlobalFooter: "* Preus en euros, impostos inclosos. Consultar al·lèrgens al personal de sala.",
   hero: {
+    formType: 'reservation',
     reservationVisible: true,
     reservationFormTitle: "Reserva Taula!",
     reservationFormSubtitle: "omple'l o truca'ns!",
     reservationPhoneNumber: "977 84 08 70",
     reservationButtonText: "Reservar Ara!",
+    reservationTimeStart: "13:00",
+    reservationTimeEnd: "15:30",
+    reservationTimeInterval: 15,
+    reservationErrorMessage: "Ho sentim, l'horari de reserva és de", 
+    
+    // Defaults for new Contact fields
+    heroContactTitle: "Contacta'ns",
+    heroContactSubtitle: "Envia'ns un missatge",
+    heroContactBtnText: "Enviar Missatge",
+
+    formNameLabel: "Nom:",
+    formNamePlaceholder: "Nom...", // Default placeholder
+
+    formEmailLabel: "El teu email",
+    formEmailPlaceholder: "email...", // Default placeholder
+
+    formPhoneLabel: "Telèfon:",
+    formPhonePlaceholder: "6...", // Default placeholder
+
+    formMessageLabel: "Missatge",
+    formMessagePlaceholder: "El teu missatge...", // Default placeholder
+
+    formDateLabel: "Dia i hora:",
+    
+    formPaxLabel: "Gent:",
+    formPaxPlaceholder: "2", // Default placeholder
+
+    formNotesLabel: "Notes:",
+    formNotesPlaceholder: "Al·lèrgies, terrassa...", // Default placeholder
+
+    formPrivacyLabel: "Si, accepto la privacitat.",
+    formCallUsLabel: "O truca'ns:",
+    
     stickyNoteText: "Obert tot l'any!",
     backgroundImages: [
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_5.png",
       "https://www.ermitaparetdelgada.com/wp-content/uploads/2023/04/ERMITA_slider_4.png"
     ],
-    reservationTimeStart: "13:00",
-    reservationTimeEnd: "15:30",
-    reservationTimeInterval: 15,
-    reservationErrorMessage: "Ho sentim, l'horari de reserva és de", 
-    formNameLabel: "Nom:",
-    formPhoneLabel: "Telèfon:",
-    formDateLabel: "Dia i hora:",
-    formPaxLabel: "Gent:",
-    formNotesLabel: "Notes:",
-    formPrivacyLabel: "Si, accepto la privacitat.",
-    formCallUsLabel: "O truca'ns:",
     heroDescription: "Una experiència gastronòmica que uneix tradició i modernitat en un entorn històric inoblidable.",
     heroSchedule: "De dimarts a diumenge de 11:00 a 17:00 h."
   },
@@ -538,6 +589,13 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     const unsubscribe = onValue(dbRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val() as Partial<AppConfig>;
+        
+        // MIGRATION LOGIC: If formType doesn't exist but reservationVisible is false, set to 'none'
+        let migratedFormType = data.hero?.formType || 'reservation';
+        if (!data.hero?.formType && data.hero?.reservationVisible === false) {
+            migratedFormType = 'none';
+        }
+
         setConfig(prev => ({
            ...prev,
            ...data,
@@ -549,7 +607,20 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            hero: { 
                ...prev.hero, 
                ...data.hero,
-               reservationVisible: data.hero?.reservationVisible !== undefined ? data.hero.reservationVisible : prev.hero.reservationVisible
+               formType: migratedFormType,
+               heroContactTitle: data.hero?.heroContactTitle || prev.hero.heroContactTitle || "Contacta'ns",
+               heroContactSubtitle: data.hero?.heroContactSubtitle || prev.hero.heroContactSubtitle || "Envia'ns un missatge",
+               heroContactBtnText: data.hero?.heroContactBtnText || prev.hero.heroContactBtnText || "Enviar Missatge",
+               formEmailLabel: data.hero?.formEmailLabel || prev.hero.formEmailLabel || "El teu email",
+               formMessageLabel: data.hero?.formMessageLabel || prev.hero.formMessageLabel || "Missatge",
+               
+               // Placeholders with defaults
+               formNamePlaceholder: data.hero?.formNamePlaceholder || prev.hero.formNamePlaceholder || "Nom...",
+               formEmailPlaceholder: data.hero?.formEmailPlaceholder || prev.hero.formEmailPlaceholder || "email...",
+               formPhonePlaceholder: data.hero?.formPhonePlaceholder || prev.hero.formPhonePlaceholder || "6...",
+               formMessagePlaceholder: data.hero?.formMessagePlaceholder || prev.hero.formMessagePlaceholder || "El teu missatge...",
+               formPaxPlaceholder: data.hero?.formPaxPlaceholder || prev.hero.formPaxPlaceholder || "2",
+               formNotesPlaceholder: data.hero?.formNotesPlaceholder || prev.hero.formNotesPlaceholder || "Al·lèrgies, terrassa...",
            },
            intro: { 
                ...prev.intro, 

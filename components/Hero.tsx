@@ -302,9 +302,11 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   const [formData, setFormData] = useState({
       name: '',
       phone: '',
+      email: '', // Needed for Contact
       pax: '', 
       notes: '',
-      privacy: false
+      privacy: false,
+      message: '' // Needed for Contact
   });
   const [dateTime, setDateTime] = useState("");
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -314,11 +316,13 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
   const [showGroupWarning, setShowGroupWarning] = useState(false);
 
-  const isFormVisible = config.hero?.reservationVisible !== false;
+  // DETERMINE FORM TYPE: 'reservation' | 'contact' | 'none'
+  const formType = config.hero?.formType || 'reservation';
+  const isFormVisible = formType !== 'none';
 
   const dynamicErrorMsg = `${config.hero.reservationErrorMessage} ${config.hero.reservationTimeStart} a ${config.hero.reservationTimeEnd}`;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
       
       if (name === 'phone') {
@@ -352,7 +356,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
       }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitReservation = async () => {
       if (!formData.name || !formData.phone || !dateTime || !formData.pax) {
           alert("Si us plau, omple el nom, telèfon, persones i data de reserva.");
           return;
@@ -386,13 +390,56 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
           });
 
           setFormStatus('success');
-          setFormData({ name: '', phone: '', pax: '', notes: '', privacy: false });
+          setFormData({ name: '', phone: '', email: '', pax: '', notes: '', privacy: false, message: '' });
           setDateTime("");
           setPhoneError("");
           setPrivacyError(false);
 
       } catch (error) {
           console.error("Error saving reservation:", error);
+          setFormStatus('error');
+      }
+  };
+
+  const handleSubmitContact = async () => {
+      if (!formData.name || !formData.email || !formData.message || !formData.phone) {
+          alert("Si us plau, omple tots els camps (Nom, Email, Telèfon i Missatge).");
+          return;
+      }
+
+      const digitsOnly = formData.phone.replace(/[^0-9]/g, '');
+      if (/[a-zA-Z]/.test(formData.phone) || digitsOnly.length < 6) {
+          setPhoneError("El telèfon no sembla correcte (mínim 6 dígits).");
+          return;
+      }
+
+      if (!formData.privacy) {
+          setPrivacyError(true);
+          return;
+      }
+
+      setFormStatus('loading');
+
+      try {
+          const messagesRef = ref(db, 'contactMessages');
+          await push(messagesRef, {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone,
+              subject: "Contacte des de Portada",
+              message: formData.message,
+              privacyAccepted: true,
+              timestamp: Date.now(),
+              read: false
+          });
+
+          setFormStatus('success');
+          setFormData({ name: '', phone: '', email: '', pax: '', notes: '', privacy: false, message: '' });
+          setPhoneError("");
+          setPrivacyError(false);
+
+      } catch (error) {
+          console.error("Error sending message:", error);
           setFormStatus('error');
       }
   };
@@ -512,7 +559,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
         </div>
 
         {isFormVisible && (
-            <div id="formulari-reserva" className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow scroll-mt-32" style={{ animationDelay: '0.6s' }}>
+            <div id="formulari-hero" className="lg:col-span-5 flex justify-center lg:justify-end perspective-1000 animate-fade-in-slow scroll-mt-32" style={{ animationDelay: '0.6s' }}>
             <div className="relative w-full max-w-md transform rotate-1 hover:rotate-0 transition-transform duration-500">
                 
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-red-700 rounded-full shadow-md z-20 border-2 border-red-900"></div>
@@ -525,7 +572,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-500">
                             <span className="material-symbols-outlined text-4xl text-green-600">check</span>
                         </div>
-                        <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Reserva Enviada!</h3>
+                        <h3 className="font-hand text-3xl font-bold text-secondary mb-2">Missatge Enviat!</h3>
                         <p className="font-sans text-gray-600 mb-6 leading-relaxed">Gràcies {formData.name}, hem rebut la teva sol·licitud. Ens posarem en contacte aviat.</p>
                         
                         <div className="flex flex-col items-center gap-3">
@@ -540,82 +587,141 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                 ) : (
                     <>
                     <div className="text-center mb-6">
-                        <h2 className="font-hand text-4xl font-bold text-secondary mb-1">{config.hero.reservationFormTitle}</h2>
-                        <p className="font-marker text-gray-500 text-lg">{config.hero.reservationFormSubtitle}</p>
+                        <h2 className="font-hand text-4xl font-bold text-secondary mb-1">
+                            {formType === 'reservation' ? config.hero.reservationFormTitle : config.hero.heroContactTitle}
+                        </h2>
+                        <p className="font-marker text-gray-500 text-lg">
+                            {formType === 'reservation' ? config.hero.reservationFormSubtitle : config.hero.heroContactSubtitle}
+                        </p>
                     </div>
 
                     <form className="space-y-4 font-marker text-lg text-secondary">
-                        <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col">
-                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNameLabel}</label>
-                            <input 
-                                type="text" 
-                                name="name"
-                                maxLength={40} 
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="Pere..." 
-                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
-                            />
-                        </div>
-                        <div className="flex flex-col relative">
-                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
-                            <input 
-                                type="tel" 
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="6..." 
-                                className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
-                            />
-                            {phoneError && (
-                                <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
-                                    {phoneError}
-                                </span>
+                        
+                        {/* --- COMMON FIELDS --- */}
+                        <div className={`grid ${formType === 'reservation' ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                            <div className="flex flex-col">
+                                <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNameLabel}</label>
+                                <input 
+                                    type="text" 
+                                    name="name"
+                                    maxLength={40} 
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    placeholder={config.hero.formNamePlaceholder} 
+                                    className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                                />
+                            </div>
+                            
+                            {/* Reservation: Phone | Contact: Email & Phone Grid */}
+                            {formType === 'reservation' ? (
+                                <div className="flex flex-col relative">
+                                    <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
+                                    <input 
+                                        type="tel" 
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        placeholder={config.hero.formPhonePlaceholder} 
+                                        className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
+                                    />
+                                    {phoneError && (
+                                        <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
+                                            {phoneError}
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formEmailLabel}</label>
+                                        <input 
+                                            type="email" 
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder={config.hero.formEmailPlaceholder} 
+                                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                                        />
+                                    </div>
+                                    <div className="flex flex-col relative">
+                                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
+                                        <input 
+                                            type="tel" 
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleInputChange}
+                                            placeholder={config.hero.formPhonePlaceholder} 
+                                            className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
+                                        />
+                                        {phoneError && (
+                                            <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
+                                                {phoneError}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             )}
                         </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4 relative z-40">
-                        <div className="flex flex-col">
-                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
-                            <CustomDateTimePicker 
-                                value={dateTime}
-                                onChange={setDateTime}
-                                configStart={config.hero.reservationTimeStart}
-                                configEnd={config.hero.reservationTimeEnd}
-                                configInterval={config.hero.reservationTimeInterval}
-                                errorMsg={dynamicErrorMsg}
-                            />
-                        </div>
-                        
-                        <div className="flex flex-col">
-                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
-                            <input 
-                                type="number" 
-                                name="pax"
-                                min="1"
-                                max="50"
-                                placeholder="2"
-                                value={formData.pax}
-                                onChange={handleInputChange}
-                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
-                            />
-                        </div>
-                        </div>
+                        {/* --- RESERVATION SPECIFIC FIELDS --- */}
+                        {formType === 'reservation' && (
+                            <>
+                                <div className="grid grid-cols-2 gap-4 relative z-40">
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>
+                                        <CustomDateTimePicker 
+                                            value={dateTime}
+                                            onChange={setDateTime}
+                                            configStart={config.hero.reservationTimeStart}
+                                            configEnd={config.hero.reservationTimeEnd}
+                                            configInterval={config.hero.reservationTimeInterval}
+                                            errorMsg={dynamicErrorMsg}
+                                        />
+                                    </div>
+                                    
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPaxLabel}</label>
+                                        <input 
+                                            type="number" 
+                                            name="pax"
+                                            min="1"
+                                            max="50"
+                                            placeholder={config.hero.formPaxPlaceholder}
+                                            value={formData.pax}
+                                            onChange={handleInputChange}
+                                            className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 font-marker text-lg"
+                                        />
+                                    </div>
+                                </div>
 
-                        <div className="flex flex-col relative z-0">
-                            <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNotesLabel}</label>
-                            <input 
-                                type="text" 
-                                name="notes"
-                                value={formData.notes}
-                                onChange={handleInputChange}
-                                // CORRECCIÓN ORTOGRÁFICA APLICADA AQUÍ:
-                                placeholder="Al·lèrgies, terrassa..." 
-                                className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
-                            />
-                        </div>
+                                <div className="flex flex-col relative z-0">
+                                    <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formNotesLabel}</label>
+                                    <input 
+                                        type="text" 
+                                        name="notes"
+                                        value={formData.notes}
+                                        onChange={handleInputChange}
+                                        placeholder={config.hero.formNotesPlaceholder} 
+                                        className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* --- CONTACT SPECIFIC FIELDS --- */}
+                        {formType === 'contact' && (
+                            <div className="flex flex-col relative z-0">
+                                <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formMessageLabel}</label>
+                                <textarea 
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleInputChange}
+                                    placeholder={config.hero.formMessagePlaceholder}
+                                    rows={3}
+                                    className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400 resize-none font-sans text-sm" 
+                                />
+                            </div>
+                        )}
 
                         <div className="flex flex-col pt-2">
                             <div className="flex items-center gap-2">
@@ -635,23 +741,25 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
 
                         <div className="border-t border-dashed border-gray-400 my-4"></div>
 
-                        <div className="flex flex-col items-center justify-center mb-6">
-                            <span className="text-sm font-sans text-gray-500 mb-1">{config.hero.formCallUsLabel}</span>
-                            <a 
-                                href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
-                                className="font-bold font-hand text-4xl text-secondary hover:text-accent transition-colors leading-none"
-                            >
-                                {config.hero.reservationPhoneNumber.replace(/^\+34\s?/, '')}
-                            </a>
-                        </div>
+                        {(formType === 'reservation' || formType === 'contact') && (
+                            <div className="flex flex-col items-center justify-center mb-6">
+                                <span className="text-sm font-sans text-gray-500 mb-1">{config.hero.formCallUsLabel}</span>
+                                <a 
+                                    href={`tel:${config.hero.reservationPhoneNumber.replace(/\s+/g, '')}`}
+                                    className="font-bold font-hand text-4xl text-secondary hover:text-accent transition-colors leading-none"
+                                >
+                                    {config.hero.reservationPhoneNumber.replace(/^\+34\s?/, '')}
+                                </a>
+                            </div>
+                        )}
 
                         <button 
                             type="button" 
-                            onClick={handleSubmit}
+                            onClick={formType === 'reservation' ? handleSubmitReservation : handleSubmitContact}
                             disabled={formStatus === 'loading'}
                             className={`w-full bg-[#4a403a] hover:bg-[#3a302a] text-white font-marker text-2xl py-2 shadow-md transform hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 ${formStatus === 'loading' ? 'opacity-70 cursor-wait' : ''}`}
                         >
-                        {formStatus === 'loading' ? 'Enviant...' : config.hero.reservationButtonText}
+                        {formStatus === 'loading' ? 'Enviant...' : (formType === 'reservation' ? config.hero.reservationButtonText : config.hero.heroContactBtnText)}
                         {formStatus !== 'loading' && <span className="material-symbols-outlined">arrow_forward</span>}
                         </button>
                         {formStatus === 'error' && <p className="text-red-500 text-center text-sm font-sans">Error enviant. Truca'ns!</p>}
@@ -676,7 +784,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
         <span className="material-symbols-outlined">keyboard_arrow_down</span>
       </div>
 
-      {showGroupWarning && (
+      {showGroupWarning && formType === 'reservation' && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGroupWarning(false)}></div>
               <div className="bg-[#fdfbf7] bg-paper-texture p-6 max-w-sm w-full rounded shadow-2xl relative z-10 border border-primary text-center transform rotate-1 animate-[fadeIn_0.2s_ease-out]">

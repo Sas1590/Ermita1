@@ -58,7 +58,11 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
   // Visibility Flags
   const showHistoryLink = config.philosophy?.visible !== false;
-  const showReservationButton = config.hero?.reservationVisible !== false;
+  
+  // HERO ACTION BUTTON LOGIC (Reservation vs Contact)
+  const formType = config.hero?.formType || 'reservation';
+  const showHeroAction = formType !== 'none';
+  const heroButtonText = formType === 'contact' ? "CONTACTAR" : config.navbar.reserveButtonText;
   
   // Check if Contact Section has any visible content
   const showContactLink = (
@@ -265,12 +269,12 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             <button onClick={() => onScrollToSection('contacte')} className="hover:text-primary transition-colors uppercase">Contacte</button>
           )}
 
-          {showReservationButton && (
+          {showHeroAction && (
             <button 
                 onClick={() => onScrollToSection('reserva')} 
                 className="border-2 border-primary text-primary px-6 py-2 font-bold uppercase tracking-widest text-sm hover:bg-primary hover:text-black transition-all duration-300"
             >
-                {config.navbar.reserveButtonText}
+                {heroButtonText}
             </button>
           )}
 
@@ -296,8 +300,8 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
 
         {/* Mobile Controls (Menu + Reservation) */}
         <div className="flex items-center gap-3 md:hidden">
-            {/* Mobile Reservation Button - Always visible but styled differently when scrolled */}
-            {showReservationButton && (
+            {/* Mobile Hero Action Button - Always visible but styled differently when scrolled */}
+            {showHeroAction && (
                 <button 
                 onClick={() => onScrollToSection('reserva')} 
                 className={`uppercase tracking-widest text-[10px] font-bold px-3 py-1.5 border transition-all duration-300 ${
@@ -306,7 +310,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
                         : 'border-white/50 text-white bg-black/20 backdrop-blur-sm'
                 }`}
                 >
-                {config.navbar.reserveButtonText}
+                {heroButtonText}
                 </button>
             )}
 
@@ -402,13 +406,13 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
             <button onClick={() => { onScrollToSection('contacte'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Contacte</button>
           )}
           
-          {/* Reserve Button inside Menu (Duplicate for ease of access if menu is open) */}
-          {showReservationButton && (
+          {/* Hero Action Button inside Mobile Menu */}
+          {showHeroAction && (
             <button 
                 onClick={() => { onScrollToSection('reserva'); setMobileMenuOpen(false); }} 
                 className="border border-white/30 px-8 py-3 mt-4 hover:bg-primary hover:border-primary hover:text-black transition-all duration-300 uppercase tracking-widest text-sm"
             >
-                {config.navbar.reserveButtonText}
+                {heroButtonText}
             </button>
           )}
 
