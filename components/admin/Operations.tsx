@@ -24,6 +24,10 @@ const MessageCard: React.FC<{ msg: ContactMessage; onToggleStatus: (id: string, 
     const [expanded, setExpanded] = useState(false);
     const TRUNCATE_LENGTH = 150; 
     const isLongMessage = msg.message.length > TRUNCATE_LENGTH;
+    
+    // Construct Mailto Link for Reply
+    const mailtoLink = `mailto:${msg.email}?subject=RE: ${msg.subject || 'Consulta Ermita Paret Delgada'}&body=%0A%0A--- Missatge original ---%0A${msg.message}`;
+
     return (
         <div className={`rounded-xl border transition-all duration-300 group ${!msg.read ? 'bg-white border-blue-300 shadow-md border-l-[6px] border-l-blue-600' : 'bg-gray-50 border-gray-200 opacity-90 hover:opacity-100'}`}>
             <div className={`px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center border-b rounded-t-xl gap-4 ${!msg.read ? 'bg-blue-50/30 border-blue-100' : 'bg-gray-100/50 border-gray-200'}`}>
@@ -38,10 +42,20 @@ const MessageCard: React.FC<{ msg: ContactMessage; onToggleStatus: (id: string, 
                 </div>
             </div>
             <div className="p-6">
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-4 items-center">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${!msg.read ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-200 text-gray-600 border-gray-300'}`}><span className="material-symbols-outlined text-sm">person</span> {msg.name}</span>
                     <a href={`mailto:${msg.email}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-colors text-xs font-medium border border-gray-200"><span className="material-symbols-outlined text-sm">alternate_email</span> {msg.email}</a>
                     {msg.phone && (<a href={`tel:${msg.phone}`} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white text-gray-600 hover:text-green-600 hover:border-green-300 transition-colors text-xs font-medium border border-gray-200"><span className="material-symbols-outlined text-sm">call</span> {msg.phone}</a>)}
+                    
+                    {/* REPLY BUTTON */}
+                    <a 
+                        href={mailtoLink}
+                        target="_blank"
+                        rel="noreferrer" 
+                        className="ml-auto inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors text-xs font-bold uppercase shadow-sm"
+                    >
+                        <span className="material-symbols-outlined text-sm">reply</span> Respondre
+                    </a>
                 </div>
                 <div className={`rounded-lg p-4 border ${!msg.read ? 'bg-white border-blue-100' : 'bg-gray-50 border-gray-100'}`}>
                     <p className={`whitespace-pre-wrap leading-relaxed text-sm break-words break-all ${!msg.read ? 'text-gray-800' : 'text-gray-500'}`}>{expanded ? msg.message : msg.message.substring(0, TRUNCATE_LENGTH) + (isLongMessage ? '...' : '')}</p>
@@ -71,12 +85,27 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
     const [showSetMasterConfirm, setShowSetMasterConfirm] = useState(false); 
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; type: 'danger' | 'warning' | 'info'; onConfirm: () => void; }>({ isOpen: false, title: '', message: '', type: 'info', onConfirm: () => {} });
+    
+    // States for Limits
     const [tempMaxMenus, setTempMaxMenus] = useState<string>("10");
     const [tempMaxHeroImages, setTempMaxHeroImages] = useState<string>("5");
     const [tempMaxProduct, setTempMaxProduct] = useState<string>("5"); 
     const [tempMaxHistoric, setTempMaxHistoric] = useState<string>("5"); 
+    
+    // States for Support
     const [tempSupportText, setTempSupportText] = useState("");
     const [tempSupportUrl, setTempSupportUrl] = useState("");
+
+    // States for Role Management
+    const [newSuperAdminEmail, setNewSuperAdminEmail] = useState("");
+    const [newDevEmail, setNewDevEmail] = useState("");
+
+    // States for EmailJS Settings (Moved to Super Admin)
+    const [tempServiceId, setTempServiceId] = useState("");
+    const [tempTemplateId, setTempTemplateId] = useState("");
+    const [tempAutoReplyId, setTempAutoReplyId] = useState("");
+    const [tempPublicKey, setTempPublicKey] = useState("");
+    const [tempEmailEnabled, setTempEmailEnabled] = useState(false);
 
     useEffect(() => {
         if (config?.adminSettings?.maxExtraMenus !== undefined) setTempMaxMenus(config.adminSettings.maxExtraMenus.toString());
@@ -84,7 +113,16 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         if (config?.adminSettings?.maxProductImages !== undefined) setTempMaxProduct(config.adminSettings.maxProductImages.toString());
         if (config?.adminSettings?.maxHistoricImages !== undefined) setTempMaxHistoric(config.adminSettings.maxHistoricImages.toString());
         if (config?.supportSettings) { setTempSupportText(config.supportSettings.text || ""); setTempSupportUrl(config.supportSettings.url || ""); }
-    }, [config?.adminSettings, config?.supportSettings]);
+        
+        // Sync Email Settings
+        if (config?.emailSettings) {
+            setTempServiceId(config.emailSettings.serviceId || "");
+            setTempTemplateId(config.emailSettings.templateId || "");
+            setTempAutoReplyId(config.emailSettings.autoReplyTemplateId || "");
+            setTempPublicKey(config.emailSettings.publicKey || "");
+            setTempEmailEnabled(config.emailSettings.enabled || false);
+        }
+    }, [config?.adminSettings, config?.supportSettings, config?.emailSettings]);
 
     useEffect(() => {
         if (activeTab === 'reservations') {
@@ -155,10 +193,45 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         if (isNaN(menusNum) || menusNum < 0 || isNaN(heroNum) || heroNum < 0 || isNaN(prodNum) || prodNum < 0 || isNaN(histNum) || histNum < 0) { setConfirmModal({ isOpen: true, title: "Error", message: "Si us plau, introdueix números vàlids.", type: 'warning', onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })) }); return; }
         const newSettings = { ...(config?.adminSettings || defaultAppConfig.adminSettings), maxExtraMenus: menusNum, maxHeroImages: heroNum, maxProductImages: prodNum, maxHistoricImages: histNum };
         if (setLocalConfig) setLocalConfig((prev: any) => ({ ...prev, adminSettings: newSettings }));
-        if (updateConfig) { try { await updateConfig({ adminSettings: newSettings }); showFeedback('success', "Límits actualitzats."); } catch(e) { showFeedback('error', "Error guardant els límits."); } }
+        if (updateConfig) { try { await updateConfig({ adminSettings: newSettings }); showFeedback('success', "Límits actualitzats."); } catch(e) { showFeedback('error', "Error guardant les límits."); } }
     };
 
     const handleSaveSupport = async () => { const newSupportSettings = { text: tempSupportText, url: tempSupportUrl }; if (setLocalConfig) setLocalConfig((prev: any) => ({ ...prev, supportSettings: newSupportSettings })); if (updateConfig) { try { await updateConfig({ supportSettings: newSupportSettings }); showFeedback('success', "Dades de suport actualitzades."); } catch(e) { showFeedback('error', "Error guardant les dades de suport."); } } };
+
+    const handleSaveEmailSettings = async () => {
+        if (!updateConfig) return;
+        try {
+            await updateConfig({ 
+                emailSettings: { 
+                    serviceId: tempServiceId, 
+                    templateId: tempTemplateId, 
+                    autoReplyTemplateId: tempAutoReplyId, 
+                    publicKey: tempPublicKey, 
+                    enabled: tempEmailEnabled 
+                } 
+            });
+            showFeedback('success', "Configuració EmailJS actualitzada.");
+        } catch(e) {
+            showFeedback('error', "Error guardant configuració email.");
+        }
+    };
+
+    // --- FEATURE TOGGLE HANDLER ---
+    const handleToggleReservationsTab = async () => {
+        if (!updateConfig || !config?.adminSettings) return;
+        try {
+            const newValue = !config.adminSettings.enableReservationsTab;
+            await updateConfig({ 
+                adminSettings: { 
+                    ...config.adminSettings, 
+                    enableReservationsTab: newValue 
+                } 
+            });
+            showFeedback('success', newValue ? "Pestanya Reserves ACTIVADA." : "Pestanya Reserves BLOQUEJADA.");
+        } catch(e) {
+            showFeedback('error', "Error canviant l'estat de la pestanya.");
+        }
+    };
 
     const performBetaInjection = async () => {
         const type = showInjectConfirm.type;
@@ -166,6 +239,43 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
         let path = ''; let data: any = null; let successMsg = '';
         if (type === 'daily') { path = 'dailyMenu'; data = BETA_DATA_DAILY; successMsg = "MENUDIARI_BETA carregat correctament."; } else if (type === 'food') { path = 'foodMenu'; data = BETA_DATA_CARTA; successMsg = "CARTA_BETA carregada correctament."; } else if (type === 'wine') { path = 'wineMenu'; data = BETA_DATA_WINE; successMsg = "CARTAVINS_BETA carregada correctament."; } else if (type === 'group') { path = 'groupMenu'; data = BETA_DATA_GROUP; successMsg = "MENUGRUP_BETA carregat correctament."; }
         try { const dbRef = ref(db, `websiteConfig/${path}`); await set(dbRef, data); if (setLocalConfig) setLocalConfig((prev: any) => ({ ...prev, [path]: data })); if (updateConfig) await updateConfig({ [path]: data }); setShowInjectConfirm({ show: false, type: null }); showFeedback('success', successMsg); } catch (e) { console.error(e); showFeedback('error', "Error injectant les dades."); }
+    };
+
+    // --- ROLE MANAGEMENT FUNCTIONS ---
+    const handleAddEmail = async (type: 'super' | 'dev', email: string) => {
+        if (!email.trim() || !updateConfig) return;
+        const currentList = type === 'super' 
+            ? (config?.managementSettings?.superAdminEmails || []) 
+            : (config?.managementSettings?.developerEmails || []);
+        
+        if (currentList.includes(email.trim())) {
+            showFeedback('error', "Aquest email ja existeix a la llista.");
+            return;
+        }
+
+        const newList = [...currentList, email.trim()];
+        const key = type === 'super' ? 'superAdminEmails' : 'developerEmails';
+        
+        try {
+            await updateConfig({ managementSettings: { ...config?.managementSettings, [key]: newList } });
+            if (type === 'super') setNewSuperAdminEmail(''); else setNewDevEmail('');
+            showFeedback('success', "Email afegit correctament.");
+        } catch (e) { showFeedback('error', "Error al guardar."); }
+    };
+
+    const handleRemoveEmail = async (type: 'super' | 'dev', email: string) => {
+        if (!updateConfig) return;
+        const currentList = type === 'super' 
+            ? (config?.managementSettings?.superAdminEmails || []) 
+            : (config?.managementSettings?.developerEmails || []);
+        
+        const newList = currentList.filter(e => e !== email);
+        const key = type === 'super' ? 'superAdminEmails' : 'developerEmails';
+
+        try {
+            await updateConfig({ managementSettings: { ...config?.managementSettings, [key]: newList } });
+            showFeedback('success', "Email eliminat.");
+        } catch (e) { showFeedback('error', "Error al guardar."); }
     };
 
     const renderConfirmModal = () => ( confirmModal.isOpen && (<div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"><div className={`bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full border-t-4 text-center ${confirmModal.type === 'danger' ? 'border-red-600' : 'border-yellow-500'}`}><div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}><span className="material-symbols-outlined text-3xl">warning</span></div><h3 className="font-serif text-2xl font-bold text-gray-800 mb-2">{confirmModal.title}</h3><p className="text-gray-500 mb-6 text-sm leading-relaxed">{confirmModal.message}</p><div className="flex gap-3">{confirmModal.type !== 'info' && (<button onClick={() => setConfirmModal(prev => ({...prev, isOpen: false}))} className="flex-1 py-3 border border-gray-300 rounded text-gray-600 font-bold uppercase text-xs hover:bg-gray-50 transition-colors">Cancel·lar</button>)}<button onClick={confirmModal.onConfirm} className={`flex-1 py-3 text-white rounded font-bold uppercase text-xs shadow-md transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : confirmModal.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}>{confirmModal.type === 'info' ? 'Entesos' : 'Confirmar'}</button></div></div></div>) );
@@ -216,8 +326,155 @@ export const Operations: React.FC<OperationsProps> = ({ activeTab, config, updat
                 {feedback && (<div className={`fixed top-4 right-4 z-[200] px-6 py-4 rounded-lg shadow-2xl border flex items-center gap-3 animate-[fadeIn_0.3s_ease-out] ${feedback.type === 'success' ? 'bg-green-600 text-white border-green-700' : 'bg-red-600 text-white border-red-700'}`}><span className="material-symbols-outlined text-2xl">{feedback.type === 'success' ? 'check_circle' : 'error'}</span><span className="font-bold">{feedback.msg}</span></div>)}
                 <div className="bg-purple-50 p-8 rounded-xl shadow-lg border-l-8 border-purple-600 border-t border-r border-b border-purple-200 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none"><span className="material-symbols-outlined text-9xl">admin_panel_settings</span></div>
-                    <div className="flex items-center gap-3 mb-8 border-b-2 border-purple-200 pb-4"><span className="material-symbols-outlined text-4xl text-purple-700">admin_panel_settings</span><div><h3 className="font-serif text-2xl font-bold text-purple-900">Zona Super Admin & Desenvolupament</h3><p className="text-purple-700 text-sm">Configuració tècnica, límits i gestió de versions mestres.</p></div></div>
+                    <div className="flex items-center gap-3 mb-8 border-b-2 border-purple-200 pb-4"><span className="material-symbols-outlined text-4xl text-purple-700">admin_panel_settings</span><div><h3 className="font-serif text-2xl font-bold text-purple-900">Zona Super Admin</h3><p className="text-purple-700 text-sm">Configuració tècnica i gestió d'equips.</p></div></div>
+                    
                     <div className="space-y-12 relative z-10">
+                        
+                        {/* --- NEW FUNCTIONALITY CONTROL (CLIENT SIDE) --- */}
+                        <div>
+                            <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">toggle_on</span> Control de Funcionalitats (Client)
+                            </h4>
+                            
+                            <div className="bg-white/60 p-6 rounded-lg border border-purple-100 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h5 className="font-bold text-gray-800 text-xs uppercase mb-1">Mòdul de Gestió de Reserves</h5>
+                                        <p className="text-[10px] text-gray-500 max-w-sm">
+                                            Si es desactiva, la pestanya "Reserves" del menú lateral apareixerà bloquejada amb un missatge de "PRÒXIMAMENT". 
+                                            Activa-la quan la funcionalitat estigui llesta per entregar al client.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={handleToggleReservationsTab} 
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm w-40 justify-center
+                                        ${config?.adminSettings?.enableReservationsTab ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"}`}
+                                    >
+                                        <span className="material-symbols-outlined text-sm">
+                                            {config?.adminSettings?.enableReservationsTab ? 'lock_open' : 'lock'}
+                                        </span>
+                                        {config?.adminSettings?.enableReservationsTab ? "ACTIVAT" : "BLOQUEJAT"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* --- NEW EMAILJS INTEGRATION (SUPER ADMIN ONLY) --- */}
+                        <div>
+                            <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">mail_lock</span> Integració EmailJS (Tècnic)
+                            </h4>
+                            
+                            <div className="bg-white/60 p-6 rounded-lg border border-purple-100 shadow-sm">
+                                
+                                {/* VISIBILITY TOGGLE */}
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h5 className="font-bold text-purple-800 text-xs uppercase">Estat del Servei de Correu</h5>
+                                        <p className="text-[10px] text-gray-500">Activa o desactiva l'enviament de correus des de la web.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setTempEmailEnabled(!tempEmailEnabled)} 
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm
+                                        ${tempEmailEnabled ? "bg-green-600 border-green-600" : "bg-gray-400 border-gray-400"} hover:opacity-90`}
+                                    >
+                                        <span className="material-symbols-outlined text-sm">
+                                            {tempEmailEnabled ? 'check_circle' : 'cancel'}
+                                        </span>
+                                        {tempEmailEnabled ? "CORREUS ACTIVATS" : "CORREUS DESACTIVATS"}
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="block text-[10px] font-bold uppercase text-purple-800 mb-1">Service ID</label>
+                                        <input 
+                                            value={tempServiceId} 
+                                            onChange={(e) => setTempServiceId(e.target.value)} 
+                                            className="w-full border border-purple-200 rounded px-3 py-2 text-xs text-gray-700 outline-none focus:border-purple-500 font-mono" 
+                                            placeholder="Ex: service_xxxxxx"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-purple-800 mb-1">Template ID (Admin)</label>
+                                        <input 
+                                            value={tempTemplateId} 
+                                            onChange={(e) => setTempTemplateId(e.target.value)} 
+                                            className="w-full border border-purple-200 rounded px-3 py-2 text-xs text-gray-700 outline-none focus:border-purple-500 font-mono" 
+                                            placeholder="Ex: template_admin"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold uppercase text-purple-800 mb-1">Template ID (Client Auto-Reply)</label>
+                                        <input 
+                                            value={tempAutoReplyId} 
+                                            onChange={(e) => setTempAutoReplyId(e.target.value)} 
+                                            className="w-full border border-purple-200 rounded px-3 py-2 text-xs text-gray-700 outline-none focus:border-purple-500 font-mono" 
+                                            placeholder="Ex: template_client"
+                                        />
+                                    </div>
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="block text-[10px] font-bold uppercase text-purple-800 mb-1">Public Key</label>
+                                        <input 
+                                            value={tempPublicKey} 
+                                            onChange={(e) => setTempPublicKey(e.target.value)} 
+                                            className="w-full border border-purple-200 rounded px-3 py-2 text-xs text-gray-700 outline-none focus:border-purple-500 font-mono" 
+                                            placeholder="Ex: xxxxxxxxxxxxxxx"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <button onClick={handleSaveEmailSettings} className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase px-4 py-2 rounded shadow-sm transition-colors">
+                                        Guardar Configuració Email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* --- NEW ROLE MANAGEMENT UI --- */}
+                        <div>
+                            <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                <span className="material-symbols-outlined text-lg">group_add</span> Gestió d'Equip i Permisos
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* SUPER ADMINS */}
+                                <div className="bg-white/60 p-4 rounded-lg border border-purple-100 shadow-sm">
+                                    <h5 className="text-xs font-bold text-purple-800 uppercase mb-3 flex items-center gap-1"><span className="material-symbols-outlined text-sm">shield</span> Super Admins</h5>
+                                    <div className="flex gap-2 mb-3">
+                                        <input type="email" value={newSuperAdminEmail} onChange={(e) => setNewSuperAdminEmail(e.target.value)} placeholder="email@exemple.com" className="flex-1 text-xs border border-purple-200 rounded px-2 py-1 outline-none focus:border-purple-500" />
+                                        <button onClick={() => handleAddEmail('super', newSuperAdminEmail)} className="bg-purple-600 text-white text-xs px-3 py-1 rounded hover:bg-purple-700">Afegir</button>
+                                    </div>
+                                    <ul className="space-y-2">
+                                        {(config?.managementSettings?.superAdminEmails || []).map((email, i) => (
+                                            <li key={i} className="flex justify-between items-center text-xs bg-purple-50 p-2 rounded border border-purple-100">
+                                                <span className="text-purple-900 truncate">{email}</span>
+                                                <button onClick={() => handleRemoveEmail('super', email)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined text-sm">close</span></button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* DEVELOPERS (RESTRICTED) */}
+                                <div className="bg-white/60 p-4 rounded-lg border border-purple-100 shadow-sm">
+                                    <h5 className="text-xs font-bold text-orange-800 uppercase mb-3 flex items-center gap-1"><span className="material-symbols-outlined text-sm">visibility_off</span> Desenvolupadors (Vista Restringida)</h5>
+                                    <p className="text-[10px] text-gray-500 mb-3 leading-tight">Els emails d'aquesta llista NO veuran dades privades (missatges/reserves).</p>
+                                    <div className="flex gap-2 mb-3">
+                                        <input type="email" value={newDevEmail} onChange={(e) => setNewDevEmail(e.target.value)} placeholder="email@exemple.com" className="flex-1 text-xs border border-orange-200 rounded px-2 py-1 outline-none focus:border-orange-500" />
+                                        <button onClick={() => handleAddEmail('dev', newDevEmail)} className="bg-orange-600 text-white text-xs px-3 py-1 rounded hover:bg-orange-700">Afegir</button>
+                                    </div>
+                                    <ul className="space-y-2">
+                                        {(config?.managementSettings?.developerEmails || []).map((email, i) => (
+                                            <li key={i} className="flex justify-between items-center text-xs bg-orange-50 p-2 rounded border border-orange-100">
+                                                <span className="text-orange-900 truncate">{email}</span>
+                                                <button onClick={() => handleRemoveEmail('dev', email)} className="text-red-400 hover:text-red-600"><span className="material-symbols-outlined text-sm">close</span></button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                         <div><h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider"><span className="material-symbols-outlined text-lg">tune</span> Límits del Sistema</h4><div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/60 p-4 rounded-lg border border-purple-100"><div className="flex items-center justify-between pb-2 border-b border-purple-100"><div><label className="block text-xs font-bold text-purple-800">Max Menús Extra</label></div><input type="number" min="0" max="50" value={tempMaxMenus} onChange={(e) => setTempMaxMenus(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div><div className="flex items-center justify-between pb-2 border-b border-purple-100"><div><label className="block text-xs font-bold text-purple-800">Max Slide Portada</label></div><input type="number" min="1" max="20" value={tempMaxHeroImages} onChange={(e) => setTempMaxHeroImages(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div><div className="flex items-center justify-between"><div><label className="block text-xs font-bold text-purple-800">Max Slide Producte</label></div><input type="number" min="1" max="20" value={tempMaxProduct} onChange={(e) => setTempMaxProduct(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div><div className="flex items-center justify-between"><div><label className="block text-xs font-bold text-purple-800">Max Slide Història</label></div><input type="number" min="1" max="20" value={tempMaxHistoric} onChange={(e) => setTempMaxHistoric(e.target.value)} className="w-16 border border-purple-300 rounded px-2 py-1 text-center font-bold text-purple-900 focus:border-purple-500 outline-none text-xs" /></div></div><div className="mt-2 text-right"><button onClick={handleSaveLimits} className="text-[10px] font-bold text-purple-700 hover:text-purple-900 uppercase underline">Guardar Límits</button></div></div>
                         <div><h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider"><span className="material-symbols-outlined text-lg">contact_support</span> Configuració Suport Tècnic</h4><div className="bg-white/60 p-4 rounded-lg border border-purple-100 flex flex-col md:flex-row gap-4"><div className="flex-1"><label className="block text-[10px] font-bold text-purple-800 mb-1">Text Botó</label><input type="text" value={tempSupportText} onChange={(e) => setTempSupportText(e.target.value)} className="w-full border border-purple-200 rounded px-3 py-1.5 text-xs text-gray-800 outline-none focus:border-purple-500" placeholder="Ex: Contactar..." /></div><div className="flex-1"><label className="block text-[10px] font-bold text-purple-800 mb-1">URL / Mailto</label><input type="text" value={tempSupportUrl} onChange={(e) => setTempSupportUrl(e.target.value)} className="w-full border border-purple-200 rounded px-3 py-1.5 text-xs text-gray-800 outline-none focus:border-purple-500 font-mono" placeholder="mailto:..." /></div><div className="flex items-end"><button onClick={handleSaveSupport} className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase px-4 py-2 rounded shadow-sm transition-colors">Guardar</button></div></div></div>
                         <div><h4 className="font-bold text-indigo-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider"><span className="material-symbols-outlined text-lg">verified</span> Gestió de l'Entrega (Master Version)</h4><div className="bg-indigo-50 border border-indigo-200 p-6 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-8"><div><h5 className="font-bold text-indigo-800 text-xs mb-2">OPCIÓ A: DEFINIR MASTER (GUARDAR)</h5><p className="text-[11px] text-indigo-700 mb-4 leading-relaxed">Guarda l'estat actual de la web com a "Versió d'Entrega". Utilitza això quan acabis el desenvolupament o facis una actualització major.</p><button onClick={() => setShowSetMasterConfirm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-xs font-bold uppercase shadow-sm flex items-center gap-2 transition-colors w-full justify-center"><span className="material-symbols-outlined text-base">save_as</span> Definir estat actual com a Master</button></div><div className="border-t md:border-t-0 md:border-l border-indigo-200 pt-6 md:pt-0 md:pl-8"><h5 className="font-bold text-red-800 text-xs mb-2">OPCIÓ B: RESTAURAR MASTER (CARREGAR)</h5><p className="text-[11px] text-red-700 mb-4 leading-relaxed">Esborra tots els canvis fets pel client i retorna la web a l'últim punt "Master" guardat. <strong className="underline">Acció destructiva.</strong></p><button onClick={() => setShowFactoryResetConfirm(true)} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded text-xs font-bold uppercase shadow-sm flex items-center gap-2 transition-colors w-full justify-center"><span className="material-symbols-outlined text-base">history</span> Restaurar Versió Master</button></div></div></div>

@@ -39,8 +39,20 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      
+      // MAGIC LINK LOGIC: Check for ?admin=true
       const params = new URLSearchParams(window.location.search);
-      if (currentUser && params.get('admin') === 'true') { setShowAdminPanel(true); }
+      const isAdminParam = params.get('admin') === 'true';
+
+      if (isAdminParam) {
+          if (currentUser) {
+              // If logged in and param exists, open panel immediately
+              setShowAdminPanel(true);
+          } else {
+              // If NOT logged in and param exists, open login modal
+              setShowLoginModal(true);
+          }
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -63,8 +75,14 @@ const App: React.FC = () => {
     if (element) { element.scrollIntoView({ behavior: 'smooth' }); }
   };
 
+  // Used only by Navbar or internal logic now
   const openAdminPanel = (tab: string = 'config') => {
-    if (user) { setAdminInitialTab(tab); setShowAdminPanel(true); } else { setShowLoginModal(true); }
+    if (user) { 
+        setAdminInitialTab(tab); 
+        setShowAdminPanel(true); 
+    } else { 
+        setShowLoginModal(true); 
+    }
   };
 
   const handleLoginSuccess = () => { setShowLoginModal(false); setShowAdminPanel(true); };
@@ -81,7 +99,13 @@ const App: React.FC = () => {
       {config.specialties?.visible !== false && <Specialties />}
       {config.philosophy?.visible !== false && <Philosophy />}
       <Contact onOpenPrivacy={() => setShowPrivacyModal(true)} />
-      <Footer onEnableAdmin={() => openAdminPanel('config')} onOpenPrivacy={() => setShowPrivacyModal(true)} onOpenCookies={() => setShowCookiesModal(true)} onOpenLegal={() => setShowLegalModal(true)} isLoggedIn={!!user} />
+      <Footer 
+        onOpenAdmin={() => openAdminPanel('config')} // Only shows if logged in inside Footer
+        onOpenPrivacy={() => setShowPrivacyModal(true)} 
+        onOpenCookies={() => setShowCookiesModal(true)} 
+        onOpenLegal={() => setShowLegalModal(true)} 
+        isLoggedIn={!!user} 
+      />
       {showPrivacyModal && <PrivacyModal onClose={() => setShowPrivacyModal(false)} />}
       {showCookiesModal && <CookiesModal onClose={() => setShowCookiesModal(false)} />}
       {showLegalModal && <LegalModal onClose={() => setShowLegalModal(false)} />}

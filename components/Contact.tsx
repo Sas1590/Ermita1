@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { db } from '../firebase';
 import { ref, push } from 'firebase/database';
+import emailjs from '@emailjs/browser';
 
 interface ContactProps {
   onOpenPrivacy: () => void;
@@ -64,6 +65,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
     setStatus('sending');
 
     try {
+      // 1. SAVE TO FIREBASE
       const messagesRef = ref(db, 'contactMessages');
       await push(messagesRef, {
         name: formData.name,
@@ -76,6 +78,40 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
         read: false
       });
 
+      // 2. SEND EMAILS VIA EMAILJS (If configured)
+      const emailSettings = config.emailSettings;
+      if (emailSettings && emailSettings.enabled && emailSettings.serviceId && emailSettings.templateId && emailSettings.publicKey) {
+          const templateParams = {
+              subject: `Nou Contacte Web - ${formData.subject || formData.name}`,
+              from_name: formData.name,
+              from_email: formData.email,
+              phone: formData.phone,
+              message: `MISSATGE DE CONTACTE (PEU DE PÀGINA)\n\n${formData.message}`,
+          };
+
+          // Admin Notification
+          await emailjs.send(
+              emailSettings.serviceId,
+              emailSettings.templateId,
+              templateParams,
+              emailSettings.publicKey
+          );
+
+          // 3. AUTO REPLY (If configured)
+          if (emailSettings.autoReplyTemplateId) {
+              try {
+                  await emailjs.send(
+                      emailSettings.serviceId,
+                      emailSettings.autoReplyTemplateId,
+                      templateParams, // This params object has 'from_email' which EmailJS uses as recipient if configured correctly
+                      emailSettings.publicKey
+                  );
+              } catch (clientErr) {
+                  console.warn("Client auto-reply failed", clientErr);
+              }
+          }
+      }
+
       setStatus('success');
       setFormData({ name: '', email: '', phone: '', subject: '', message: '', privacy: false });
       
@@ -83,7 +119,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
       setTimeout(() => setStatus('idle'), 5000);
 
     } catch (error) {
-      console.error("Error sending message to Firebase:", error);
+      console.error("Error sending message:", error);
       setStatus('error');
     }
   };
@@ -223,7 +259,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                             value={formData.name}
                             onChange={handleChange}
                             required
-                            placeholder="Nom i cognoms" 
+                            placeholder={config.contact.formNamePlaceholder} 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder-white/20" 
                         />
                     </div>
@@ -236,7 +272,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                             value={formData.email}
                             onChange={handleChange}
                             required
-                            placeholder="exemple@email.com" 
+                            placeholder={config.contact.formEmailPlaceholder} 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder-white/20" 
                         />
                     </div>
@@ -248,7 +284,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            placeholder="+34..." 
+                            placeholder={config.contact.formPhonePlaceholder} 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder-white/20" 
                         />
                     </div>
@@ -260,7 +296,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                             name="subject"
                             value={formData.subject}
                             onChange={handleChange}
-                            placeholder="De què vols parlar?" 
+                            placeholder={config.contact.formSubjectPlaceholder} 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors placeholder-white/20" 
                         />
                     </div>
@@ -282,7 +318,7 @@ const Contact: React.FC<ContactProps> = ({ onOpenPrivacy }) => {
                             required
                             maxLength={1000} // UPDATED LIMIT
                             rows={4} 
-                            placeholder="Explica'ns de què es tracta..." 
+                            placeholder={config.contact.formMessagePlaceholder} 
                             className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors resize-none placeholder-white/20"
                         ></textarea>
                     </div>

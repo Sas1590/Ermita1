@@ -2,14 +2,14 @@ import React from 'react';
 import { useConfig } from '../context/ConfigContext';
 
 interface FooterProps {
-  onEnableAdmin: () => void;
+  onOpenAdmin: () => void;
   onOpenPrivacy: () => void;
   onOpenCookies: () => void;
   onOpenLegal: () => void;
   isLoggedIn: boolean;
 }
 
-const Footer: React.FC<FooterProps> = ({ onEnableAdmin, onOpenPrivacy, onOpenCookies, onOpenLegal, isLoggedIn }) => {
+const Footer: React.FC<FooterProps> = ({ onOpenAdmin, onOpenPrivacy, onOpenCookies, onOpenLegal, isLoggedIn }) => {
   const { config } = useConfig();
   
   return (
@@ -51,12 +51,18 @@ const Footer: React.FC<FooterProps> = ({ onEnableAdmin, onOpenPrivacy, onOpenCoo
           <button onClick={(e) => { e.preventDefault(); onOpenLegal(); }} className="hover:text-primary transition-colors">Avís Legal</button>
           <button onClick={(e) => { e.preventDefault(); onOpenPrivacy(); }} className="hover:text-primary transition-colors">Privacitat</button>
           
-          <button 
-            onClick={(e) => { e.preventDefault(); onEnableAdmin(); }} 
-            className={`transition-colors border px-2 py-1 rounded text-[10px] ${isLoggedIn ? 'border-green-500/50 text-green-500 hover:bg-green-500/10' : 'border-white/10 hover:text-white hover:border-white/30'}`}
-          >
-            {isLoggedIn ? 'Panell' : 'Admin'}
-          </button>
+          {/* Admin Button restored for testing */}
+          <button onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} className="hover:text-primary transition-colors">Admin</button>
+          
+          {/* Only show button if already logged in (Convenience link) */}
+          {isLoggedIn && (
+            <button 
+                onClick={(e) => { e.preventDefault(); onOpenAdmin(); }} 
+                className="transition-colors border px-2 py-1 rounded text-[10px] border-green-500/50 text-green-500 hover:bg-green-500/10 ml-2"
+            >
+                Panell
+            </button>
+          )}
         </div>
       </div>
     </footer>

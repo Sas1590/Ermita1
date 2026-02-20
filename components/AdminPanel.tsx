@@ -7,10 +7,6 @@ import { ProfileTab } from './admin/ProfileTab';
 import { Operations } from './admin/Operations';
 import { ref, get, onValue } from 'firebase/database';
 
-const SUPER_ADMIN_EMAILS = [
-    'umc_admin@proton.me'
-];
-
 interface AdminPanelProps {
     initialTab?: string;
     onSaveSuccess: () => void;
@@ -22,6 +18,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
     const [localConfig, setLocalConfig] = useState(() => JSON.parse(JSON.stringify(config)));
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    const [isDeveloper, setIsDeveloper] = useState(false); 
     const [counts, setCounts] = useState({ inbox: 0, reservations: 0 });
     const [menuViewState, setMenuViewState] = useState<'dashboard' | 'type_selection' | 'editor'>('dashboard');
     const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
@@ -30,8 +27,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
     useEffect(() => {
         if (auth.currentUser) {
             const userEmail = auth.currentUser.email || '';
-            const isSuper = SUPER_ADMIN_EMAILS.includes(userEmail);
+            
+            // Dynamic Role Check from Config
+            const superAdmins = config.managementSettings?.superAdminEmails || [];
+            const devEmails = config.managementSettings?.developerEmails || [];
+
+            // EMERGENCY ACCESS: Allow specific owner email to access Super Admin zone
+            // This prevents lockout if the DB config is empty or reset.
+            const isOwnerOverride = userEmail.toLowerCase() === 'umc_admin@proton.me';
+
+            const isSuper = superAdmins.includes(userEmail) || isOwnerOverride;
+            
+            // "Developer" in this context means "Restricted View" (Private data hidden)
+            // A Super Admin is never restricted.
+            const isDev = devEmails.includes(userEmail) && !isSuper;
+            
             setIsSuperAdmin(isSuper);
+            setIsDeveloper(isDev);
 
             const uid = auth.currentUser.uid;
             get(ref(db, `adminProfiles/${uid}/displayName`)).then((snapshot) => {
@@ -40,33 +52,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                 }
             });
 
-            const messagesRef = ref(db, 'contactMessages');
-            const reservationsRef = ref(db, 'reservations');
+            // If user is NOT a restricted developer, fetch private counts
+            if (!isDev) {
+                const messagesRef = ref(db, 'contactMessages');
+                const reservationsRef = ref(db, 'reservations');
 
-            const unsubMsg = onValue(messagesRef, (snapshot) => {
-                let count = 0;
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    count = Object.values(data).filter((m: any) => !m.read).length;
-                }
-                setCounts(prev => ({ ...prev, inbox: count }));
-            });
+                const unsubMsg = onValue(messagesRef, (snapshot) => {
+                    let count = 0;
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        count = Object.values(data).filter((m: any) => !m.read).length;
+                    }
+                    setCounts(prev => ({ ...prev, inbox: count }));
+                });
 
-            const unsubRes = onValue(reservationsRef, (snapshot) => {
-                let count = 0;
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    count = Object.values(data).filter((r: any) => r.status === 'pending').length;
-                }
-                setCounts(prev => ({ ...prev, reservations: count }));
-            });
+                const unsubRes = onValue(reservationsRef, (snapshot) => {
+                    let count = 0;
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        count = Object.values(data).filter((r: any) => r.status === 'pending').length;
+                    }
+                    setCounts(prev => ({ ...prev, reservations: count }));
+                });
 
-            return () => {
-                unsubMsg();
-                unsubRes();
-            };
+                return () => {
+                    unsubMsg();
+                    unsubRes();
+                };
+            }
         }
-    }, []);
+    }, [config.managementSettings]); // Re-run if config changes (e.g. user added to list)
 
     const handleSave = async () => {
         await updateConfig(localConfig);
@@ -84,14 +99,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
         }
     };
 
+    // --- DYNAMIC TABS GENERATION ---
     const tabs = [
         { id: 'config', label: 'Contingut Web', icon: 'edit_document' },
         { id: 'menu', label: 'Gestor Cartes', icon: 'restaurant_menu' },
-        { id: 'inbox', label: 'Missatges', icon: 'mail' },
-        { id: 'reservations', label: 'Reserves', icon: 'book_online' },
-        { id: 'profile', label: 'El Meu Perfil', icon: 'person' },
-        { id: 'security', label: 'Seguretat', icon: 'security' },
     ];
+
+    // ONLY SHOW PRIVATE DATA TABS IF NOT RESTRICTED (DEVELOPER)
+    if (!isDeveloper) {
+        tabs.push(
+            { id: 'inbox', label: 'Missatges', icon: 'mail' },
+            { id: 'reservations', label: 'Reserves', icon: 'book_online' }
+        );
+    }
+
+    tabs.push({ id: 'profile', label: 'El Meu Perfil', icon: 'person' });
+    
+    // Always show security for everyone
+    tabs.push({ id: 'security', label: 'Seguretat', icon: 'security' });
 
     if (isSuperAdmin) {
         tabs.push({ id: 'superadmin', label: 'Zona Super Admin', icon: 'admin_panel_settings' });
@@ -108,7 +133,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                         </div>
                         <div>
                             <h2 className="font-serif text-xl font-bold tracking-wide">Panell d'Administració</h2>
-                            <p className="text-xs text-gray-400">Gestiona el contingut i les operacions</p>
+                            <p className="text-xs text-gray-400">
+                                {isDeveloper ? 'Mode Restringit (Dades Privades Ocultes)' : 'Gestiona el contingut i les operacions'}
+                            </p>
                         </div>
                     </div>
                     <div className="flex gap-3">
@@ -125,9 +152,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                     <div className="w-20 md:w-64 bg-[#2c241b] flex-shrink-0 flex flex-col border-r border-white/5">
                         <div className="p-5 border-b border-white/5 mb-2 hidden md:block">
                             <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">LOGEJAT COM:</p>
-                            <p className="text-xs font-bold text-green-400 truncate" title={auth.currentUser?.email || ''}>
+                            <p className={`text-xs font-bold truncate ${isDeveloper ? 'text-orange-400' : 'text-green-400'}`} title={auth.currentUser?.email || ''}>
                                 {auth.currentUser?.email}
                             </p>
+                            {isDeveloper && <p className="text-[9px] text-gray-500 mt-1 italic">Rol: Tècnic (Restringit)</p>}
+                            {isSuperAdmin && <p className="text-[9px] text-purple-400 mt-1 italic">Rol: Super Admin</p>}
                         </div>
 
                         <div className="flex-1 overflow-y-auto py-2 space-y-2 px-3">
@@ -137,6 +166,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                                 if (tab.id === 'inbox') { badgeCount = counts.inbox; badgeColor = "bg-blue-500"; } 
                                 else if (tab.id === 'reservations') { badgeCount = counts.reservations; badgeColor = "bg-red-500"; }
                                 const isSuperAdminTab = tab.id === 'superadmin';
+                                
                                 return (
                                     <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative ${activeTab === tab.id ? (isSuperAdminTab ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-900/30' : 'bg-primary text-black font-bold shadow-md') : (isSuperAdminTab ? 'text-purple-300 hover:bg-purple-900/20 hover:text-white border border-purple-500/20 mt-4' : 'text-gray-400 hover:bg-white/5 hover:text-white')}`}>
                                         <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? (isSuperAdminTab ? 'text-white' : 'text-black') : (isSuperAdminTab ? 'text-purple-400 group-hover:text-purple-200' : 'text-gray-500 group-hover:text-white')}`}>{tab.icon}</span>
@@ -162,7 +192,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'config', o
                             {activeTab === 'config' && (<ConfigTab localConfig={localConfig} setLocalConfig={setLocalConfig} userEmail={auth.currentUser?.email || ''} />)}
                             {activeTab === 'menu' && (<MenuManager localConfig={localConfig} setLocalConfig={setLocalConfig} menuViewState={menuViewState} setMenuViewState={setMenuViewState} editingMenuId={editingMenuId} setEditingMenuId={setEditingMenuId} onDeleteCard={handleMenuDelete} />)}
                             {activeTab === 'profile' && (<ProfileTab currentName={personalAdminName} setCurrentName={setPersonalAdminName} />)}
-                            {(activeTab === 'reservations' || activeTab === 'inbox') && (<Operations activeTab={activeTab} config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} />)}
+                            {/* RENDER BOTH INBOX AND RESERVATIONS via Operations */}
+                            {(activeTab === 'inbox' || activeTab === 'reservations') && !isDeveloper && (<Operations activeTab={activeTab} config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} />)}
                             {activeTab === 'security' && (<Operations activeTab='security' config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} isSuperAdmin={isSuperAdmin} />)}
                             {activeTab === 'superadmin' && isSuperAdmin && (<Operations activeTab='superadmin' config={config} updateConfig={updateConfig} setLocalConfig={setLocalConfig} isSuperAdmin={isSuperAdmin} />)}
                         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { db } from '../firebase';
 import { ref, push } from 'firebase/database';
+import emailjs from '@emailjs/browser';
 
 interface HeroProps {
     onRedirectToMenu?: (tab: string) => void;
@@ -302,7 +303,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
   const [formData, setFormData] = useState({
       name: '',
       phone: '',
-      email: '', // Needed for Contact
+      email: '', // Needed for Contact AND Reservation now
       pax: '', 
       notes: '',
       privacy: false,
@@ -377,6 +378,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
       setFormStatus('loading');
 
       try {
+          // 1. SAVE TO FIREBASE (Backup)
           const reservationsRef = ref(db, 'reservations');
           const [datePart, timePart] = dateTime.split('T');
 
@@ -388,6 +390,50 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
               createdAt: Date.now(),
               status: 'pending' 
           });
+
+          // 2. SEND EMAILS VIA EMAILJS (If configured)
+          const emailSettings = config.emailSettings;
+          if (emailSettings && emailSettings.enabled && emailSettings.serviceId && emailSettings.templateId && emailSettings.publicKey) {
+              const dateObj = new Date(dateTime);
+              const formattedDate = dateObj.toLocaleDateString('ca-ES');
+              const formattedTime = dateObj.toLocaleTimeString('ca-ES', {hour: '2-digit', minute:'2-digit'});
+              
+              const templateParams = {
+                  subject: `Nova Reserva Web - ${formData.name}`,
+                  from_name: formData.name,
+                  from_email: formData.email || "web@ermitaparetdelgada.com", // If no email provided, use generic
+                  phone: formData.phone,
+                  message: `SOL·LICITUD DE RESERVA\n\nData: ${formattedDate}\nHora: ${formattedTime}\nPersones: ${formData.pax}\n\nNotes: ${formData.notes || 'Cap'}\n\nTelèfon client: ${formData.phone}`,
+              };
+
+              // Send to Admin
+              await emailjs.send(
+                  emailSettings.serviceId,
+                  emailSettings.templateId,
+                  templateParams,
+                  emailSettings.publicKey
+              );
+
+              // 3. SEND AUTO-REPLY TO CLIENT (If configured and email is provided)
+              if (emailSettings.autoReplyTemplateId && formData.email) {
+                  const clientParams = {
+                      ...templateParams,
+                      from_email: formData.email // Make sure 'from_email' maps to the recipient in EmailJS auto-reply template
+                  };
+                  
+                  // Wrap in try-catch so if client email fails (e.g. fake email), the reservation still succeeds
+                  try {
+                      await emailjs.send(
+                          emailSettings.serviceId,
+                          emailSettings.autoReplyTemplateId,
+                          clientParams,
+                          emailSettings.publicKey
+                      );
+                  } catch (clientErr) {
+                      console.warn("Client auto-reply failed:", clientErr);
+                  }
+              }
+          }
 
           setFormStatus('success');
           setFormData({ name: '', phone: '', email: '', pax: '', notes: '', privacy: false, message: '' });
@@ -421,6 +467,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
       setFormStatus('loading');
 
       try {
+          // 1. SAVE TO FIREBASE
           const messagesRef = ref(db, 'contactMessages');
           await push(messagesRef, {
               name: formData.name,
@@ -432,6 +479,40 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
               timestamp: Date.now(),
               read: false
           });
+
+          // 2. SEND EMAIL VIA EMAILJS (If configured)
+          const emailSettings = config.emailSettings;
+          if (emailSettings && emailSettings.enabled && emailSettings.serviceId && emailSettings.templateId && emailSettings.publicKey) {
+              const templateParams = {
+                  subject: `Nou Missatge Web - ${formData.name}`,
+                  from_name: formData.name,
+                  from_email: formData.email,
+                  phone: formData.phone,
+                  message: `MISSATGE DE CONTACTE (PORTADA)\n\n${formData.message}`,
+              };
+
+              // Admin Notification
+              await emailjs.send(
+                  emailSettings.serviceId,
+                  emailSettings.templateId,
+                  templateParams,
+                  emailSettings.publicKey
+              );
+
+              // 3. AUTO REPLY TO CLIENT
+              if (emailSettings.autoReplyTemplateId) {
+                  try {
+                      await emailjs.send(
+                          emailSettings.serviceId,
+                          emailSettings.autoReplyTemplateId,
+                          templateParams,
+                          emailSettings.publicKey
+                      );
+                  } catch (err) {
+                      console.warn("Auto-reply failed", err);
+                  }
+              }
+          }
 
           setFormStatus('success');
           setFormData({ name: '', phone: '', email: '', pax: '', notes: '', privacy: false, message: '' });
@@ -612,9 +693,9 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                 />
                             </div>
                             
-                            {/* Reservation: Phone | Contact: Email & Phone Grid */}
+                            {/* Reservation: Phone & Email Grid (UPDATED to include Email) */}
                             {formType === 'reservation' ? (
-                                <div className="flex flex-col relative">
+                                <div className="flex flex-col">
                                     <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formPhoneLabel}</label>
                                     <input 
                                         type="tel" 
@@ -625,7 +706,7 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                                         className={`bg-white/50 border-b-2 outline-none px-2 py-1 w-full placeholder-gray-400 transition-colors ${phoneError ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-accent'}`} 
                                     />
                                     {phoneError && (
-                                        <span className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-sans font-bold leading-tight bg-white/90 px-1 rounded">
+                                        <span className="text-[10px] text-red-500 font-sans font-bold leading-tight mt-1">
                                             {phoneError}
                                         </span>
                                     )}
@@ -666,6 +747,19 @@ const Hero: React.FC<HeroProps> = ({ onRedirectToMenu }) => {
                         {/* --- RESERVATION SPECIFIC FIELDS --- */}
                         {formType === 'reservation' && (
                             <>
+                                {/* EMAIL FIELD ADDED FOR RESERVATIONS */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formEmailLabel}</label>
+                                    <input 
+                                        type="email" 
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        placeholder={config.hero.formEmailPlaceholder} 
+                                        className="bg-white/50 border-b-2 border-gray-300 focus:border-accent outline-none px-2 py-1 w-full placeholder-gray-400" 
+                                    />
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4 relative z-40">
                                     <div className="flex flex-col">
                                         <label className="text-sm text-gray-500 mb-1 font-sans">{config.hero.formDateLabel}</label>

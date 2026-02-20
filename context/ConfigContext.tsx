@@ -55,6 +55,7 @@ export interface WineItem {
   price: string;
   visible?: boolean;
   strikethrough?: boolean;
+  image?: string;
 }
 
 export interface WineGroup {
@@ -107,6 +108,19 @@ export interface AppConfig {
     maxHeroImages: number;
     maxProductImages: number;
     maxHistoricImages: number;
+    enableReservationsTab?: boolean; // NEW TOGGLE
+  };
+  managementSettings: {
+    superAdminEmails: string[];
+    developerEmails: string[];
+  };
+  // NEW EMAIL INTEGRATION SETTINGS
+  emailSettings: {
+    serviceId: string;
+    templateId: string;
+    autoReplyTemplateId?: string; // NEW: Template for client confirmation
+    publicKey: string;
+    enabled: boolean;
   };
   supportSettings: {
     text: string;
@@ -141,25 +155,24 @@ export interface AppConfig {
     
     // Common Labels & Placeholders
     formNameLabel: string;
-    formNamePlaceholder: string; // NEW
+    formNamePlaceholder: string; 
 
     formEmailLabel: string;
-    formEmailPlaceholder: string; // NEW
+    formEmailPlaceholder: string; 
 
     formPhoneLabel: string;
-    formPhonePlaceholder: string; // NEW
+    formPhonePlaceholder: string; 
 
     formMessageLabel: string;
-    formMessagePlaceholder: string; // NEW
+    formMessagePlaceholder: string; 
 
     formDateLabel: string;
-    // Date doesn't strictly have a placeholder in custom component, but kept for consistency if needed later
-
+    
     formPaxLabel: string;
-    formPaxPlaceholder: string; // NEW
+    formPaxPlaceholder: string; 
 
     formNotesLabel: string;
-    formNotesPlaceholder: string; // NEW
+    formNotesPlaceholder: string; 
 
     formPrivacyLabel: string;
     formCallUsLabel: string;
@@ -285,12 +298,24 @@ export interface AppConfig {
     socialTitle: string;
     socialDescription: string;
     socialButtonText: string;
+    
+    // Bottom Form Fields
     formTitle: string;
     formNameLabel: string;
+    formNamePlaceholder: string; 
+    
     formEmailLabel: string;
+    formEmailPlaceholder: string; 
+    
     formPhoneLabel: string;
+    formPhonePlaceholder: string; 
+    
     formSubjectLabel: string;
+    formSubjectPlaceholder: string; 
+    
     formMessageLabel: string;
+    formMessagePlaceholder: string; 
+    
     formButtonText: string;
   };
   navbar: {
@@ -305,7 +330,19 @@ export const defaultAppConfig: AppConfig = {
     maxExtraMenus: 10,
     maxHeroImages: 5,
     maxProductImages: 5,
-    maxHistoricImages: 5
+    maxHistoricImages: 5,
+    enableReservationsTab: false // Defaults to Locked
+  },
+  managementSettings: {
+    superAdminEmails: [],
+    developerEmails: []
+  },
+  emailSettings: {
+    serviceId: "",
+    templateId: "",
+    autoReplyTemplateId: "",
+    publicKey: "",
+    enabled: false
   },
   supportSettings: {
     text: "Contactar amb UMC Ideas",
@@ -325,30 +362,29 @@ export const defaultAppConfig: AppConfig = {
     reservationTimeInterval: 15,
     reservationErrorMessage: "Ho sentim, l'horari de reserva és de", 
     
-    // Defaults for new Contact fields
     heroContactTitle: "Contacta'ns",
     heroContactSubtitle: "Envia'ns un missatge",
     heroContactBtnText: "Enviar Missatge",
 
     formNameLabel: "Nom:",
-    formNamePlaceholder: "Nom...", // Default placeholder
+    formNamePlaceholder: "Nom...", 
 
     formEmailLabel: "El teu email",
-    formEmailPlaceholder: "email...", // Default placeholder
+    formEmailPlaceholder: "email...", 
 
     formPhoneLabel: "Telèfon:",
-    formPhonePlaceholder: "6...", // Default placeholder
+    formPhonePlaceholder: "6...", 
 
     formMessageLabel: "Missatge",
-    formMessagePlaceholder: "El teu missatge...", // Default placeholder
+    formMessagePlaceholder: "El teu missatge...", 
 
     formDateLabel: "Dia i hora:",
     
     formPaxLabel: "Gent:",
-    formPaxPlaceholder: "2", // Default placeholder
+    formPaxPlaceholder: "2", 
 
     formNotesLabel: "Notes:",
-    formNotesPlaceholder: "Al·lèrgies, terrassa...", // Default placeholder
+    formNotesPlaceholder: "Al·lèrgies, terrassa...", 
 
     formPrivacyLabel: "Si, accepto la privacitat.",
     formCallUsLabel: "O truca'ns:",
@@ -390,11 +426,11 @@ export const defaultAppConfig: AppConfig = {
         visible: true
       },
       {
-        title: "Vins de Proximitat",
-        subtitle: "DO Tarragona",
-        image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=2070&auto=format&fit=crop",
-        badge: "Celler",
-        description: "Descobreix els sabors autèntics de la nostra terra, cuinats amb passió i respecte pel producte.",
+        title: "Postres Artesans",
+        subtitle: "Dolça Tradició",
+        image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?q=80&w=2057&auto=format&fit=crop",
+        badge: "Casolà",
+        description: "El final perfecte amb les receptes de l'àvia: Crema Catalana, flams i pastissos elaborats cada dia a la nostra cuina.",
         visible: true
       }
     ]
@@ -551,10 +587,15 @@ export const defaultAppConfig: AppConfig = {
     socialButtonText: "Instagram",
     formTitle: "Envia'ns un missatge",
     formNameLabel: "Nom",
+    formNamePlaceholder: "Nom i cognoms",
     formEmailLabel: "Email",
+    formEmailPlaceholder: "exemple@email.com",
     formPhoneLabel: "Telèfon",
+    formPhonePlaceholder: "+34...",
     formSubjectLabel: "Assumpte",
+    formSubjectPlaceholder: "De què vols parlar?",
     formMessageLabel: "Missatge",
+    formMessagePlaceholder: "Explica'ns de què es tracta...",
     formButtonText: "Enviar"
   },
   navbar: {
@@ -599,10 +640,25 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
         setConfig(prev => ({
            ...prev,
            ...data,
+           managementSettings: data.managementSettings ? {
+               superAdminEmails: data.managementSettings.superAdminEmails || [],
+               developerEmails: data.managementSettings.developerEmails || []
+           } : prev.managementSettings,
+           emailSettings: data.emailSettings ? {
+                serviceId: data.emailSettings.serviceId || "",
+                templateId: data.emailSettings.templateId || "",
+                autoReplyTemplateId: data.emailSettings.autoReplyTemplateId || "", // New field
+                publicKey: data.emailSettings.publicKey || "",
+                enabled: data.emailSettings.enabled !== undefined ? data.emailSettings.enabled : false
+           } : prev.emailSettings,
            menuGlobalFooter: data.menuGlobalFooter || prev.menuGlobalFooter, 
            menuHeader: data.menuHeader ? { ...prev.menuHeader, ...data.menuHeader } : prev.menuHeader,
            brand: { ...prev.brand, ...data.brand },
-           adminSettings: { ...prev.adminSettings, ...data.adminSettings },
+           adminSettings: { 
+               ...prev.adminSettings, 
+               ...data.adminSettings,
+               enableReservationsTab: data.adminSettings?.enableReservationsTab !== undefined ? data.adminSettings.enableReservationsTab : prev.adminSettings.enableReservationsTab
+           },
            supportSettings: data.supportSettings ? { ...prev.supportSettings, ...data.supportSettings } : prev.supportSettings,
            hero: { 
                ...prev.hero, 
@@ -651,7 +707,13 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
            contact: { 
                ...prev.contact, 
                ...data.contact,
-               formVisible: data.contact?.formVisible !== undefined ? data.contact.formVisible : prev.contact.formVisible
+               formVisible: data.contact?.formVisible !== undefined ? data.contact.formVisible : prev.contact.formVisible,
+               // NEW PLACEHOLDERS MIGRATION LOGIC
+               formNamePlaceholder: data.contact?.formNamePlaceholder || prev.contact.formNamePlaceholder || "Nom i cognoms",
+               formEmailPlaceholder: data.contact?.formEmailPlaceholder || prev.contact.formEmailPlaceholder || "exemple@email.com",
+               formPhonePlaceholder: data.contact?.formPhonePlaceholder || prev.contact.formPhonePlaceholder || "+34...",
+               formSubjectPlaceholder: data.contact?.formSubjectPlaceholder || prev.contact.formSubjectPlaceholder || "De què vols parlar?",
+               formMessagePlaceholder: data.contact?.formMessagePlaceholder || prev.contact.formMessagePlaceholder || "Explica'ns de què es tracta..."
            },
            navbar: { ...prev.navbar, ...data.navbar },
            foodMenu: data.foodMenu || prev.foodMenu,

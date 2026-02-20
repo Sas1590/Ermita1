@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 // --- CURATED LIST OF ICONS FOR RESTAURANT ---
-// First Item is "mini_rhombus" (Small Separator Rhombus).
-// Second Item is "diamond" (Big Diamond Icon).
 export const AVAILABLE_ICONS = [
     "mini_rhombus", // Explicit value for the small separator
     "diamond", // Big Diamond Icon (Icona gran)
@@ -16,22 +14,53 @@ export const AVAILABLE_ICONS = [
     "water_drop", "menu_book", "checkroom", "flatware", "local_fire_department"
 ];
 
+// --- VISIBILITY TOGGLE COMPONENT (SHARED) ---
+export const VisibilityToggle = ({ 
+    isVisible, 
+    onToggle, 
+    labelVisible = "VISIBLE",
+    labelHidden = "OCULT",
+    colorClass = "bg-green-600 border-green-600",
+    offColorClass = "bg-gray-400 border-gray-400"
+}: { 
+    isVisible: boolean, 
+    onToggle: () => void, 
+    labelVisible?: string, 
+    labelHidden?: string, 
+    colorClass?: string, 
+    offColorClass?: string 
+}) => (
+    <button 
+        onClick={onToggle} 
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm mb-6
+        ${isVisible ? colorClass : offColorClass} hover:opacity-90 hover:shadow-md`}
+    >
+        <span className="material-symbols-outlined text-sm">
+            {isVisible ? 'visibility' : 'visibility_off'}
+        </span>
+        {isVisible ? labelVisible : labelHidden}
+    </button>
+);
+
 // --- LOGO EDITOR COMPONENT ---
 export const LogoEditor = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
     const [imgError, setImgError] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const isBase64 = value?.trim().startsWith('data:');
+    
+    // Clean value to remove accidental whitespace
+    const cleanValue = value ? value.trim() : "";
+    const isBase64 = cleanValue.startsWith('data:');
 
-    useEffect(() => { setImgError(false); }, [value]);
+    useEffect(() => { setImgError(false); }, [cleanValue]);
 
     return (
         <div className="flex gap-4 items-start bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm">
             {/* 1. Small Thumbnail (Dark Background) */}
             <div className="w-24 h-24 shrink-0 bg-gray-800 border border-gray-300 rounded-lg flex items-center justify-center overflow-hidden relative group">
-                {value && !imgError ? (
+                {cleanValue && !imgError ? (
                     <img 
-                        src={value} 
-                        alt="Logo Preview" 
+                        src={cleanValue} 
+                        alt="Preview" 
                         className="max-w-full max-h-full object-contain p-1"
                         onError={() => setImgError(true)}
                     />
@@ -63,7 +92,7 @@ export const LogoEditor = ({ value, onChange }: { value: string, onChange: (val:
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-bold text-orange-800 uppercase tracking-wide">Codi Base64 Ocult</p>
                             <p className="text-[9px] text-orange-600/70 truncate font-mono">
-                                {value.substring(0, 40)}...
+                                {cleanValue.substring(0, 40)}...
                             </p>
                         </div>
                         <div className="text-[10px] font-bold text-orange-500 uppercase bg-white border border-orange-100 px-2 py-0.5 rounded shadow-sm group-hover:text-orange-700 transition-colors">
@@ -93,7 +122,7 @@ export const LogoEditor = ({ value, onChange }: { value: string, onChange: (val:
                 {imgError && (
                     <div className="flex items-center gap-2 text-red-500">
                         <span className="material-symbols-outlined text-sm">error</span>
-                        <span className="text-[10px] font-medium">Error al carregar la imatge.</span>
+                        <span className="text-[10px] font-medium">Error al carregar la imatge. Revisa l'enllaç.</span>
                     </div>
                 )}
             </div>
@@ -139,8 +168,6 @@ export const ImageArrayEditor = ({
         setDraggedIndex(index);
         // Required for Firefox
         e.dataTransfer.effectAllowed = "move";
-        // Optional: Set a transparent drag image or similar if needed, 
-        // but default usually works fine for rows.
     };
 
     const onDragOver = (e: React.DragEvent) => {
@@ -195,7 +222,7 @@ export const ImageArrayEditor = ({
                     <div className="w-16 h-16 bg-gray-200 rounded overflow-hidden shrink-0 border border-gray-300 flex items-center justify-center bg-white relative">
                         {url ? (
                             <img 
-                                src={url} 
+                                src={url.trim()} 
                                 alt={`Preview ${idx}`} 
                                 className="w-full h-full object-cover pointer-events-none" // Prevent image drag interfering with row drag
                                 onError={(e) => {
@@ -260,21 +287,14 @@ export const IconPicker = ({ value, onChange }: { value: string, onChange: (val:
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen]);
 
-    // Helper to render the icon
-    // "mini_rhombus" -> Renders the Specific SMALL Separator Rhombus (tiny, rotated)
-    // "diamond" -> Renders the Standard Material Icon Diamond (larger)
     const renderIconVisual = (iconVal: string, sizeClass: string = "text-xl", colorClass: string = "") => {
-        if (iconVal === "mini_rhombus" || !iconVal) { // Handle explicit mini_rhombus or empty legacy
-            // Case 1: The Small Separator (Previously treated as empty, now strictly the small divider)
-            // WE USE w-2 h-2 to match the website's small size exactly.
-            // Centered explicitly.
+        if (iconVal === "mini_rhombus" || !iconVal) {
             return (
                 <div className="flex items-center justify-center w-6 h-6">
                     <div className={`w-2 h-2 rotate-45 bg-[#8b5a2b] ${colorClass.replace('text-', 'bg-').replace('[#8b5a2b]', 'primary')}`}></div>
                 </div>
             );
         }
-        // Case 2: Standard Icons (including the big 'diamond')
         return <span className={`material-symbols-outlined ${sizeClass} ${colorClass}`}>{iconVal}</span>;
     };
 
@@ -292,7 +312,6 @@ export const IconPicker = ({ value, onChange }: { value: string, onChange: (val:
             </button>
 
             {isOpen && (
-                // Centered dropdown
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white border border-gray-200 shadow-xl rounded-lg z-50 p-3">
                     <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
                         {AVAILABLE_ICONS.map((icon, idx) => (

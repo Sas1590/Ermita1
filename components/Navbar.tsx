@@ -264,8 +264,8 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
              <button onClick={() => onScrollToSection('historia')} className="hover:text-primary transition-colors uppercase">Història</button>
           )}
           
-          {/* Contact link - Programmatic scroll - Conditional Visibility */}
-          {showContactLink && (
+          {/* Contact link - Programmatic scroll - Conditional Visibility - HIDDEN if Hero Form is Contact type */}
+          {showContactLink && formType !== 'contact' && (
             <button onClick={() => onScrollToSection('contacte')} className="hover:text-primary transition-colors uppercase">Contacte</button>
           )}
 
@@ -402,7 +402,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled, onOpenMenu, onScrollToSection
           {showHistoryLink && (
               <button onClick={() => { onScrollToSection('historia'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Història</button>
           )}
-          {showContactLink && (
+          {showContactLink && formType !== 'contact' && (
             <button onClick={() => { onScrollToSection('contacte'); setMobileMenuOpen(false); }} className="uppercase tracking-widest text-sm hover:text-primary">Contacte</button>
           )}
           
